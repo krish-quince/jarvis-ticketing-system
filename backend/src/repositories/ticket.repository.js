@@ -42,3 +42,20 @@ export const getAllTickets = async (companyId) => {
 
     return result.rows;
 };
+
+export const getTicketById = async (ticketId, companyId) => {
+    const result = await pool.query(
+        `
+            SELECT t.*, c.category_name, p.priority_name, s.status_name 
+            FROM tickets t 
+            INNER JOIN ticket_categories c 
+                ON c.category_id = t.category_id 
+            INNER JOIN ticket_priorities p 
+                ON p.priority_id = t.priority_id 
+            INNER JOIN ticket_statuses s 
+                ON s.status_id = t.status_id 
+            WHERE t.ticket_id = $1 AND t.company_id = $2
+        `, [ticketId, companyId]);
+
+    return result.rows[0];
+};

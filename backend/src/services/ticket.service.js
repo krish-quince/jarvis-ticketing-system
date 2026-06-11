@@ -16,3 +16,7 @@ export const createTicket = async(ticketData, user) => {
 export const getAllTickets = async(companyId) => {
     return await ticketRepository.getAllTickets(companyId);
 };
+
+export const getTicketById = async (ticketId, companyId) => {
+    return await ticketRepository.getTicketById(ticketId, companyId);
+};
