@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import pool from "./config/db.js"
 
 dotenv.config();
 
@@ -13,6 +14,26 @@ app.get("/health", (req, res) => {
         message: "Server is running",
         timestamp: new Date().toISOString(),
     });
+});
+
+app.get("/db-health", async (req, res) => {
+    try {
+        const result = await pool.query("SELECT NOW()");
+
+        res.status(200).json({
+            success: true,
+            database: "Connected",
+            serverTime: result.rows[0].now,
+        });
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            database: "Disconnected",
+            error: error.message,
+        });
+    }
 });
 
 const PORT = process.env.PORT || 5000;
