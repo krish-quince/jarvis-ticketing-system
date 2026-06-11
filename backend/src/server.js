@@ -5,6 +5,8 @@ import pool from "./config/db.js"
 
 import authRoutes from "./routes/auth.routes.js";
 
+import { verifyToken } from "./middleware/auth.middleware.js";
+
 dotenv.config();
 
 const app = express();
@@ -39,6 +41,13 @@ app.get("/db-health", async (req, res) => {
             error: error.message,
         });
     }
+});
+
+app.get("/profile", verifyToken, (req, res) => {
+    res.status(200).json({
+        success: true,
+        user: req.user,
+    });
 });
 
 const PORT = process.env.PORT || 5000;
