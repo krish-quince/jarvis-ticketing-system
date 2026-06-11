@@ -30,7 +30,11 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
         throw new Error("Ticket not found.");
     }
 
-    await ticketRepository.updateStatus(ticketId, newStatusId);
+    const updatedTicket =  await ticketRepository.updateTicketStatus(ticketId, statusId);
 
-    await historyService.createHistory(ticketId, "Status", String(ticket.status_id), String(newStatusId), user.userCode);
+    await historyService.createHistory(
+        ticketId, "Status", String(ticket.status_id), String(statusId), user.userCode
+    );
+
+    return updatedTicket;
 };

@@ -58,6 +58,16 @@ export const getTicketById = async (ticketId, companyId) => {
         `, [ticketId, companyId]);
 
 
-        
+
+    return result.rows[0];
+};
+
+export const updateTicketStatus = async(ticketId, statusId) => {
+    const result = await pool.query(
+        `
+            UPDATE tickets SET status_id = $1, update_timestamp = CURRENT_TIMESTAMP WHERE ticket_id = $2 RETURNING *
+        `, [statusId, ticketId]
+    );
+
     return result.rows[0];
 };

@@ -6,7 +6,7 @@ export const createHistory = async(ticketId, fieldName, oldValue, newValue, user
             INSERT INTO ticket_history
             (
                 ticket_id, 
-                field_name, 
+                field_changed, 
                 old_value, 
                 new_value, 
                 changed_by_user_code

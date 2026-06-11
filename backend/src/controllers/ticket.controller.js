@@ -62,3 +62,35 @@ export const getTicketById = async (req, res) => {
         });
     }
 };
+
+export const updateTicketStatus = async(req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const { status_id } = req.body;
+
+        const ticket = await ticketService.updateTicketStatus(
+            ticketId, 
+            status_id, 
+            req.user
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: ticket,
+        });
+    } catch (error) {
+        console.error(error);
+
+        if(error.message === "Ticket not found") {
+            return res.status(404).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
