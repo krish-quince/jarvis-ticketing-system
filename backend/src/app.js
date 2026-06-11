@@ -8,6 +8,7 @@ import authRoutes from "./routes/auth.routes.js";
 import { verifyToken } from "./middleware/auth.middleware.js";
 
 import ticketRoutes from "./routes/ticket.routes.js";
+import commentRoutes from "./routes/comment.routes.js";
 
 dotenv.config();
 
@@ -17,10 +18,9 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 
-app.use(
-    "/api/tickets",
-    ticketRoutes
-  );
+app.use("/api/tickets", ticketRoutes);
+
+app.use("/api/tickets", commentRoutes);
 
 app.get("/health", (req, res) => {
     res.status(200).json({

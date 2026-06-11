@@ -57,5 +57,7 @@ export const getTicketById = async (ticketId, companyId) => {
             WHERE t.ticket_id = $1 AND t.company_id = $2
         `, [ticketId, companyId]);
 
+
+        
     return result.rows[0];
 };
