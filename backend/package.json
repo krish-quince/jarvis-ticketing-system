@@ -1,11 +1,13 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Mock and Real ticketing API for the Jarvis ticketing system.",
+  "main": "index.cjs",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "start:mock": "node index.cjs",
+    "dev:mock": "node index.cjs"
   },
   "keywords": [],
   "author": "",
