@@ -15,3 +15,12 @@ export const login = async (
 
   return response.data;
 };
+
+export const register = async (userData: any) => {
+  const response = await API.post(
+    "/auth/register",
+    userData
+  );
+
+  return response.data;
+};

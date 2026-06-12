@@ -27,6 +27,7 @@ type Props = {
     last_name: string;
     email: string;
     department: string;
+    password?: string;
   }) => Promise<void>;
 };
 
@@ -89,6 +90,7 @@ const LoginCard = ({
         last_name: regLastName.trim(),
         email: regEmail.trim().toLowerCase(),
         department: regDepartment,
+        password: regPassword,
       });
       // Clear form and toggle back to login on success
       setEmail(regEmail.trim().toLowerCase());

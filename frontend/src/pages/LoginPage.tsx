@@ -6,8 +6,7 @@ import Header from "../components/Header";
 import LoginCard from "../components/LoginCard";
 import Carousel from "../components/Carousel";
 
-import { login } from "../services/authService";
-import { createUser } from "../services/userService";
+import { login, register } from "../services/authService";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -47,14 +46,27 @@ const LoginPage = () => {
     last_name: string;
     email: string;
     department: string;
+    password?: string;
   }) => {
     try {
-      // Default to "User" role for newly registered portal users
-      const data = await createUser({
-        ...userData,
-        role_id: "User"
+      // Generate a unique user code (e.g. QC_KRIS_4321)
+      const namePrefix = `${userData.first_name.slice(0, 3)}${userData.last_name.slice(0, 3)}`.toUpperCase();
+      const uniqueSuffix = Math.floor(1000 + Math.random() * 9000);
+      const userCode = `QC_${namePrefix}_${uniqueSuffix}`;
+
+      // Call backend auth/register mapping standard required DB fields
+      const result = await register({
+        company_id: 1, // Default to Quince Capital
+        role_id: 4, // Default to Customer role
+        user_code: userCode,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        email: userData.email,
+        password: userData.password || "password123", // Fallback password
+        phone: "", // Optional column
       });
-      alert(`User ${data.first_name} ${data.last_name} registered successfully!`);
+
+      alert(`User ${result.user?.first_name || userData.first_name} registered successfully!`);
     } catch (error: any) {
       console.error(error);
       const errMsg = error.response?.data?.message || "Registration failed. Please try again.";
