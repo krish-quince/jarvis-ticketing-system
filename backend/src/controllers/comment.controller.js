@@ -25,7 +25,7 @@ export const getCommentsByTicketId = async (req, res) => {
     try {
         const { ticketId } = req.params;
 
-        const comments = await commentService.getCommentsByTicketId(ticketId);
+        const comments = await commentService.getCommentsByTicketId(ticketId, req.user);
 
         return res.status(200).json({
             success: true,
@@ -35,7 +35,7 @@ export const getCommentsByTicketId = async (req, res) => {
     } catch (error) {
         console.error(error);
 
-        if(error.message === "Ticket not found") {
+        if(error.message === "Ticket not found.") {
             return res.status(404).json({
                 success: false,
                 message: error.message,

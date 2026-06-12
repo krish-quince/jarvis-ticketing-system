@@ -19,11 +19,16 @@ export const createHistory = async(ticketId, fieldName, oldValue, newValue, user
     return result.rows[0];
 };
 
-export const getTicketHistory = async (ticketId) => {
+export const getTicketHistory = async (ticketId, companyId) => {
     const result = await pool.query(
         `
-            SELECT * FROM ticket_history WHERE ticket_id = $1 ORDER BY changed_at DESC  
-        `, [ticketId]
+            SELECT th.*
+            FROM ticket_history th
+            INNER JOIN tickets t
+                ON t.ticket_id = th.ticket_id
+            WHERE th.ticket_id = $1 AND t.company_id = $2
+            ORDER BY th.changed_at DESC  
+        `, [ticketId, companyId]
     );
 
     return result.rows;

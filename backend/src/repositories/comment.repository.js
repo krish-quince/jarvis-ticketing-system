@@ -11,11 +11,16 @@ export const createComment = async (ticketId, userCode, commentText) => {
     return result.rows[0];
 };
 
-export const getCommentsByTicketId = async(ticketId) => {
+export const getCommentsByTicketId = async(ticketId, companyId) => {
     const result = await pool.query(
         `
-            SELECT * FROM ticket_comments WHERE ticket_id = $1 ORDER BY created_at ASC
-        `, [ticketId]
+            SELECT tc.*
+            FROM ticket_comments tc
+            INNER JOIN tickets t
+                ON t.ticket_id = tc.ticket_id
+            WHERE tc.ticket_id = $1 AND t.company_id = $2
+            ORDER BY tc.created_at ASC
+        `, [ticketId, companyId]
     );
 
     return result.rows;

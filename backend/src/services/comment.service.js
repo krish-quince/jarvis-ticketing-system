@@ -13,6 +13,12 @@ export const createComment = async(ticketId, commentText, user) => {
     );
 };
 
-export const getCommentsByTicketId = async(ticketId) => {
-    return await commmentRepository.getCommentsByTicketId(ticketId);
+export const getCommentsByTicketId = async(ticketId, user) => {
+    const ticket = await commmentRepository.getTicketById(ticketId, user.companyId);
+
+    if(!ticket) {
+        throw new Error("Ticket not found.");
+    }
+
+    return await commmentRepository.getCommentsByTicketId(ticketId, user.companyId);
 };

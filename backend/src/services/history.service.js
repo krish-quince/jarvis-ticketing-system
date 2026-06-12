@@ -4,6 +4,6 @@ export const createHistory = async(ticketId, fieldName, oldValue, newValue, user
     return await historyRepository.createHistory(ticketId, fieldName, oldValue, newValue, userCode);
 };
 
-export const getTicketHistory = async(ticketId) => {
-    return await historyRepository.getTicketHistory(ticketId);
+export const getTicketHistory = async(ticketId, companyId) => {
+    return await historyRepository.getTicketHistory(ticketId, companyId);
 };

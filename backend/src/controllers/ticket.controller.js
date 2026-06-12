@@ -1,5 +1,33 @@
 import * as ticketService from "../services/ticket.service.js";
 
+const sendTicketError = (res, error) => {
+    if(
+        error.message === "Ticket not found." ||
+        error.message === "Assigned user not found." ||
+        error.message === "Status not found." ||
+        error.message === "Resolved status not found." ||
+        error.message === "Priority not found." ||
+        error.message === "Category not found."
+    ) {
+        return res.status(404).json({
+            success: false,
+            message: error.message,
+        });
+    }
+
+    if(error.message.endsWith("is required.")) {
+        return res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+
+    return res.status(500).json({
+        success: false,
+        message: error.message,
+    });
+};
+
 export const createTicket = async (req, res) => {
     try {
         const ticket = await ticketService.createTicket(req.body, req.user);
@@ -81,16 +109,94 @@ export const updateTicketStatus = async(req, res) => {
     } catch (error) {
         console.error(error);
 
-        if(error.message === "Ticket not found") {
-            return res.status(404).json({
-                success: false,
-                message: error.message,
-            });
-        }
+        return sendTicketError(res, error);
+    }
+};
 
-        return res.status(500).json({
-            success: false,
-            message: error.message,
+export const assignTicket = async(req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const { assigned_to_user_code } = req.body;
+
+        const ticket = await ticketService.assignTicket(
+            ticketId,
+            assigned_to_user_code,
+            req.user
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: ticket,
         });
+    } catch (error) {
+        console.error(error);
+
+        return sendTicketError(res, error);
+    }
+};
+
+export const updateTicketPriority = async(req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const { priority_id } = req.body;
+
+        const ticket = await ticketService.updateTicketPriority(
+            ticketId,
+            priority_id,
+            req.user
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: ticket,
+        });
+    } catch (error) {
+        console.error(error);
+
+        return sendTicketError(res, error);
+    }
+};
+
+export const updateTicketCategory = async(req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const { category_id } = req.body;
+
+        const ticket = await ticketService.updateTicketCategory(
+            ticketId,
+            category_id,
+            req.user
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: ticket,
+        });
+    } catch (error) {
+        console.error(error);
+
+        return sendTicketError(res, error);
+    }
+};
+
+export const resolveTicket = async(req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const { status_id } = req.body;
+
+        const ticket = await ticketService.resolveTicket(
+            ticketId,
+            status_id,
+            req.user
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: ticket,
+        });
+    } catch (error) {
+        console.error(error);
+
+        return sendTicketError(res, error);
     }
 };
