@@ -7,6 +7,7 @@ import LoginCard from "../components/LoginCard";
 import Carousel from "../components/Carousel";
 
 import { login } from "../services/authService";
+import { createUser } from "../services/userService";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -41,6 +42,26 @@ const LoginPage = () => {
     }
   };
 
+  const handleRegister = async (userData: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    department: string;
+  }) => {
+    try {
+      // Default to "User" role for newly registered portal users
+      const data = await createUser({
+        ...userData,
+        role_id: "User"
+      });
+      alert(`User ${data.first_name} ${data.last_name} registered successfully!`);
+    } catch (error: any) {
+      console.error(error);
+      const errMsg = error.response?.data?.message || "Registration failed. Please try again.";
+      throw new Error(errMsg);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -71,6 +92,7 @@ const LoginPage = () => {
           setEmail={setEmail}
           setPassword={setPassword}
           handleLogin={handleLogin}
+          handleRegister={handleRegister}
         />
 
         <Box
