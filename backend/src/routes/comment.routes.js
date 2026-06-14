@@ -9,9 +9,24 @@ import {
     verifyToken
 } from "../middleware/auth.middleware.js";
 
+import {
+    validate
+}
+from "../middleware/validation.middleware.js";
+
+import {
+    createCommentSchema
+}
+from "../validators/comment.validator.js";
+
 const router = Router();
 
-router.post("/:ticketId/comments", verifyToken, createComment);
+router.post(
+    "/:ticketId/comments",
+    verifyToken,
+    validate(createCommentSchema),
+    createComment
+);
 
 router.get("/:ticketId/comments", verifyToken, getCommentsByTicketId);
 
