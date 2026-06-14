@@ -48,7 +48,7 @@ export const createTicket = async (req, res) => {
 
 export const getAllTickets = async (req, res) => {
     try {
-        const tickets = await ticketService.getAllTickets(req.user.companyId);
+        const tickets = await ticketService.getAllTickets(req.user.companyId, req.user);
 
         return res.status(200).json({
             success: true,
@@ -68,7 +68,7 @@ export const getTicketById = async (req, res) => {
     try {
         const { ticketId } = req.params;
 
-        const ticket = await ticketService.getTicketById(ticketId, req.user.companyId);
+        const ticket = await ticketService.getTicketById(ticketId, req.user.companyId, req.user);
 
         if(!ticket) {
             return res.status(404).json({

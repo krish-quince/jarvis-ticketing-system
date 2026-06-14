@@ -13,6 +13,7 @@ export const registerUser = async (req, res) => {
             email,
             password,
             phone,
+            department,
         } = req.body;
 
         const existingUser = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
@@ -37,11 +38,12 @@ export const registerUser = async (req, res) => {
                 last_name,
                 email,
                 password_hash,
-                phone
+                phone,
+                department
             )
             VALUES 
             (
-                $1,$2,$3,$4,$5,$6,$7,$8 
+                $1,$2,$3,$4,$5,$6,$7,$8,$9
             )
             RETURNING *
             `,
@@ -54,6 +56,7 @@ export const registerUser = async (req, res) => {
                 email,
                 hashedPassword,
                 phone,
+                department || "General",
             ]
         );
 
@@ -103,8 +106,9 @@ export const loginUser = async (req, res) => {
         const token = jwt.sign(
             {
                 userCode: user.user_code,
-                roleId: user.role_id,
-                companyId: user.company_id,
+                roleId: Number(user.role_id),
+                companyId: Number(user.company_id),
+                department: user.department || "General",
             },
             process.env.JWT_SECRET, {
                 expiresIn: "1d",

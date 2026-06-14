@@ -13,11 +13,12 @@ export const createTicket = async (ticket) => {
             priority_id,
             status_id,
             raised_by_user_code,
-            assigned_to_user_code
+            assigned_to_user_code,
+            department
         ) 
         VALUES
         (
-            $1,$2,$3,$4,$5,$6,$7,$8,$9
+            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10
         )
         RETURNING *
         `,
@@ -31,15 +32,32 @@ export const createTicket = async (ticket) => {
             ticket.status_id,
             ticket.raisedByUserCode,
             ticket.assigned_to_user_code,
+            ticket.department || 'General',
         ]
     );
 
     return result.rows[0];
 };
 
-export const getAllTickets = async (companyId) => {
-    const result = await pool.query(`SELECT * FROM tickets WHERE company_id = $1 ORDER BY ticket_id DESC`, [companyId]);
+export const getAllTickets = async (companyId, user) => {
+    let query = `
+         SELECT t.*, s.status_name, s.status_color, c.category_name, p.priority_name, p.priority_color
+         FROM tickets t
+         LEFT JOIN ticket_statuses s ON s.status_id = t.status_id
+         LEFT JOIN ticket_categories c ON c.category_id = t.category_id
+         LEFT JOIN ticket_priorities p ON p.priority_id = t.priority_id
+         WHERE t.company_id = $1
+    `;
+    const params = [companyId];
 
+    if (user && Number(user.roleId) !== 1) {
+        query += ` AND (t.assigned_to_user_code = $2 OR t.raised_by_user_code = $3 OR t.department = $4)`;
+        params.push(user.userCode, user.userCode, user.department || 'General');
+    }
+
+    query += ` ORDER BY t.ticket_id DESC`;
+
+    const result = await pool.query(query, params);
     return result.rows;
 };
 
@@ -190,5 +208,21 @@ export const getCategoryByIdAndCompany = async(categoryId, companyId) => {
         `, [categoryId, companyId]
     );
 
+    return result.rows[0];
+};
+
+export const deleteTicket = async (ticketId, companyId) => {
+    const result = await pool.query(
+        `DELETE FROM tickets WHERE ticket_id = $1 AND company_id = $2 RETURNING *`,
+        [ticketId, companyId]
+    );
+    return result.rows[0];
+};
+
+export const updateTicketDetails = async (ticketId, subject, description, companyId) => {
+    const result = await pool.query(
+        `UPDATE tickets SET subject = $1, description = $2, update_timestamp = CURRENT_TIMESTAMP WHERE ticket_id = $3 AND company_id = $4 RETURNING *`,
+        [subject, description, ticketId, companyId]
+    );
     return result.rows[0];
 };

@@ -8,6 +8,13 @@ export const createComment = async(ticketId, commentText, user) => {
         throw new Error("Ticket not found.");
     }
 
+    if (user && Number(user.roleId) !== 1 &&
+        ticket.assigned_to_user_code !== user.userCode &&
+        ticket.raised_by_user_code !== user.userCode &&
+        ticket.department !== user.department) {
+        throw new Error("Access denied to this ticket.");
+    }
+
     return await commmentRepository.createComment(
         ticketId, user.userCode, commentText
     );
@@ -18,6 +25,13 @@ export const getCommentsByTicketId = async(ticketId, user) => {
 
     if(!ticket) {
         throw new Error("Ticket not found.");
+    }
+
+    if (user && Number(user.roleId) !== 1 &&
+        ticket.assigned_to_user_code !== user.userCode &&
+        ticket.raised_by_user_code !== user.userCode &&
+        ticket.department !== user.department) {
+        throw new Error("Access denied to this ticket.");
     }
 
     return await commmentRepository.getCommentsByTicketId(ticketId, user.companyId);
