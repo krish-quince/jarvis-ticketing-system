@@ -123,23 +123,61 @@ const Sidebar = ({
           bgcolor: "#F4C63D",
           p: 1.5,
           textAlign: "center",
+          borderTop: "1px solid rgba(0, 0, 0, 0.08)",
         }}
       >
         {collapsed ? (
-          "👤"
+          <Tooltip title={(() => {
+            try {
+              const u = JSON.parse(localStorage.getItem("user") || "{}");
+              return `${u.first_name || "Guest"} (${u.role_id === 1 ? "Admin" : u.role_id === 2 ? "Manager" : u.role_id === 3 ? "Developer" : u.role_id === 4 ? "Customer" : "Viewer"})`;
+            } catch {
+              return "User";
+            }
+          })()} placement="right">
+            <span style={{ fontSize: 20, cursor: "pointer" }}>👤</span>
+          </Tooltip>
         ) : (
-          <>
-            <div>
-              Nandu Gatla
-            </div>
-            <div
-              style={{
-                fontSize: 12,
-              }}
-            >
-              Admin
-            </div>
-          </>
+          (() => {
+            let displayName = "Guest User";
+            let displayRole = "Viewer";
+            try {
+              const userStr = localStorage.getItem("user");
+              if (userStr) {
+                const user = JSON.parse(userStr);
+                displayName = `${user.first_name} ${user.last_name || ""}`.trim();
+                const roleMap: Record<number, string> = {
+                  1: "Admin",
+                  2: "Manager",
+                  3: "Developer",
+                  4: "Customer",
+                  5: "Viewer",
+                };
+                displayRole = roleMap[user.role_id] || "User";
+              }
+            } catch (e) {
+              console.error("Error reading user from localStorage:", e);
+            }
+            return (
+              <>
+                <div style={{ fontWeight: 600, color: "#211B5A", fontSize: "14px" }}>
+                  {displayName}
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    color: "rgba(33, 27, 90, 0.75)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginTop: "2px"
+                  }}
+                >
+                  {displayRole}
+                </div>
+              </>
+            );
+          })()
         )}
       </Box>
     </Box>

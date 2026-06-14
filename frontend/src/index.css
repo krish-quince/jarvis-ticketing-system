@@ -1,62 +1,136 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --bg-app: #EFF6FF;
+  --bg-card: #fff;
+  --bg-header: #F8F9FA;
+  --bg-row-alt: #FBFDFF;
+  --bg-row-hover: #EEF6FF;
+  --text: #4A5568;
+  --text-h: #1A202C;
+  --text-secondary: #718096;
+  --text-subject: #2D2675;
+  --text-muted: #475569;
+  --text-sub: #64748B;
+  --border: #E2E8F0;
+  --shadow: rgba(0, 0, 0, 0.05) 0 10px 15px -3px, rgba(0, 0, 0, 0.02) 0 4px 6px -2px;
+  --accent: #3A3482;
+  --accent-light: #EAF2FF;
+  --accent-chip-text: #211B5A;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: 'Poppins', system-ui, Roboto, sans-serif;
+  --heading: 'Poppins', system-ui, Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
+  font: 14px var(--sans);
+  letter-spacing: 0.1px;
   color-scheme: light dark;
   color: var(--text);
-  background: var(--bg);
+  background: var(--bg-app);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+.dark-theme {
+  --bg-app: #13121a;
+  --bg-card: #1d1b26;
+  --bg-header: #242230;
+  --bg-row-alt: #201e2c;
+  --bg-row-hover: #2a2840;
+  --text: #cbd5e1;
+  --text-h: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-subject: #b7afff;
+  --text-muted: #94a3b8;
+  --text-sub: #64748b;
+  --border: rgba(255, 255, 255, 0.08);
+  --shadow: rgba(0, 0, 0, 0.3) 0 10px 15px -3px, rgba(0, 0, 0, 0.15) 0 4px 6px -2px;
+  --accent: #b7afff;
+  --accent-light: rgba(183, 175, 255, 0.1);
+  --accent-chip-text: #b7afff;
 }
+
+.light-theme {
+  --bg-app: #EFF6FF;
+  --bg-card: #fff;
+  --bg-header: #F8F9FA;
+  --bg-row-alt: #FBFDFF;
+  --bg-row-hover: #EEF6FF;
+  --text: #4A5568;
+  --text-h: #1A202C;
+  --text-secondary: #718096;
+  --text-subject: #2D2675;
+  --text-muted: #475569;
+  --text-sub: #64748B;
+  --border: #E2E8F0;
+  --accent: #3A3482;
+  --accent-light: #EAF2FF;
+  --accent-chip-text: #211B5A;
+}
+
+/* ── MUI overrides: force CSS vars to win ── */
+
+/* Paper / Card backgrounds */
+.dark-theme .MuiPaper-root,
+.dark-theme .MuiCard-root {
+  background-color: var(--bg-card) !important;
+  color: var(--text) !important;
+}
+
+/* Table header */
+.dark-theme .MuiTableHead-root .MuiTableRow-root {
+  background-color: var(--bg-header) !important;
+}
+
+.dark-theme .MuiTableHead-root .MuiTableCell-root {
+  background-color: var(--bg-header) !important;
+  color: var(--text-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Table body rows */
+.dark-theme .MuiTableBody-root .MuiTableRow-root {
+  background-color: var(--bg-card) !important;
+}
+
+.dark-theme .MuiTableBody-root .MuiTableRow-root:nth-of-type(even) {
+  background-color: var(--bg-row-alt) !important;
+}
+
+.dark-theme .MuiTableBody-root .MuiTableRow-root:hover {
+  background-color: var(--bg-row-hover) !important;
+}
+
+/* Table cells */
+.dark-theme .MuiTableCell-root {
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Chips */
+.dark-theme .MuiChip-root {
+  background-color: var(--accent-light) !important;
+  color: var(--accent-chip-text) !important;
+}
+
+/* Checkboxes */
+.dark-theme .MuiCheckbox-root {
+  color: var(--text-sub) !important;
+}
+.dark-theme .MuiCheckbox-root.Mui-checked {
+  color: var(--accent) !important;
+}
+
+/* Typography inside table inherits correctly */
+.dark-theme .MuiTableCell-root .MuiTypography-root {
+  color: inherit;
+}
+
+/* ── end MUI overrides ── */
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
+  width: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -64,6 +138,7 @@
 
 body {
   margin: 0;
+  background-color: var(--bg-app);
 }
 
 h1,
@@ -82,6 +157,7 @@ h1 {
     margin: 20px 0;
   }
 }
+
 h2 {
   font-size: 24px;
   line-height: 118%;
@@ -91,6 +167,7 @@ h2 {
     font-size: 20px;
   }
 }
+
 p {
   margin: 0;
 }

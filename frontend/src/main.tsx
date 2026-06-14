@@ -3,6 +3,7 @@ import { ThemeProvider } from "@mui/material";
 
 import App from "./App";
 import theme from "./theme/theme";
+import "./index.css";
 
 ReactDOM.createRoot(
   document.getElementById("root")!

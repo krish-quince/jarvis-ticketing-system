@@ -1,4 +1,4 @@
-import { Box } from "@mui/material";
+import { Box, Snackbar, Alert } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -13,6 +13,20 @@ const LoginPage = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [toast, setToast] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error" | "info" | "warning";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  const handleCloseToast = () => {
+    setToast((prev) => ({ ...prev, open: false }));
+  };
 
   const handleLogin = async () => {
     try {
@@ -33,11 +47,15 @@ const LoginPage = () => {
 
       console.log("Login Success:", data);
 
-      navigate("/dashboard");
+      navigate("/tickets");
 
     } catch (error) {
       console.error(error);
-      alert("Invalid Email or Password");
+      setToast({
+        open: true,
+        message: "Invalid Email or Password",
+        severity: "error",
+      });
     }
   };
 
@@ -64,12 +82,22 @@ const LoginPage = () => {
         email: userData.email,
         password: userData.password || "password123", // Fallback password
         phone: "", // Optional column
+        department: userData.department || "General",
       });
 
-      alert(`User ${result.user?.first_name || userData.first_name} registered successfully!`);
+      setToast({
+        open: true,
+        message: `User ${result.user?.first_name || userData.first_name} registered successfully!`,
+        severity: "success",
+      });
     } catch (error: any) {
       console.error(error);
       const errMsg = error.response?.data?.message || "Registration failed. Please try again.";
+      setToast({
+        open: true,
+        message: errMsg,
+        severity: "error",
+      });
       throw new Error(errMsg);
     }
   };
@@ -120,6 +148,26 @@ const LoginPage = () => {
           <Carousel />
         </Box>
       </Box>
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        onClose={handleCloseToast}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseToast}
+          severity={toast.severity}
+          sx={{
+            width: "100%",
+            borderRadius: "16px",
+            fontWeight: 600,
+            boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.15)",
+          }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
