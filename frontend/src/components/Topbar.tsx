@@ -9,15 +9,6 @@ import {
   Avatar,
   Popover,
   Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Snackbar,
   Alert,
 } from "@mui/material";
@@ -33,7 +24,6 @@ import {
 } from "@mui/icons-material";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { createTicket } from "../services/ticketService";
 
 const Topbar = () => {
   const navigate = useNavigate();
@@ -66,56 +56,8 @@ const Topbar = () => {
     navigate("/");
   };
 
-  // New Ticket dialog state
-  const [openDialog, setOpenDialog] = useState(false);
-  const [subject, setSubject] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("General Issues");
-  const [priority, setPriority] = useState("Medium");
-  const [submitting, setSubmitting] = useState(false);
-
   // Toast feedback state
   const [toast, setToast] = useState({ open: false, message: "", severity: "success" as "success" | "error" });
-
-  const handleCreateTicket = async () => {
-    if (!subject.trim() || !description.trim()) {
-      setToast({ open: true, message: "Please fill in all fields", severity: "error" });
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      await createTicket({
-        subject,
-        description,
-        category_name: category,
-        priority_name: priority,
-      });
-
-      setToast({ open: true, message: "Ticket created successfully!", severity: "success" });
-      setOpenDialog(false);
-      setSubject("");
-      setDescription("");
-      setCategory("General Issues");
-      setPriority("Medium");
-
-      // Reload page content if we are on the tickets view
-      if (location.pathname === "/tickets") {
-        window.location.reload();
-      } else {
-        navigate("/tickets");
-      }
-    } catch (error: any) {
-      console.error(error);
-      setToast({
-        open: true,
-        message: error.response?.data?.message || "Failed to create ticket",
-        severity: "error",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <AppBar position="sticky" elevation={0} sx={{ backgroundColor: "#211B5A", color: "#fff" }}>
@@ -180,7 +122,7 @@ const Topbar = () => {
               <Button
                 variant="contained"
                 startIcon={<Add />}
-                onClick={() => setOpenDialog(true)}
+                onClick={() => navigate("/tickets/new")}
                 sx={{
                   backgroundColor: "#3A3482",
                   color: "#fff",
@@ -382,82 +324,6 @@ const Topbar = () => {
           })}
         </Box>
       </Box>
-
-      {/* New Ticket Dialog Modal */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, color: "#211B5A" }}>Create New Ticket</DialogTitle>
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 1 }}>
-          <TextField
-            autoFocus
-            label="Subject / Ticket Title"
-            variant="outlined"
-            fullWidth
-            required
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-          />
-
-          <TextField
-            label="Describe the issue or request"
-            variant="outlined"
-            fullWidth
-            required
-            multiline
-            rows={4}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel id="dialog-category-label">Category</InputLabel>
-              <Select
-                labelId="dialog-category-label"
-                value={category}
-                label="Category"
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <MenuItem value="General Issues">General Issues</MenuItem>
-                <MenuItem value="Technical">Technical</MenuItem>
-                <MenuItem value="Bug reports">Bug reports</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth>
-              <InputLabel id="dialog-priority-label">Priority</InputLabel>
-              <Select
-                labelId="dialog-priority-label"
-                value={priority}
-                label="Priority"
-                onChange={(e) => setPriority(e.target.value)}
-              >
-                <MenuItem value="Low">Low</MenuItem>
-                <MenuItem value="Medium">Medium</MenuItem>
-                <MenuItem value="High">High</MenuItem>
-                <MenuItem value="Critical">Critical</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setOpenDialog(false)} color="inherit" sx={{ fontWeight: 600 }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreateTicket}
-            variant="contained"
-            disabled={submitting}
-            sx={{
-              backgroundColor: "#211B5A",
-              color: "#fff",
-              fontWeight: 600,
-              "&:hover": { backgroundColor: "#3A3482" },
-            }}
-          >
-            {submitting ? "Submitting..." : "Submit Ticket"}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Snackbar feedback */}
       <Snackbar

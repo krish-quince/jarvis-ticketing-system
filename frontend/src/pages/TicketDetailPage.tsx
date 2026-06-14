@@ -85,8 +85,13 @@ const TicketDetailPage = () => {
       const ticketData = await getTicketById(ticketId);
       setTicket(ticketData);
 
-      const commentsData = await getComments(ticketId);
-      setComments(commentsData);
+      try {
+        const commentsData = await getComments(ticketId);
+        setComments(commentsData || []);
+      } catch (commentsError) {
+        console.warn("Unable to load ticket comments:", commentsError);
+        setComments([]);
+      }
 
       if (isAdminOrDev) {
         const usersData = await getUsers();

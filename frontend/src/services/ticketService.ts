@@ -1,10 +1,12 @@
 import API from "./api";
 
+const unwrapData = (responseData: any) => responseData.data ?? responseData;
+
 export const getTickets = async () => {
   const response =
     await API.get("/tickets");
 
-  return response.data.data;
+  return unwrapData(response.data);
 };
 
 export const getTicketById = async (
@@ -15,7 +17,7 @@ export const getTicketById = async (
       `/tickets/${id}`
     );
 
-  return response.data.data;
+  return unwrapData(response.data);
 };
 
 export const createTicket = async (
@@ -27,7 +29,7 @@ export const createTicket = async (
       ticketData
     );
 
-  return response.data.data;
+  return unwrapData(response.data);
 };
 
 export const updateTicket = async (
@@ -71,10 +73,10 @@ export const assignTicket = async (id: number, userCode: string) => {
 
 export const getComments = async (ticketId: number) => {
   const response = await API.get(`/tickets/${ticketId}/comments`);
-  return response.data.data;
+  return unwrapData(response.data);
 };
 
 export const createComment = async (ticketId: number, commentText: string) => {
   const response = await API.post(`/tickets/${ticketId}/comments`, { comment_text: commentText });
-  return response.data.data;
+  return unwrapData(response.data);
 };

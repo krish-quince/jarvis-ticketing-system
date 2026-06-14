@@ -7,5 +7,5 @@ export const getDashboardSummary =
         "/dashboard/summary"
       );
 
-    return response.data.data;
+    return response.data.data ?? response.data;
   };

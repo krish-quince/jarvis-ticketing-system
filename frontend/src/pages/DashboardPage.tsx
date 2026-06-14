@@ -206,7 +206,7 @@ const DashboardPage = () => {
                         },
                         cursor: "pointer",
                       }}
-                      onClick={() => navigate(`/tickets`)}
+                      onClick={() => navigate(`/tickets/${ticket.ticket_id}`)}
                     >
                       <TableCell sx={{ fontWeight: 600, color: "#3A3482" }}>
                         {ticket.ticket_no}
@@ -264,7 +264,7 @@ const DashboardPage = () => {
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/tickets`);
+                            navigate(`/tickets/${ticket.ticket_id}`);
                           }}
                         >
                           View Details

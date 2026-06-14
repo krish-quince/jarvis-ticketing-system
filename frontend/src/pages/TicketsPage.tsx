@@ -20,16 +20,44 @@ import {
 import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 import { getTickets } from "../services/ticketService";
 
+type Ticket = {
+  ticket_id: number;
+  ticket_no?: string;
+  subject?: string;
+  department?: string;
+  category_name?: string;
+  parent_category_name?: string | null;
+  priority_name?: string;
+  status_name?: string;
+  raised_by_user_code?: string;
+  assigned_to_user_code?: string | null;
+  due_date?: string | null;
+  created_at?: string | null;
+  update_timestamp?: string | null;
+};
+
+type CategoryTreeItem = {
+  label: string;
+  indent: number;
+  isParent: boolean;
+};
+
+type ToastState = {
+  open: boolean;
+  message: string;
+  severity: "success" | "error" | "info" | "warning";
+};
+
 const TicketsPage = () => {
   const navigate = useNavigate();
-  const [tickets, setTickets] = useState([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedParents, setExpandedParents] = useState(new Set(["Technical"]));
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set(["Technical"]));
 
   const [searchParams] = useSearchParams();
   const activePill = searchParams.get("filter") || "all";
   const [selectedCategory, setSelectedCategory] = useState("All categories");
-  const [toast, setToast] = useState({
+  const [toast, setToast] = useState<ToastState>({
     open: false,
     message: "",
     severity: "success",
@@ -59,10 +87,10 @@ const TicketsPage = () => {
     }
   };
 
-  const buildCategoryTree = () => {
-    const tree = [{ label: "All categories", indent: 0, isParent: false }];
-    const parentToChildren = {};
-    const topLevelOnly = new Set();
+  const buildCategoryTree = (): CategoryTreeItem[] => {
+    const tree: CategoryTreeItem[] = [{ label: "All categories", indent: 0, isParent: false }];
+    const parentToChildren: Record<string, Set<string>> = {};
+    const topLevelOnly = new Set<string>();
 
     tickets.forEach((ticket) => {
       const parent = ticket.parent_category_name || null;
@@ -95,7 +123,7 @@ const TicketsPage = () => {
 
   const categoryTree = buildCategoryTree();
 
-  const toggleParent = (label) => {
+  const toggleParent = (label: string) => {
     setExpandedParents((prev) => {
       const next = new Set(prev);
       if (next.has(label)) next.delete(label);
@@ -104,7 +132,7 @@ const TicketsPage = () => {
     });
   };
 
-  const getPriorityInfo = (name) => {
+  const getPriorityInfo = (name?: string) => {
     switch (name?.toLowerCase()) {
       case "critical": return { color: "#ff727e", label: "Critical" };
       case "high":     return { color: "#ff9b45", label: "High" };
@@ -114,7 +142,7 @@ const TicketsPage = () => {
     }
   };
 
-  const getStatusInfo = (name) => {
+  const getStatusInfo = (name?: string) => {
     switch (name?.toLowerCase()) {
       case "open":        return { color: "#ff727e", label: "New" };
       case "in progress": return { color: "#149447", label: "In progress" };
@@ -125,7 +153,7 @@ const TicketsPage = () => {
     }
   };
 
-  const filterPill = (ticket) => {
+  const filterPill = (ticket: Ticket) => {
     switch (activePill) {
       case "unclosed":   return ticket.status_name?.toLowerCase() !== "closed";
       case "unassigned": return !ticket.assigned_to_user_code;
@@ -139,7 +167,7 @@ const TicketsPage = () => {
     }
   };
 
-  const filterCategory = (ticket) => {
+  const filterCategory = (ticket: Ticket) => {
     if (selectedCategory === "All categories") return true;
     return (
       ticket.category_name?.toLowerCase() === selectedCategory.toLowerCase() ||
@@ -149,7 +177,7 @@ const TicketsPage = () => {
 
   const filteredTickets = tickets.filter((t) => filterPill(t) && filterCategory(t));
 
-  const getCategoryCount = (catName) => {
+  const getCategoryCount = (catName: string) => {
     if (catName === "All categories") return tickets.length;
     return tickets.filter(
       (t) =>
@@ -158,7 +186,7 @@ const TicketsPage = () => {
     ).length;
   };
 
-  const formatDateTime = (value) => {
+  const formatDateTime = (value?: string | Date | null) => {
     if (!value) return "";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
@@ -172,7 +200,7 @@ const TicketsPage = () => {
     });
   };
 
-  const wasUpdatedByTech = (ticket) => {
+  const wasUpdatedByTech = (ticket: Ticket) => {
     if (!ticket.assigned_to_user_code) return false;
     if (!ticket.update_timestamp || !ticket.created_at) return false;
     return new Date(ticket.update_timestamp) > new Date(ticket.created_at);

@@ -93,7 +93,7 @@ const MainLayout = () => {
   const allCount = tickets.length;
 
   const activePill = searchParams.get("filter") || "all";
-  const isTicketsRoute = location.pathname.startsWith("/tickets");
+  const isTicketListRoute = location.pathname === "/tickets";
 
   return (
     <Box
@@ -108,7 +108,7 @@ const MainLayout = () => {
     >
       <Topbar />
 
-      {isTicketsRoute && (
+      {isTicketListRoute && (
         <Box
           sx={{
             backgroundColor: "var(--bg-app)",
@@ -218,8 +218,8 @@ const MainLayout = () => {
 
       <Box
         sx={{
-          p: isTicketsRoute ? { xs: 2, sm: "0 40px 40px" } : { xs: 2, sm: 3, md: 4 },
-          maxWidth: isTicketsRoute ? "none" : 1440,
+          p: isTicketListRoute ? { xs: 2, sm: "0 40px 40px" } : { xs: 2, sm: 3, md: 4 },
+          maxWidth: isTicketListRoute ? "none" : 1440,
           mx: "auto",
           width: "100%",
           boxSizing: "border-box",

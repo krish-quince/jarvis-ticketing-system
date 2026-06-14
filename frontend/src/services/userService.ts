@@ -4,7 +4,7 @@ export const getUsers = async () => {
   const response =
     await API.get("/users");
 
-  return response.data.data;
+  return response.data.data ?? response.data;
 };
 
 export const getUserByCode = async (
