@@ -1,7 +1,9 @@
 import pool from "../config/db.js";
 
-export const createHistory = async(ticketId, fieldName, oldValue, newValue, userCode) => {
-    const result = await pool.query(
+export const createHistory = async(ticketId, fieldName, oldValue, newValue, userCode, client = null) => {
+    const db = client || pool;
+    
+    const result = await db.query(
         `
             INSERT INTO ticket_history
             (

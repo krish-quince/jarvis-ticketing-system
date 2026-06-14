@@ -71,7 +71,31 @@ export const createTicket = async (ticketData, user) => {
     department: user.department || "General",
   };
 
-  return await ticketRepository.createTicket(payload);
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const ticket = await ticketRepository.createTicket(payload, client);
+
+    await historyService.createHistory(
+      ticket.ticket_id,
+      "Created",
+      "",
+      "Ticket Created",
+      user.userCode,
+      client,
+    );
+
+    await client.query("COMMIT");
+
+    return ticket;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getAllTickets = async (companyId, user, search, page, limit) => {
@@ -139,21 +163,36 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
     return ticket;
   }
 
-  const updatedTicket = await ticketRepository.updateTicketStatus(
-    ticketId,
-    statusId,
-    user.companyId,
-  );
+  const client = await pool.connect();
 
-  await historyService.createHistory(
-    ticketId,
-    "Status",
-    String(ticket.status_id),
-    String(statusId),
-    user.userCode,
-  );
+  try {
+    await client.query("BEGIN");
 
-  return updatedTicket;
+    const updatedTicket = await ticketRepository.updateTicketStatus(
+      ticketId,
+      statusId,
+      user.companyId,
+      client,
+    );
+
+    await historyService.createHistory(
+      ticketId,
+      "Status",
+      String(ticket.status_id),
+      String(statusId),
+      user.userCode,
+      client,
+    );
+
+    await client.query("COMMIT");
+
+    return updatedTicket;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const assignTicket = async (ticketId, assignedToUserCode, user) => {
@@ -192,21 +231,36 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
     return ticket;
   }
 
-  const updatedTicket = await ticketRepository.updateTicketAssignee(
-    ticketId,
-    assignedToUserCode,
-    user.companyId,
-  );
+  const client = await pool.connect();
 
-  await historyService.createHistory(
-    ticketId,
-    "AssignedTo",
-    String(oldValue),
-    String(assignedToUserCode),
-    user.userCode,
-  );
+  try {
+    await client.query("BEGIN");
 
-  return updatedTicket;
+    const updatedTicket = await ticketRepository.updateTicketAssignee(
+      ticketId,
+      assignedToUserCode,
+      user.companyId,
+      client,
+    );
+
+    await historyService.createHistory(
+      ticketId,
+      "AssignedTo",
+      String(oldValue),
+      String(assignedToUserCode),
+      user.userCode,
+      client,
+    );
+
+    await client.query("COMMIT");
+
+    return updatedTicket;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const updateTicketPriority = async (ticketId, priorityId, user) => {
@@ -227,7 +281,9 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
 
   // Check Priority Permission
   if (!canManageTicket(user)) {
-    throw new Error("Access denied. Only technicians can update ticket priority.");
+    throw new Error(
+      "Access denied. Only technicians can update ticket priority.",
+    );
   }
 
   const priority = await ticketRepository.getPriorityByIdAndCompany(
@@ -243,21 +299,36 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
     return ticket;
   }
 
-  const updatedTicket = await ticketRepository.updateTicketPriority(
-    ticketId,
-    priorityId,
-    user.companyId,
-  );
+  const client = await pool.connect();
 
-  await historyService.createHistory(
-    ticketId,
-    "Priority",
-    String(ticket.priority_id),
-    String(priorityId),
-    user.userCode,
-  );
+  try {
+    await client.query("BEGIN");
 
-  return updatedTicket;
+    const updatedTicket = await ticketRepository.updateTicketPriority(
+      ticketId,
+      priorityId,
+      user.companyId,
+      client,
+    );
+
+    await historyService.createHistory(
+      ticketId,
+      "Priority",
+      String(ticket.priority_id),
+      String(priorityId),
+      user.userCode,
+      client,
+    );
+
+    await client.query("COMMIT");
+
+    return updatedTicket;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const updateTicketCategory = async (ticketId, categoryId, user) => {
@@ -278,7 +349,9 @@ export const updateTicketCategory = async (ticketId, categoryId, user) => {
 
   // Check Category Permission
   if (!canManageTicket(user)) {
-    throw new Error("Access denied. Only technicians can update ticket category.");
+    throw new Error(
+      "Access denied. Only technicians can update ticket category.",
+    );
   }
 
   const category = await ticketRepository.getCategoryByIdAndCompany(
@@ -294,21 +367,36 @@ export const updateTicketCategory = async (ticketId, categoryId, user) => {
     return ticket;
   }
 
-  const updatedTicket = await ticketRepository.updateTicketCategory(
-    ticketId,
-    categoryId,
-    user.companyId,
-  );
+  const client = await pool.connect();
 
-  await historyService.createHistory(
-    ticketId,
-    "Category",
-    String(ticket.category_id),
-    String(categoryId),
-    user.userCode,
-  );
+  try {
+    await client.query("BEGIN");
 
-  return updatedTicket;
+    const updatedTicket = await ticketRepository.updateTicketCategory(
+      ticketId,
+      categoryId,
+      user.companyId,
+      client,
+    );
+
+    await historyService.createHistory(
+      ticketId,
+      "Category",
+      String(ticket.category_id),
+      String(categoryId),
+      user.userCode,
+      client,
+    );
+
+    await client.query("COMMIT");
+
+    return updatedTicket;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const resolveTicket = async (ticketId, statusId, user) => {
@@ -346,41 +434,48 @@ export const resolveTicket = async (ticketId, statusId, user) => {
     return ticket;
   }
 
-  const updatedTicket = await pool.query(
-    `
-            UPDATE tickets
-            SET
-                status_id = $1,
-                resolved_by_user_code = $2,
-                resolution_date = CURRENT_TIMESTAMP,
-                update_timestamp = CURRENT_TIMESTAMP
-            WHERE ticket_id = $3 AND company_id = $4
-            RETURNING *
-        `,
-    [nextStatusId, user.userCode, ticketId, user.companyId],
-  );
+  const client = await pool.connect();
 
-  const resultTicket = updatedTicket.rows[0];
+  try {
+    await client.query("BEGIN");
 
-  if (String(ticket.status_id) !== String(nextStatusId)) {
-    await historyService.createHistory(
+    const resultTicket = await ticketRepository.resolveTicket(
       ticketId,
-      "Status",
-      String(ticket.status_id),
-      String(nextStatusId),
       user.userCode,
+      nextStatusId,
+      user.companyId,
+      client,
     );
-  }
 
-  if (oldResolvedBy !== user.userCode) {
-    await historyService.createHistory(
-      ticketId,
-      "Resolution",
-      String(oldResolvedBy),
-      String(user.userCode),
-      user.userCode,
-    );
-  }
+    if (String(ticket.status_id) !== String(nextStatusId)) {
+      await historyService.createHistory(
+        ticketId,
+        "Status",
+        String(ticket.status_id),
+        String(nextStatusId),
+        user.userCode,
+        client,
+      );
+    }
 
-  return resultTicket;
+    if (oldResolvedBy !== user.userCode) {
+      await historyService.createHistory(
+        ticketId,
+        "Resolution",
+        String(oldResolvedBy),
+        String(user.userCode),
+        user.userCode,
+        client,
+      );
+    }
+
+    await client.query("COMMIT");
+
+    return resultTicket;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
