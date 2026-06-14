@@ -46,15 +46,38 @@ export const createTicket = async (req, res) => {
     }
 };
 
-export const getAllTickets = async (req, res) => {
+export const getAllTickets = async (
+    req,
+    res
+) => {
+
     try {
-        const tickets = await ticketService.getAllTickets(req.user.companyId, req.user);
+
+        const {
+            search = "",
+            page = 1,
+            limit = 25
+        } = req.query;
+
+        const tickets =
+            await ticketService.getAllTickets(
+                req.user.companyId,
+                req.user,
+                search,
+                Number(page),
+                Number(limit)
+            );
 
         return res.status(200).json({
             success: true,
+            page: Number(page),
+            limit: Number(limit),
+            count: tickets.length,
             data: tickets,
         });
+
     } catch (error) {
+
         console.error(error);
 
         return res.status(500).json({

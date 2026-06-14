@@ -39,25 +39,92 @@ export const createTicket = async (ticket) => {
     return result.rows[0];
 };
 
-export const getAllTickets = async (companyId, user) => {
+export const getAllTickets = async (
+    companyId,
+    user,
+    search = "",
+    page = 1,
+    limit = 25
+) => {
+
+    const offset =
+        (page - 1) * limit;
+
     let query = `
-         SELECT t.*, s.status_name, s.status_color, c.category_name, p.priority_name, p.priority_color
+         SELECT
+            t.*,
+            s.status_name,
+            s.status_color,
+            c.category_name,
+            p.priority_name,
+            p.priority_color
          FROM tickets t
-         LEFT JOIN ticket_statuses s ON s.status_id = t.status_id
-         LEFT JOIN ticket_categories c ON c.category_id = t.category_id
-         LEFT JOIN ticket_priorities p ON p.priority_id = t.priority_id
+         LEFT JOIN ticket_statuses s
+            ON s.status_id = t.status_id
+         LEFT JOIN ticket_categories c
+            ON c.category_id = t.category_id
+         LEFT JOIN ticket_priorities p
+            ON p.priority_id = t.priority_id
          WHERE t.company_id = $1
     `;
+
     const params = [companyId];
 
-    if (user && Number(user.roleId) !== 1) {
-        query += ` AND (t.assigned_to_user_code = $2 OR t.raised_by_user_code = $3 OR t.department = $4)`;
-        params.push(user.userCode, user.userCode, user.department || 'General');
+    if (
+        user &&
+        Number(user.roleId) !== 1
+    ) {
+        query += `
+            AND (
+                t.assigned_to_user_code = $2
+                OR
+                t.raised_by_user_code = $3
+                OR
+                t.department = $4
+            )
+        `;
+
+        params.push(
+            user.userCode,
+            user.userCode,
+            user.department || "General"
+        );
     }
 
-    query += ` ORDER BY t.ticket_id DESC`;
+    if (search) {
 
-    const result = await pool.query(query, params);
+        query += `
+            AND (
+                t.ticket_no ILIKE $${params.length + 1}
+                OR
+                t.subject ILIKE $${params.length + 1}
+                OR
+                t.description ILIKE $${params.length + 1}
+            )
+        `;
+
+        params.push(
+            `%${search}%`
+        );
+    }
+
+    query += `
+        ORDER BY t.ticket_id DESC
+        LIMIT $${params.length + 1}
+        OFFSET $${params.length + 2}
+    `;
+
+    params.push(
+        Number(limit),
+        Number(offset)
+    );
+
+    const result =
+        await pool.query(
+            query,
+            params
+        );
+
     return result.rows;
 };
 

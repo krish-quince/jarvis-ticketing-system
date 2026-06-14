@@ -52,8 +52,21 @@ export const createTicket = async(ticketData, user) => {
     return await ticketRepository.createTicket(payload);
 };
 
-export const getAllTickets = async(companyId, user) => {
-    return await ticketRepository.getAllTickets(companyId, user);
+export const getAllTickets = async (
+    companyId,
+    user,
+    search,
+    page,
+    limit
+) => {
+
+    return await ticketRepository.getAllTickets(
+        companyId,
+        user,
+        search,
+        page,
+        limit
+    );
 };
 
 export const getTicketById = async (ticketId, companyId, user) => {
