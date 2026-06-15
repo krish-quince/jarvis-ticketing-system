@@ -219,7 +219,7 @@ const TicketsPage = () => {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "260px minmax(0, 1fr)" },
+          gridTemplateColumns: { xs: "1fr", lg: "320px minmax(0, 1fr)" },
           gap: { xs: 2, lg: 3 },
           alignItems: "start",
         }}
