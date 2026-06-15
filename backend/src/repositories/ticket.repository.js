@@ -311,14 +311,14 @@ export const getResolvedStatusByCompany = async (companyId) => {
   return result.rows[0];
 };
 
-export const getPriorityByIdAndCompany = async (priorityId, companyId) => {
+export const getPriorityByIdAndCompany = async (priorityId) => {
   const result = await pool.query(
     `
             SELECT priority_id
             FROM ticket_priorities
-            WHERE priority_id = $1 AND company_id = $2
+            WHERE priority_id = $1
         `,
-    [priorityId, companyId],
+    [priorityId],
   );
 
   return result.rows[0];

@@ -26,8 +26,8 @@ export const createTicket = async (ticketData, user) => {
   }
   if (ticketData.priority_name) {
     const res = await pool.query(
-      "SELECT priority_id FROM ticket_priorities WHERE priority_name = $1 AND company_id = $2",
-      [ticketData.priority_name, user.companyId],
+      "SELECT priority_id FROM ticket_priorities WHERE priority_name = $1",
+      [ticketData.priority_name],
     );
     if (res.rows.length > 0) priority_id = res.rows[0].priority_id;
   }
@@ -49,8 +49,8 @@ export const createTicket = async (ticketData, user) => {
   }
   if (!priority_id) {
     const res = await pool.query(
-      "SELECT priority_id FROM ticket_priorities WHERE company_id = $1 LIMIT 1",
-      [user.companyId],
+      "SELECT priority_id FROM ticket_priorities LIMIT 1",
+      [],
     );
     priority_id = res.rows[0]?.priority_id;
   }
@@ -369,8 +369,7 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
   }
 
   const priority = await ticketRepository.getPriorityByIdAndCompany(
-    priorityId,
-    user.companyId,
+    priorityId
   );
 
   if (!priority) {

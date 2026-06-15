@@ -31,9 +31,7 @@ export const getPriorities = async (
 ) => {
   try {
     const data =
-      await service.getPriorities(
-        req.user.companyId
-      );
+  await service.getPriorities();
 
     return res.status(200).json({
       success: true,

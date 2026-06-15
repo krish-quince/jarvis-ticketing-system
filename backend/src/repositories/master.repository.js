@@ -18,7 +18,7 @@ export const getCategories = async (companyId) => {
   return result.rows;
 };
 
-export const getPriorities = async (companyId) => {
+export const getPriorities = async () => {
   const result = await pool.query(
     `
     SELECT
@@ -27,11 +27,9 @@ export const getPriorities = async (companyId) => {
       priority_value,
       priority_color
     FROM ticket_priorities
-    WHERE company_id = $1
-      AND is_active = true
+    WHERE is_active = true
     ORDER BY priority_value
-    `,
-    [companyId]
+    `
   );
 
   return result.rows;

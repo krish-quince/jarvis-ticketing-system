@@ -8,12 +8,8 @@ export const getCategories = async (
   );
 };
 
-export const getPriorities = async (
-  companyId
-) => {
-  return repository.getPriorities(
-    companyId
-  );
+export const getPriorities = async () => {
+  return repository.getPriorities();
 };
 
 export const getSubCategories = async (
