@@ -186,3 +186,91 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+.light-theme .trix-toolbar {
+  background: var(--bg-header);
+}
+
+.dark-theme .trix-toolbar {
+  background: var(--bg-header);
+}
+
+.dark-theme .trix-button {
+  filter: invert(0.85);
+}
+
+.light-theme trix-editor {
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+.trix-content {
+  min-height: 260px;
+}
+
+trix-editor {
+  background: var(--bg-card);
+  color: var(--text);
+  border: none !important;
+  min-height: 280px;
+  padding: 16px;
+  font-family: var(--sans);
+  font-size: 14px;
+}
+
+trix-editor:focus {
+  outline: none;
+}
+
+.trix-content {
+  min-height: 280px;
+}
+
+.trix-toolbar {
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+}
+
+.trix-button-group {
+  border: none !important;
+}
+
+.trix-toolbar {
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+}
+
+.trix-button-group {
+  border: none !important;
+}
+
+.MuiOutlinedInput-root {
+  background: var(--bg-card) !important;
+  color: var(--text) !important;
+}
+
+.MuiOutlinedInput-notchedOutline {
+  border-color: var(--border) !important;
+}
+
+.MuiSelect-select {
+  color: var(--text) !important;
+}
+
+.MuiMenu-paper {
+  background: var(--bg-card) !important;
+  color: var(--text) !important;
+}
+
+.MuiPaper-root.MuiMenu-paper {
+  background: var(--bg-card) !important;
+  color: var(--text) !important;
+}
+
+.MuiMenuItem-root {
+  color: var(--text) !important;
+}
+
+.MuiMenuItem-root:hover {
+  background: var(--bg-row-hover) !important;
+}

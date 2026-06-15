@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import {
   Alert,
   Box,
   Button,
   Card,
   CircularProgress,
-  Divider,
+  Collapse,
   FormControl,
-  InputLabel,
+  IconButton,
   MenuItem,
   Select,
   Snackbar,
@@ -17,34 +18,39 @@ import {
   Typography,
 } from "@mui/material";
 
+import AttachFileIcon from "@mui/icons-material/AttachFile";
+
 import { createTicket } from "../services/ticketService";
+import "trix";
+import "trix/dist/trix.css";
+import { useEffect, useRef } from "react";
 
 const NewTicketPage = () => {
   const navigate = useNavigate();
 
-  const [submitForAnotherUser, setSubmitForAnotherUser] =
-    useState(false);
+  const [submitForAnotherUser, setSubmitForAnotherUser] = useState(false);
 
-  const [category, setCategory] =
-    useState("General Issues");
+  const [category, setCategory] = useState("General Issues");
 
-  const [priority, setPriority] =
-    useState("Medium");
+  const [priority, setPriority] = useState("Medium");
 
-  const [subject, setSubject] =
-    useState("");
+  const [subject, setSubject] = useState("");
 
-  const [description, setDescription] =
-    useState("");
+  const [description, setDescription] = useState("");
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const [dueDate, setDueDate] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [tags, setTags] = useState("");
+  const [asset, setAsset] = useState("");
+  const [recurring, setRecurring] = useState(false);
 
   const [toast, setToast] = useState({
     open: false,
-    severity: "success" as
-      | "success"
-      | "error",
+    severity: "success" as "success" | "error",
     message: "",
   });
 
@@ -58,12 +64,18 @@ const NewTicketPage = () => {
       return;
     }
 
-    if (!description.trim()) {
+    const plainText = description
+      .replace(/<[^>]*>/g, "")
+      .replace(/&nbsp;/g, "")
+      .trim();
+
+    if (!plainText) {
       setToast({
         open: true,
         severity: "error",
         message: "Description is required",
       });
+
       return;
     }
 
@@ -73,17 +85,30 @@ const NewTicketPage = () => {
       await createTicket({
         subject,
         description,
+
         category,
         priority,
+
         category_name: category,
         priority_name: priority,
+
+        due_date: dueDate || null,
+
+        assigned_to_user_code: assignedTo || null,
+
+        tags,
+
+        asset,
+
+        is_recurring: recurring,
+
+        submit_for_another_user: submitForAnotherUser,
       });
 
       setToast({
         open: true,
         severity: "success",
-        message:
-          "Ticket created successfully",
+        message: "Ticket created successfully",
       });
 
       setTimeout(() => {
@@ -95,381 +120,491 @@ const NewTicketPage = () => {
       setToast({
         open: true,
         severity: "error",
-        message:
-          error?.response?.data
-            ?.message ||
-          "Failed to create ticket",
+        message: error?.response?.data?.message || "Failed to create ticket",
       });
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    const editor = document.querySelector("trix-editor") as HTMLElement | null;
+
+    if (!editor) return;
+
+    const handleChange = (event: any) => {
+      setDescription(event.target.value);
+    };
+
+    editor.addEventListener("trix-change", handleChange);
+
+    return () => {
+      editor.removeEventListener("trix-change", handleChange);
+    };
+  }, []);
+
+  const [attachments, setAttachments] = useState<File[]>([]);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+
+    if (!files) return;
+
+    setAttachments((prev) => [...prev, ...Array.from(files)]);
+  };
+
   return (
     <Box
       sx={{
+        width: "100%",
         display: "flex",
-        flexDirection: "column",
-        gap: 2,
+        justifyContent: "center",
       }}
     >
-      {/* Breadcrumb */}
-
       <Box
         sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          color: "var(--text-secondary)",
-          fontSize: 14,
+          width: "100%",
+          maxWidth: 820,
         }}
       >
-        <Typography
-          sx={{
-            color:
-              "var(--text-secondary)",
-            fontSize: 14,
-          }}
-        >
-          Tickets
-        </Typography>
-
-        <Typography>/</Typography>
-
-        <Typography
-          sx={{
-            color: "var(--text-h)",
-            fontWeight: 600,
-            fontSize: 14,
-          }}
-        >
-          New
-        </Typography>
-      </Box>
-
-      {/* Main Card */}
-
-      <Card
-        sx={{
-          borderRadius: "10px",
-          border:
-            "1px solid var(--border)",
-          backgroundColor:
-            "var(--bg-card)",
-          boxShadow: "none",
-          p: 4,
-          maxWidth: 1050,
-        }}
-      >
-        <Typography
-          variant="h4"
-          sx={{
-            mb: 4,
-            color: "var(--text-h)",
-            fontWeight: 500,
-          }}
-        >
-          New Ticket
-        </Typography>
-
-        {/* Submit for another user */}
+        {/* Breadcrumb */}
 
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            mb: 4,
+            gap: 1.5,
+            mb: 3,
+            color: "var(--text-secondary)",
+            fontSize: 14,
           }}
         >
-          <Switch
-            checked={
-              submitForAnotherUser
-            }
-            onChange={(e) =>
-              setSubmitForAnotherUser(
-                e.target.checked
-              )
-            }
-          />
+          <Typography
+            sx={{
+              fontSize: 14,
+              color: "var(--text-secondary)",
+            }}
+          >
+            Tickets
+          </Typography>
+
+          <Typography>›</Typography>
 
           <Typography
             sx={{
-              color: "var(--text)",
+              fontSize: 14,
+              color: "var(--text-h)",
             }}
           >
-            Submit on behalf of another
-            user
+            New
           </Typography>
         </Box>
 
-        {/* Category + Priority */}
-
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            mb: 3,
-            flexWrap: "wrap",
-          }}
-        >
-          <FormControl
-            sx={{
-              minWidth: 280,
-            }}
-          >
-            <InputLabel>
-              Category
-            </InputLabel>
-
-            <Select
-              value={category}
-              label="Category"
-              onChange={(e) =>
-                setCategory(
-                  e.target.value
-                )
-              }
-            >
-              <MenuItem value="General Issues">
-                General Issues
-              </MenuItem>
-
-              <MenuItem value="Technical">
-                Technical
-              </MenuItem>
-
-              <MenuItem value="Bug reports">
-                Bug reports
-              </MenuItem>
-
-              <MenuItem value="Network">
-                Network
-              </MenuItem>
-
-              <MenuItem value="Software">
-                Software
-              </MenuItem>
-            </Select>
-          </FormControl>
-
-          <FormControl
-            sx={{
-              minWidth: 220,
-            }}
-          >
-            <InputLabel>
-              Priority
-            </InputLabel>
-
-            <Select
-              value={priority}
-              label="Priority"
-              onChange={(e) =>
-                setPriority(
-                  e.target.value
-                )
-              }
-            >
-              <MenuItem value="Low">
-                Low
-              </MenuItem>
-
-              <MenuItem value="Medium">
-                Medium
-              </MenuItem>
-
-              <MenuItem value="High">
-                High
-              </MenuItem>
-
-              <MenuItem value="Critical">
-                Critical
-              </MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-
-        {/* Subject */}
-
-        <TextField
-          fullWidth
-          placeholder="Subject"
-          value={subject}
-          onChange={(e) =>
-            setSubject(e.target.value)
-          }
-          sx={{
-            mb: 3,
-          }}
-        />
-
-        {/* Editor */}
-
         <Card
           sx={{
-            border:
-              "1px solid var(--border)",
-            boxShadow: "none",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: "12px",
             overflow: "hidden",
-            mb: 3,
+            boxShadow: "none",
           }}
         >
-          {/* Fake toolbar */}
+          {/* Header */}
 
           <Box
             sx={{
-              height: 48,
-              borderBottom:
-                "1px solid var(--border)",
-              display: "flex",
-              alignItems: "center",
-              px: 2,
-              gap: 2,
-              color:
-                "var(--text-secondary)",
-              fontSize: 14,
+              px: 4,
+              py: 3,
+              borderBottom: "1px solid var(--border)",
             }}
           >
-            B
-            <Divider
-              orientation="vertical"
-              flexItem
-            />
-            I
-            <Divider
-              orientation="vertical"
-              flexItem
-            />
-            U
-            <Divider
-              orientation="vertical"
-              flexItem
-            />
-            Link
-            <Divider
-              orientation="vertical"
-              flexItem
-            />
-            Image
+            <Typography
+              sx={{
+                fontSize: 16,
+                fontWeight: 500,
+                color: "var(--text-h)",
+              }}
+            >
+              New ticket
+            </Typography>
           </Box>
 
-          <TextField
-            fullWidth
-            multiline
-            rows={12}
-            placeholder="Details"
-            value={description}
-            onChange={(e) =>
-              setDescription(
-                e.target.value
-              )
-            }
-            variant="outlined"
+          {/* Body */}
+
+          <Box
             sx={{
-              "& fieldset": {
-                border: "none",
-              },
+              p: 3,
             }}
-          />
+          >
+            {/* Submit on behalf */}
+
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                mb: 3,
+              }}
+            >
+              <Switch
+                checked={submitForAnotherUser}
+                onChange={(e) => setSubmitForAnotherUser(e.target.checked)}
+              />
+
+              <Typography
+                sx={{
+                  color: "var(--text)",
+                  fontSize: 14,
+                }}
+              >
+                Submit on behalf of another user
+              </Typography>
+            </Box>
+
+            {/* Category + Priority */}
+
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                flexWrap: "wrap",
+                mb: 3,
+              }}
+            >
+              <FormControl
+                sx={{
+                  width: 300,
+                }}
+              >
+                <Select
+                  value={category}
+                  displayEmpty
+                  onChange={(e) => setCategory(e.target.value)}
+                  size="small"
+                >
+                  <MenuItem value="General Issues">General Issues</MenuItem>
+
+                  <MenuItem value="Technical - Bug Reports">
+                    Technical - Bug Reports
+                  </MenuItem>
+
+                  <MenuItem value="Technical - Feature Requests">
+                    Technical - Feature Requests
+                  </MenuItem>
+
+                  <MenuItem value="Technical - Jarvis Bugs">
+                    Technical - Jarvis Bugs
+                  </MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl
+                sx={{
+                  width: 180,
+                }}
+              >
+                <Select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value)}
+                  size="small"
+                >
+                  <MenuItem value="Low">Low</MenuItem>
+
+                  <MenuItem value="Medium">Normal</MenuItem>
+
+                  <MenuItem value="High">High</MenuItem>
+
+                  <MenuItem value="Critical">Critical</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* Subject */}
+
+            <TextField
+              fullWidth
+              placeholder="Subject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              size="small"
+              sx={{
+                mb: 3,
+
+                "& .MuiOutlinedInput-root": {
+                  background: "var(--bg-app)",
+                },
+              }}
+            />
+
+            {/* Editor */}
+
+            <Box
+              sx={{
+                border: "1px solid var(--border)",
+                borderRadius: "8px",
+                overflow: "hidden",
+                mb: 2,
+
+                "& .trix-toolbar": {
+                  background: "var(--bg-header)",
+                  borderBottom: "1px solid var(--border)",
+                  padding: "8px",
+                },
+
+                "& .trix-button-group": {
+                  border: "none",
+                },
+
+                "& trix-editor": {
+                  minHeight: "280px",
+                  border: "none",
+                  outline: "none",
+                  padding: "16px",
+                  background: "var(--bg-card)",
+                  color: "var(--text)",
+                },
+
+                "& .trix-content": {
+                  color: "var(--text)",
+                },
+
+                "& .trix-button": {
+                  background: "transparent",
+                  border: "none",
+                },
+              }}
+            >
+              <input id="ticket-description" type="hidden" name="description" />
+
+              <trix-editor input="ticket-description" placeholder="Details" />
+            </Box>
+
+            {/* Attachment */}
+
+            {attachments.length > 0 && (
+              <Box sx={{ mt: 1 }}>
+                {attachments.map((file, index) => (
+                  <Typography
+                    key={index}
+                    sx={{
+                      fontSize: 13,
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    📎 {file.name}
+                  </Typography>
+                ))}
+              </Box>
+            )}
+
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
+              <IconButton
+                component="label"
+                sx={{
+                  color: "var(--text-secondary)",
+                }}
+              >
+                <AttachFileIcon />
+
+                <input
+                  hidden
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                />
+              </IconButton>
+            </Box>
+
+            {/* Advanced */}
+
+            <Collapse in={showAdvanced} className="">
+              <Box
+                sx={{
+                  mt: 3,
+                  paddingBottom: 5,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 2,
+                  alignItems: "center",
+                }}
+              >
+                <TextField
+                  size="small"
+                  placeholder="Due"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  sx={{
+                    width: 150,
+                    "& .MuiOutlinedInput-root": {
+                      background: "var(--bg-app)",
+                    },
+                  }}
+                />
+
+                <FormControl
+                  size="small"
+                  sx={{
+                    width: 170,
+                  }}
+                >
+                  <Select
+                    value={assignedTo}
+                    onChange={(e) => setAssignedTo(e.target.value)}
+                  >
+                    <MenuItem value="">(Assigned to)</MenuItem>
+
+                    <MenuItem value="admin">Admin</MenuItem>
+
+                    <MenuItem value="tech1">Tech 1</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <TextField
+                  size="small"
+                  placeholder="Tags..."
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  sx={{
+                    width: 220,
+                    "& .MuiOutlinedInput-root": {
+                      background: "var(--bg-app)",
+                    },
+                  }}
+                />
+
+                <TextField
+                  size="small"
+                  placeholder="type an asset..."
+                  value={asset}
+                  onChange={(e) => setAsset(e.target.value)}
+                  sx={{
+                    width: 220,
+                    "& .MuiOutlinedInput-root": {
+                      background: "var(--bg-app)",
+                    },
+                  }}
+                />
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <Switch
+                    checked={recurring}
+                    onChange={(e) => setRecurring(e.target.checked)}
+                  />
+
+                  <Typography
+                    sx={{
+                      color: "var(--text)",
+                      fontSize: 14,
+                    }}
+                  >
+                    Recurring
+                  </Typography>
+
+                  <Typography
+                    sx={{
+                      color: "var(--text-secondary)",
+                      fontSize: 12,
+                    }}
+                  >
+                    (you'll be able to set the schedule at the next step)
+                  </Typography>
+                </Box>
+              </Box>
+            </Collapse>
+
+            {/* Footer */}
+
+            <Box
+              sx={{
+                display: "flex",
+                gap: 1.5,
+              }}
+            >
+              <Button
+                variant="contained"
+                disabled={loading}
+                onClick={handleSubmit}
+                sx={{
+                  background: "#635BFF",
+
+                  textTransform: "none",
+
+                  minWidth: 100,
+
+                  "&:hover": {
+                    background: "#5449ff",
+                  },
+                }}
+              >
+                {loading ? (
+                  <CircularProgress
+                    size={18}
+                    sx={{
+                      color: "#fff",
+                    }}
+                  />
+                ) : (
+                  "Submit"
+                )}
+              </Button>
+
+              <Button
+                variant="contained"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                sx={{
+                  background: "var(--bg-header)",
+                  color: "var(--text)",
+
+                  textTransform: "none",
+
+                  boxShadow: "none",
+
+                  "&:hover": {
+                    background: "var(--bg-row-hover)",
+                  },
+                }}
+              >
+                Advanced...
+              </Button>
+            </Box>
+          </Box>
         </Card>
 
-        {/* Attachment */}
-
-        <Box
-          sx={{
-            mb: 3,
-          }}
+        <Snackbar
+          open={toast.open}
+          autoHideDuration={4000}
+          onClose={() =>
+            setToast((prev) => ({
+              ...prev,
+              open: false,
+            }))
+          }
         >
-          <Button
-            variant="outlined"
-            component="label"
-          >
-            Attach File
-
-            <input
-              hidden
-              type="file"
-            />
-          </Button>
-        </Box>
-
-        {/* Actions */}
-
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-          }}
-        >
-          <Button
-            variant="contained"
-            disabled={loading}
-            onClick={handleSubmit}
+          <Alert
+            severity={toast.severity}
             sx={{
-              backgroundColor:
-                "#5B4CF0",
-              color: "#fff",
-              minWidth: 120,
-              textTransform: "none",
-
-              "&:hover": {
-                backgroundColor:
-                  "#4737E5",
-              },
+              width: "100%",
             }}
           >
-            {loading ? (
-              <CircularProgress
-                size={20}
-                sx={{
-                  color: "#fff",
-                }}
-              />
-            ) : (
-              "Submit"
-            )}
-          </Button>
-
-          <Button
-            variant="outlined"
-            onClick={() =>
-              navigate("/tickets")
-            }
-            sx={{
-              textTransform: "none",
-            }}
-          >
-            Cancel
-          </Button>
-
-          <Button
-            variant="outlined"
-            sx={{
-              textTransform: "none",
-            }}
-          >
-            Advanced...
-          </Button>
-        </Box>
-      </Card>
-
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={4000}
-        onClose={() =>
-          setToast((prev) => ({
-            ...prev,
-            open: false,
-          }))
-        }
-      >
-        <Alert
-          severity={toast.severity}
-          sx={{ width: "100%" }}
-        >
-          {toast.message}
-        </Alert>
-      </Snackbar>
+            {toast.message}
+          </Alert>
+        </Snackbar>
+      </Box>
     </Box>
   );
 };
