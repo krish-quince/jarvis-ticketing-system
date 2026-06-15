@@ -20,8 +20,47 @@ import {
 } from "@mui/material";
 
 import AttachFileIcon from "@mui/icons-material/AttachFile";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
+
 import RichTextEditor from "../components/RichTextEditor";
 import { createTicket } from "../services/ticketService";
+import api from "../services/api";
+
+const menuItemSx = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  px: 2,
+  py: "10px",
+  cursor: "pointer",
+  fontSize: 14,
+  color: "var(--text)",
+  borderRadius: "6px",
+  mx: "4px",
+  "&:hover": {
+    background: "rgba(99,91,255,0.15)",
+    color: "#635BFF",
+  },
+};
+
+const selectedItemSx = {
+  ...menuItemSx,
+  background: "#635BFF",
+  color: "#fff",
+  "&:hover": {
+    background: "#5449ff",
+    color: "#fff",
+  },
+};
+
+const panelSx = {
+  width: 240,
+  py: "6px",
+  overflowY: "auto" as const,
+  maxHeight: 360,
+};
 
 const NewTicketPage = () => {
   const navigate = useNavigate();
@@ -50,7 +89,6 @@ const NewTicketPage = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [dueDate, setDueDate] = useState("");
   const [tags, setTags] = useState("");
-  const [asset, setAsset] = useState("");
   const [recurring, setRecurring] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [toast, setToast] = useState<{
@@ -94,18 +132,6 @@ const NewTicketPage = () => {
 
     fetchAllSubCategories();
   }, [categories]);
-
-  useEffect(() => {
-    const editor = document.querySelector("trix-editor") as HTMLElement | null;
-    if (!editor) return;
-
-    const handleChange = (event: any) => {
-      setDescription(event.target.innerHTML);
-    };
-
-    editor.addEventListener("trix-change", handleChange);
-    return () => editor.removeEventListener("trix-change", handleChange);
-  }, []);
 
   const selectedCategory = categories.find(
     (c) => String(c.category_id) === categoryId
@@ -183,11 +209,7 @@ const NewTicketPage = () => {
     setPriorityId("");
     setAssignTo("");
     setAssignableUsers([]);
-
-    const trixEditor = document.querySelector("trix-editor") as any;
-    if (trixEditor?.editor) {
-      trixEditor.editor.loadHTML("");
-    }
+    setAttachments([]);
   };
 
   const handleSubmit = async () => {
@@ -229,7 +251,6 @@ const NewTicketPage = () => {
         assigned_to_user_code: assignTo || null,
         due_date: dueDate || null,
         tags,
-        asset,
         is_recurring: recurring,
         submit_for_another_user: submitForAnotherUser,
       });
@@ -249,17 +270,9 @@ const NewTicketPage = () => {
     }
   };
 
-  
-
-  const [attachments, setAttachments] = useState<File[]>([]);
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-
-    if (!files) return;
-
-    setAttachments((prev) => [...prev, ...Array.from(files)]);
-  };
+  const subPanel = hoveredCat
+    ? allSubCategories[String(hoveredCat.category_id)] || []
+    : [];
 
   return (
     <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
@@ -286,24 +299,10 @@ const NewTicketPage = () => {
           }}
         >
           {/* Header */}
-
-          <Box
-            sx={{
-              px: 4,
-              py: 3,
-              borderBottom: "1px solid var(--border)",
-            }}
-          >
-            <Typography
-  component="h2"
-  sx={{
-    fontSize: 24,
-    fontWeight: 600,
-    color: "var(--text-h)",
-  }}
->
-  New ticket
-</Typography>
+          <Box sx={{ px: 4, py: 3, borderBottom: "1px solid var(--border)" }}>
+            <Typography component="h2" sx={{ fontSize: 24, fontWeight: 600, color: "var(--text-h)" }}>
+              New ticket
+            </Typography>
           </Box>
 
           {/* Card Body */}
@@ -323,7 +322,6 @@ const NewTicketPage = () => {
             {/* Category + Priority row */}
             <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3, alignItems: "center" }}>
 
-              {/* Category trigger button */}
               <Button
                 ref={categoryBtnRef}
                 variant="outlined"
@@ -349,7 +347,6 @@ const NewTicketPage = () => {
                 Category - {categoryBtnLabel}
               </Button>
 
-              {/* Two-panel Popover */}
               <Popover
                 open={popoverOpen}
                 anchorEl={categoryBtnRef.current}
@@ -368,7 +365,6 @@ const NewTicketPage = () => {
                   },
                 }}
               >
-                {/* PANEL A — Categories */}
                 {activePanel === "categories" && (
                   <Box sx={panelSx}>
                     <Box
@@ -407,7 +403,6 @@ const NewTicketPage = () => {
                   </Box>
                 )}
 
-                {/* PANEL B — Subcategories */}
                 {activePanel === "subcategories" && hoveredCat && (
                   <Box sx={panelSx}>
                     <Box
@@ -452,7 +447,6 @@ const NewTicketPage = () => {
                 )}
               </Popover>
 
-              {/* Priority */}
               <FormControl sx={{ minWidth: 160 }}>
                 <Select
                   value={priorityId}
@@ -490,47 +484,25 @@ const NewTicketPage = () => {
             />
 
             {/* Editor */}
+            <Box
+              sx={{
+                mb: 3,
+                "& .ProseMirror": {
+                  minHeight: "300px",
+                  padding: "16px",
+                  outline: "none",
+                  backgroundColor: "#fff",
+                },
+                "& .ProseMirror p": { margin: "0 0 12px 0" },
+                "& .ProseMirror h1": { fontSize: "2rem", marginBottom: "12px" },
+                "& .ProseMirror h2": { fontSize: "1.5rem", marginBottom: "10px" },
+                "& .ProseMirror h3": { fontSize: "1.25rem", marginBottom: "8px" },
+              }}
+            >
+              <RichTextEditor value={description} onChange={setDescription} />
+            </Box>
 
-            
-
-<Box
-  sx={{
-    mb: 3,
-
-    "& .ProseMirror": {
-      minHeight: "300px",
-      padding: "16px",
-      outline: "none",
-      backgroundColor: "#fff",
-    },
-
-    "& .ProseMirror p": {
-      margin: "0 0 12px 0",
-    },
-
-    "& .ProseMirror h1": {
-      fontSize: "2rem",
-      marginBottom: "12px",
-    },
-
-    "& .ProseMirror h2": {
-      fontSize: "1.5rem",
-      marginBottom: "10px",
-    },
-
-    "& .ProseMirror h3": {
-      fontSize: "1.25rem",
-      marginBottom: "8px",
-    },
-  }}
->
-  <RichTextEditor
-    value={description}
-    onChange={setDescription}
-  />
-</Box>           
-{/* Attachment */}
-
+            {/* Attachments list */}
             {attachments.length > 0 && (
               <Box sx={{ mt: 1 }}>
                 {attachments.map((file, index) => (
@@ -561,24 +533,18 @@ const NewTicketPage = () => {
                   alignItems: "center",
                 }}
               >
-
                 <TextField
                   size="small"
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  slotProps={{
-  inputLabel: {
-    shrink: true,
-  },
-}}
+                  slotProps={{ inputLabel: { shrink: true } }}
                   sx={{
                     width: 150,
                     "& .MuiOutlinedInput-root": { background: "var(--bg-app)" },
                   }}
                 />
 
-                {/* Assign To — moved here */}
                 <FormControl sx={{ minWidth: 200 }}>
                   <Select
                     value={assignTo}
@@ -587,9 +553,7 @@ const NewTicketPage = () => {
                     size="small"
                     renderValue={(value) => {
                       if (!value) {
-                        return (
-                          <span style={{ color: "var(--text-secondary)" }}>(Assigned to)</span>
-                        );
+                        return <span style={{ color: "var(--text-secondary)" }}>(Assigned to)</span>;
                       }
                       const user = assignableUsers.find((u) => u.user_code === value);
                       return user ? `${user.first_name} ${user.last_name}` : value;
@@ -599,9 +563,7 @@ const NewTicketPage = () => {
                       color: assignTo ? "var(--text-h)" : "var(--text-secondary)",
                     }}
                   >
-                    <MenuItem value="">
-                      Auto Assign
-                    </MenuItem>
+                    <MenuItem value="">Auto Assign</MenuItem>
                     {assignableUsers.map((user) => (
                       <MenuItem key={user.user_code} value={user.user_code}>
                         {user.first_name} {user.last_name}
@@ -620,17 +582,6 @@ const NewTicketPage = () => {
                     "& .MuiOutlinedInput-root": { background: "var(--bg-app)" },
                   }}
                 />
-
-                {/* <TextField
-                  size="small"
-                  placeholder="Type an asset..."
-                  value={asset}
-                  onChange={(e) => setAsset(e.target.value)}
-                  sx={{
-                    width: 220,
-                    "& .MuiOutlinedInput-root": { background: "var(--bg-app)" },
-                  }}
-                /> */}
 
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Switch
@@ -660,11 +611,7 @@ const NewTicketPage = () => {
                   "&:hover": { background: "#5449ff" },
                 }}
               >
-                {loading ? (
-                  <CircularProgress size={18} sx={{ color: "#fff" }} />
-                ) : (
-                  "Submit"
-                )}
+                {loading ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : "Submit"}
               </Button>
 
               <Button
