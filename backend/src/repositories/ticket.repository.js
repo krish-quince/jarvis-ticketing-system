@@ -1,64 +1,76 @@
 import pool from "../config/db.js";
 
-export const createTicket = async (ticket,
-    client = null
-) => {
-    const db = client || pool;
-    const result = await db.query(
-        `
+export const createTicket = async (ticket, client = null) => {
+  const db = client || pool;
+
+  const result = await db.query(
+    `
         INSERT INTO tickets
         (
             company_id,
             ticket_no,
             subject,
             description,
+
             category_id,
+            subcategory_id,
+
             priority_id,
             status_id,
+
             raised_by_user_code,
             assigned_to_user_code,
+
             department
-        ) 
+        )
         VALUES
         (
-            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10
+            $1,$2,$3,$4,
+            $5,$6,
+            $7,$8,
+            $9,$10,
+            $11
         )
         RETURNING *
         `,
-        [
-            ticket.companyId,
-            ticket.ticketNo,
-            ticket.subject,
-            ticket.description,
-            ticket.category_id,
-            ticket.priority_id,
-            ticket.status_id,
-            ticket.raisedByUserCode,
-            ticket.assigned_to_user_code,
-            ticket.department || 'General',
-        ]
-    );
+    [
+      ticket.companyId,
+      ticket.ticketNo,
+      ticket.subject,
+      ticket.description,
 
-    return result.rows[0];
+      ticket.category_id,
+      ticket.subcategory_id,
+
+      ticket.priority_id,
+      ticket.status_id,
+
+      ticket.raisedByUserCode,
+      ticket.assigned_to_user_code,
+
+      ticket.department || "General",
+    ],
+  );
+
+  return result.rows[0];
 };
 
 export const getAllTickets = async (
-    companyId,
-    user,
-    search = "",
-    page = 1,
-    limit = 25
+  companyId,
+  user,
+  search = "",
+  page = 1,
+  limit = 25,
 ) => {
+  const offset = (page - 1) * limit;
 
-    const offset =
-        (page - 1) * limit;
-
-    let query = `
+  let query = `
          SELECT
             t.*,
             s.status_name,
             s.status_color,
             c.category_name,
+            sc.subcategory_name,
             p.priority_name,
             p.priority_color
          FROM tickets t
@@ -66,18 +78,17 @@ export const getAllTickets = async (
             ON s.status_id = t.status_id
          LEFT JOIN ticket_categories c
             ON c.category_id = t.category_id
+         LEFT JOIN ticket_subcategories sc
+            ON sc.subcategory_id = t.subcategory_id
          LEFT JOIN ticket_priorities p
             ON p.priority_id = t.priority_id
          WHERE t.company_id = $1
     `;
 
-    const params = [companyId];
+  const params = [companyId];
 
-    if (
-        user &&
-        Number(user.roleId) !== 1
-    ) {
-        query += `
+  if (user && Number(user.roleId) !== 1) {
+    query += `
             AND (
                 t.assigned_to_user_code = $2
                 OR
@@ -87,16 +98,11 @@ export const getAllTickets = async (
             )
         `;
 
-        params.push(
-            user.userCode,
-            user.userCode,
-            user.department || "General"
-        );
-    }
+    params.push(user.userCode, user.userCode, user.department || "General");
+  }
 
-    if (search) {
-
-        query += `
+  if (search) {
+    query += `
             AND (
                 t.ticket_no ILIKE $${params.length + 1}
                 OR
@@ -106,110 +112,149 @@ export const getAllTickets = async (
             )
         `;
 
-        params.push(
-            `%${search}%`
-        );
-    }
+    params.push(`%${search}%`);
+  }
 
-    query += `
+  query += `
         ORDER BY t.ticket_id DESC
         LIMIT $${params.length + 1}
         OFFSET $${params.length + 2}
     `;
 
-    params.push(
-        Number(limit),
-        Number(offset)
-    );
+  params.push(Number(limit), Number(offset));
 
-    const result =
-        await pool.query(
-            query,
-            params
-        );
+  const result = await pool.query(query, params);
 
-    return result.rows;
+  return result.rows;
 };
 
 export const getTicketById = async (ticketId, companyId) => {
-    const result = await pool.query(
-        `
-            SELECT t.*, c.category_name, p.priority_name, s.status_name 
-            FROM tickets t 
-            INNER JOIN ticket_categories c 
-                ON c.category_id = t.category_id 
-            INNER JOIN ticket_priorities p 
-                ON p.priority_id = t.priority_id 
-            INNER JOIN ticket_statuses s 
-                ON s.status_id = t.status_id 
-            WHERE t.ticket_id = $1 AND t.company_id = $2
-        `, [ticketId, companyId]);
+  const result = await pool.query(
+    `
+    SELECT
+        t.*,
+        c.category_name,
+        sc.subcategory_name,
+        p.priority_name,
+        p.priority_color,
+        s.status_name,
+        s.status_color
 
+        FROM tickets t
 
+        INNER JOIN ticket_categories c
+            ON c.category_id = t.category_id
 
-    return result.rows[0];
+        LEFT JOIN ticket_subcategories sc
+            ON sc.subcategory_id = t.subcategory_id
+
+        INNER JOIN ticket_priorities p
+            ON p.priority_id = t.priority_id
+
+        INNER JOIN ticket_statuses s
+            ON s.status_id = t.status_id
+
+        WHERE
+            t.ticket_id = $1
+        AND 
+        t.company_id = $2
+    `,
+    [ticketId, companyId],
+  );
+
+  return result.rows[0];
 };
 
-export const updateTicketStatus = async(ticketId, statusId, companyId, client = null) => {
-    const db = client || pool;
-    const result = await db.query(
-        `
+export const updateTicketStatus = async (
+  ticketId,
+  statusId,
+  companyId,
+  client = null,
+) => {
+  const db = client || pool;
+  const result = await db.query(
+    `
             UPDATE tickets
             SET status_id = $1, update_timestamp = CURRENT_TIMESTAMP
             WHERE ticket_id = $2 AND company_id = $3
             RETURNING *
-        `, [statusId, ticketId, companyId]
-    );
+        `,
+    [statusId, ticketId, companyId],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
-export const updateTicketAssignee = async(ticketId, assignedToUserCode, companyId, client = null) => {
-    const db = client || pool;
-    const result = await db.query(
-        `
+export const updateTicketAssignee = async (
+  ticketId,
+  assignedToUserCode,
+  companyId,
+  client = null,
+) => {
+  const db = client || pool;
+  const result = await db.query(
+    `
             UPDATE tickets
             SET assigned_to_user_code = $1, update_timestamp = CURRENT_TIMESTAMP
             WHERE ticket_id = $2 AND company_id = $3
             RETURNING *
-        `, [assignedToUserCode, ticketId, companyId]
-    );
+        `,
+    [assignedToUserCode, ticketId, companyId],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
-export const updateTicketPriority = async(ticketId, priorityId, companyId, client = null) => {
-    const db = client || pool;
-    const result = await db.query(
-        `
+export const updateTicketPriority = async (
+  ticketId,
+  priorityId,
+  companyId,
+  client = null,
+) => {
+  const db = client || pool;
+  const result = await db.query(
+    `
             UPDATE tickets
             SET priority_id = $1, update_timestamp = CURRENT_TIMESTAMP
             WHERE ticket_id = $2 AND company_id = $3
             RETURNING *
-        `, [priorityId, ticketId, companyId]
-    );
+        `,
+    [priorityId, ticketId, companyId],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
-export const updateTicketCategory = async(ticketId, categoryId, companyId, client = null) => {
-    const db = client || pool;
-    const result = await db.query(
-        `
+export const updateTicketCategory = async (
+  ticketId,
+  categoryId,
+  companyId,
+  client = null,
+) => {
+  const db = client || pool;
+  const result = await db.query(
+    `
             UPDATE tickets
             SET category_id = $1, update_timestamp = CURRENT_TIMESTAMP
             WHERE ticket_id = $2 AND company_id = $3
             RETURNING *
-        `, [categoryId, ticketId, companyId]
-    );
+        `,
+    [categoryId, ticketId, companyId],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
-export const resolveTicket = async(ticketId, resolvedByUserCode, statusId, companyId, client = null) => {
-    const db = client || pool;
-    const result = await db.query(
-        `
+export const resolveTicket = async (
+  ticketId,
+  resolvedByUserCode,
+  statusId,
+  companyId,
+  client = null,
+) => {
+  const db = client || pool;
+  const result = await db.query(
+    `
             UPDATE tickets
             SET
                 status_id = $1,
@@ -218,88 +263,100 @@ export const resolveTicket = async(ticketId, resolvedByUserCode, statusId, compa
                 update_timestamp = CURRENT_TIMESTAMP
             WHERE ticket_id = $3 AND company_id = $4
             RETURNING *
-        `, [statusId, resolvedByUserCode, ticketId, companyId]
-    );
+        `,
+    [statusId, resolvedByUserCode, ticketId, companyId],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
-export const getUserByCodeAndCompany = async(userCode, companyId) => {
-    const result = await pool.query(
-        `
+export const getUserByCodeAndCompany = async (userCode, companyId) => {
+  const result = await pool.query(
+    `
             SELECT user_code
             FROM users
             WHERE user_code = $1 AND company_id = $2
-        `, [userCode, companyId]
-    );
+        `,
+    [userCode, companyId],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
-export const getStatusByIdAndCompany = async(statusId, companyId) => {
-    const result = await pool.query(
-        `
+export const getStatusByIdAndCompany = async (statusId, companyId) => {
+  const result = await pool.query(
+    `
             SELECT status_id
             FROM ticket_statuses
             WHERE status_id = $1 AND company_id = $2 AND is_active = true
-        `, [statusId, companyId]
-    );
+        `,
+    [statusId, companyId],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
-export const getResolvedStatusByCompany = async(companyId) => {
-    const result = await pool.query(
-        `
+export const getResolvedStatusByCompany = async (companyId) => {
+  const result = await pool.query(
+    `
             SELECT status_id
             FROM ticket_statuses
             WHERE company_id = $1 AND LOWER(status_name) = LOWER($2) AND is_active = true
             ORDER BY display_order ASC
             LIMIT 1
-        `, [companyId, "Resolved"]
-    );
+        `,
+    [companyId, "Resolved"],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
-export const getPriorityByIdAndCompany = async(priorityId, companyId) => {
-    const result = await pool.query(
-        `
+export const getPriorityByIdAndCompany = async (priorityId, companyId) => {
+  const result = await pool.query(
+    `
             SELECT priority_id
             FROM ticket_priorities
             WHERE priority_id = $1 AND company_id = $2
-        `, [priorityId, companyId]
-    );
+        `,
+    [priorityId, companyId],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
-export const getCategoryByIdAndCompany = async(categoryId, companyId) => {
-    const result = await pool.query(
-        `
+export const getCategoryByIdAndCompany = async (categoryId, companyId) => {
+  const result = await pool.query(
+    `
             SELECT category_id
             FROM ticket_categories
             WHERE category_id = $1 AND company_id = $2
-        `, [categoryId, companyId]
-    );
+        `,
+    [categoryId, companyId],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 };
 
 export const deleteTicket = async (ticketId, companyId, client = null) => {
-    const db = client || pool;
-    const result = await db.query(
-        `DELETE FROM tickets WHERE ticket_id = $1 AND company_id = $2 RETURNING *`,
-        [ticketId, companyId]
-    );
-    return result.rows[0];
+  const db = client || pool;
+  const result = await db.query(
+    `DELETE FROM tickets WHERE ticket_id = $1 AND company_id = $2 RETURNING *`,
+    [ticketId, companyId],
+  );
+  return result.rows[0];
 };
 
-export const updateTicketDetails = async (ticketId, subject, description, companyId, client = null) => {
-    const db = client || pool;
-    const result = await db.query(
-        `UPDATE tickets SET subject = $1, description = $2, update_timestamp = CURRENT_TIMESTAMP WHERE ticket_id = $3 AND company_id = $4 RETURNING *`,
-        [subject, description, ticketId, companyId]
-    );
-    return result.rows[0];
+export const updateTicketDetails = async (
+  ticketId,
+  subject,
+  description,
+  companyId,
+  client = null,
+) => {
+  const db = client || pool;
+  const result = await db.query(
+    `UPDATE tickets SET subject = $1, description = $2, update_timestamp = CURRENT_TIMESTAMP WHERE ticket_id = $3 AND company_id = $4 RETURNING *`,
+    [subject, description, ticketId, companyId],
+  );
+  return result.rows[0];
 };

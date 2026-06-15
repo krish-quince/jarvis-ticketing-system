@@ -62,20 +62,24 @@ export const getSubCategories = async (
 };
 
 export const getSubCategoryById = async (
-  subcategoryId
+  subcategoryId,
+  companyId
 ) => {
 
   const result = await pool.query(
     `
     SELECT
       subcategory_id,
+      category_id,
+      company_id,
       subcategory_name,
       assigned_user_code
     FROM ticket_subcategories
     WHERE subcategory_id = $1
+      AND company_id = $2
       AND is_active = true
     `,
-    [subcategoryId]
+    [subcategoryId, companyId]
   );
 
   return result.rows[0];

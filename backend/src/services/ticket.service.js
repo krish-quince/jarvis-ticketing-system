@@ -5,6 +5,7 @@ import {
   canAccessTicket,
   canManageTicket,
 } from "../utils/ticketPermissions.js";
+import * as masterRepository from "../repositories/master.repository.js";
 
 export const createTicket = async (ticketData, user) => {
   const ticketNo = `TKT-${Date.now()}`;
@@ -12,6 +13,7 @@ export const createTicket = async (ticketData, user) => {
   let category_id = ticketData.category_id;
   let priority_id = ticketData.priority_id;
   let status_id = ticketData.status_id;
+  let subcategory_id = ticketData.subcategory_id;
 
   // Resolve IDs by name if provided
   if (ticketData.category_name) {
@@ -59,15 +61,47 @@ export const createTicket = async (ticketData, user) => {
     status_id = res.rows[0]?.status_id || 1;
   }
 
+  let assigned_to_user_code = null;
+
+  if (subcategory_id) {
+    const subCategory = await masterRepository.getSubCategoryById(
+      subcategory_id,
+      user.companyId,
+    );
+
+    if (!subCategory) {
+      throw new Error("Subcategory not found.");
+    }
+
+    if (
+      Number(subCategory.category_id) !==
+      Number(category_id)
+    ) {
+      throw new Error(
+        "Subcategory does not belong to selected category."
+      );
+    }
+
+    assigned_to_user_code = subCategory.assigned_user_code;
+  }
+
   const payload = {
     subject: ticketData.subject,
     description: ticketData.description,
+
     category_id,
+    subcategory_id,
+
     priority_id,
     status_id,
+
+    assigned_to_user_code,
+
     ticketNo,
+
     raisedByUserCode: user.userCode,
     companyId: user.companyId,
+
     department: user.department || "General",
   };
 

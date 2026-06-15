@@ -2,13 +2,31 @@ import { z } from "zod";
 
 export const createTicketSchema = z.object({
   body: z.object({
-    subject: z.string().trim().min(5).max(255),
+    subject: z
+      .string()
+      .trim()
+      .min(5)
+      .max(255),
 
-    description: z.string().trim().min(5),
+    description: z
+      .string()
+      .trim()
+      .min(5),
 
-    category_name: z.string().min(1),
+    category_id: z.coerce
+      .number()
+      .int()
+      .positive(),
 
-    priority_name: z.string().min(1),
+    subcategory_id: z.coerce
+      .number()
+      .int()
+      .positive(),
+
+    priority_id: z.coerce
+      .number()
+      .int()
+      .positive(),
   }),
 });
 
