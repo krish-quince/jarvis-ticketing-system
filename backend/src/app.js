@@ -14,6 +14,7 @@ import commentRoutes from "./routes/comment.routes.js";
 import historyRoutes from "./routes/history.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
+import masterRoutes from "./routes/master.routes.js";
 
 dotenv.config();
 
@@ -69,5 +70,10 @@ app.get("/profile", verifyToken, (req, res) => {
         user: req.user,
     });
 });
+
+app.use(
+  "/api/master",
+  masterRoutes
+);
 
 export default app;
