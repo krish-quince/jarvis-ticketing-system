@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict 9TI2MvT74zcjvhbXlYxuw2R9TBzhLbdigMMblPNJyaK1ztNA1hPzTfMDNuFZT4P
+\restrict fIGeW3YyLa63WhjOU5HTBMwi7c6EQHSiqJbpPCG9q3CMZBdbjgcPixeSGdEJYY8
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
 
--- Started on 2026-06-15 10:48:27
+-- Started on 2026-06-15 15:12:44
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -61,7 +61,7 @@ CREATE SEQUENCE public.companies_company_id_seq
 ALTER SEQUENCE public.companies_company_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5171 (class 0 OID 0)
+-- TOC entry 5186 (class 0 OID 0)
 -- Dependencies: 220
 -- Name: companies_company_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -102,7 +102,7 @@ CREATE SEQUENCE public.roles_role_id_seq
 ALTER SEQUENCE public.roles_role_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5172 (class 0 OID 0)
+-- TOC entry 5187 (class 0 OID 0)
 -- Dependencies: 222
 -- Name: roles_role_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -144,7 +144,7 @@ CREATE SEQUENCE public.tags_tag_id_seq
 ALTER SEQUENCE public.tags_tag_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5173 (class 0 OID 0)
+-- TOC entry 5188 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: tags_tag_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -185,7 +185,7 @@ CREATE SEQUENCE public.ticket_attachments_attachment_id_seq
 ALTER SEQUENCE public.ticket_attachments_attachment_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5174 (class 0 OID 0)
+-- TOC entry 5189 (class 0 OID 0)
 -- Dependencies: 226
 -- Name: ticket_attachments_attachment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -227,7 +227,7 @@ CREATE SEQUENCE public.ticket_categories_category_id_seq
 ALTER SEQUENCE public.ticket_categories_category_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5175 (class 0 OID 0)
+-- TOC entry 5190 (class 0 OID 0)
 -- Dependencies: 228
 -- Name: ticket_categories_category_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -267,7 +267,7 @@ CREATE SEQUENCE public.ticket_comments_comment_id_seq
 ALTER SEQUENCE public.ticket_comments_comment_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5176 (class 0 OID 0)
+-- TOC entry 5191 (class 0 OID 0)
 -- Dependencies: 230
 -- Name: ticket_comments_comment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -309,7 +309,7 @@ CREATE SEQUENCE public.ticket_history_history_id_seq
 ALTER SEQUENCE public.ticket_history_history_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5177 (class 0 OID 0)
+-- TOC entry 5192 (class 0 OID 0)
 -- Dependencies: 232
 -- Name: ticket_history_history_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -352,7 +352,7 @@ CREATE SEQUENCE public.ticket_priorities_priority_id_seq
 ALTER SEQUENCE public.ticket_priorities_priority_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5178 (class 0 OID 0)
+-- TOC entry 5193 (class 0 OID 0)
 -- Dependencies: 234
 -- Name: ticket_priorities_priority_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -397,12 +397,56 @@ CREATE SEQUENCE public.ticket_statuses_status_id_seq
 ALTER SEQUENCE public.ticket_statuses_status_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5179 (class 0 OID 0)
+-- TOC entry 5194 (class 0 OID 0)
 -- Dependencies: 236
 -- Name: ticket_statuses_status_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.ticket_statuses_status_id_seq OWNED BY public.ticket_statuses.status_id;
+
+
+--
+-- TOC entry 242 (class 1259 OID 17102)
+-- Name: ticket_subcategories; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.ticket_subcategories (
+    subcategory_id bigint NOT NULL,
+    company_id bigint NOT NULL,
+    category_id bigint NOT NULL,
+    subcategory_name character varying(100) NOT NULL,
+    subcategory_description text,
+    assigned_user_code character varying(50),
+    is_active boolean DEFAULT true,
+    update_timestamp timestamp with time zone DEFAULT now(),
+    user_code character varying(50)
+);
+
+
+ALTER TABLE public.ticket_subcategories OWNER TO postgres;
+
+--
+-- TOC entry 241 (class 1259 OID 17101)
+-- Name: ticket_subcategories_subcategory_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.ticket_subcategories_subcategory_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.ticket_subcategories_subcategory_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5195 (class 0 OID 0)
+-- Dependencies: 241
+-- Name: ticket_subcategories_subcategory_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.ticket_subcategories_subcategory_id_seq OWNED BY public.ticket_subcategories.subcategory_id;
 
 
 --
@@ -427,7 +471,8 @@ CREATE TABLE public.tickets (
     is_recurring boolean DEFAULT false,
     update_timestamp timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     user_code character varying(50),
-    department character varying(100) DEFAULT 'General'::character varying
+    department character varying(100) DEFAULT 'General'::character varying,
+    subcategory_id bigint
 );
 
 
@@ -449,7 +494,7 @@ CREATE SEQUENCE public.tickets_ticket_id_seq
 ALTER SEQUENCE public.tickets_ticket_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5180 (class 0 OID 0)
+-- TOC entry 5196 (class 0 OID 0)
 -- Dependencies: 238
 -- Name: tickets_ticket_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -496,7 +541,7 @@ CREATE SEQUENCE public.users_user_serial_no_seq
 ALTER SEQUENCE public.users_user_serial_no_seq OWNER TO postgres;
 
 --
--- TOC entry 5181 (class 0 OID 0)
+-- TOC entry 5197 (class 0 OID 0)
 -- Dependencies: 240
 -- Name: users_user_serial_no_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -505,7 +550,7 @@ ALTER SEQUENCE public.users_user_serial_no_seq OWNED BY public.users.user_serial
 
 
 --
--- TOC entry 4906 (class 2604 OID 16976)
+-- TOC entry 4911 (class 2604 OID 16976)
 -- Name: companies company_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -513,7 +558,7 @@ ALTER TABLE ONLY public.companies ALTER COLUMN company_id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 4909 (class 2604 OID 16977)
+-- TOC entry 4914 (class 2604 OID 16977)
 -- Name: roles role_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -521,7 +566,7 @@ ALTER TABLE ONLY public.roles ALTER COLUMN role_id SET DEFAULT nextval('public.r
 
 
 --
--- TOC entry 4912 (class 2604 OID 16978)
+-- TOC entry 4917 (class 2604 OID 16978)
 -- Name: tags tag_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -529,7 +574,7 @@ ALTER TABLE ONLY public.tags ALTER COLUMN tag_id SET DEFAULT nextval('public.tag
 
 
 --
--- TOC entry 4915 (class 2604 OID 16979)
+-- TOC entry 4920 (class 2604 OID 16979)
 -- Name: ticket_attachments attachment_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -537,7 +582,7 @@ ALTER TABLE ONLY public.ticket_attachments ALTER COLUMN attachment_id SET DEFAUL
 
 
 --
--- TOC entry 4917 (class 2604 OID 16980)
+-- TOC entry 4922 (class 2604 OID 16980)
 -- Name: ticket_categories category_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -545,7 +590,7 @@ ALTER TABLE ONLY public.ticket_categories ALTER COLUMN category_id SET DEFAULT n
 
 
 --
--- TOC entry 4920 (class 2604 OID 16981)
+-- TOC entry 4925 (class 2604 OID 16981)
 -- Name: ticket_comments comment_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -553,7 +598,7 @@ ALTER TABLE ONLY public.ticket_comments ALTER COLUMN comment_id SET DEFAULT next
 
 
 --
--- TOC entry 4922 (class 2604 OID 16982)
+-- TOC entry 4927 (class 2604 OID 16982)
 -- Name: ticket_history history_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -561,7 +606,7 @@ ALTER TABLE ONLY public.ticket_history ALTER COLUMN history_id SET DEFAULT nextv
 
 
 --
--- TOC entry 4924 (class 2604 OID 16983)
+-- TOC entry 4929 (class 2604 OID 16983)
 -- Name: ticket_priorities priority_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -569,7 +614,7 @@ ALTER TABLE ONLY public.ticket_priorities ALTER COLUMN priority_id SET DEFAULT n
 
 
 --
--- TOC entry 4927 (class 2604 OID 16984)
+-- TOC entry 4932 (class 2604 OID 16984)
 -- Name: ticket_statuses status_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -577,7 +622,15 @@ ALTER TABLE ONLY public.ticket_statuses ALTER COLUMN status_id SET DEFAULT nextv
 
 
 --
--- TOC entry 4933 (class 2604 OID 16985)
+-- TOC entry 4946 (class 2604 OID 17105)
+-- Name: ticket_subcategories subcategory_id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ticket_subcategories ALTER COLUMN subcategory_id SET DEFAULT nextval('public.ticket_subcategories_subcategory_id_seq'::regclass);
+
+
+--
+-- TOC entry 4938 (class 2604 OID 16985)
 -- Name: tickets ticket_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -585,7 +638,7 @@ ALTER TABLE ONLY public.tickets ALTER COLUMN ticket_id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 4937 (class 2604 OID 16986)
+-- TOC entry 4942 (class 2604 OID 16986)
 -- Name: users user_serial_no; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -593,7 +646,7 @@ ALTER TABLE ONLY public.users ALTER COLUMN user_serial_no SET DEFAULT nextval('p
 
 
 --
--- TOC entry 5144 (class 0 OID 16851)
+-- TOC entry 5157 (class 0 OID 16851)
 -- Dependencies: 219
 -- Data for Name: companies; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -605,7 +658,7 @@ COPY public.companies (company_id, company_name, company_code, email, phone, add
 
 
 --
--- TOC entry 5146 (class 0 OID 16862)
+-- TOC entry 5159 (class 0 OID 16862)
 -- Dependencies: 221
 -- Data for Name: roles; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -620,7 +673,7 @@ COPY public.roles (role_id, role_name, description, is_active, update_timestamp,
 
 
 --
--- TOC entry 5148 (class 0 OID 16872)
+-- TOC entry 5161 (class 0 OID 16872)
 -- Dependencies: 223
 -- Data for Name: tags; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -640,7 +693,7 @@ COPY public.tags (tag_id, company_id, tag_name, tag_color, is_active, update_tim
 
 
 --
--- TOC entry 5150 (class 0 OID 16881)
+-- TOC entry 5163 (class 0 OID 16881)
 -- Dependencies: 225
 -- Data for Name: ticket_attachments; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -650,7 +703,7 @@ COPY public.ticket_attachments (attachment_id, ticket_id, file_name, file_path, 
 
 
 --
--- TOC entry 5152 (class 0 OID 16890)
+-- TOC entry 5165 (class 0 OID 16890)
 -- Dependencies: 227
 -- Data for Name: ticket_categories; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -667,7 +720,7 @@ COPY public.ticket_categories (category_id, company_id, category_name, category_
 
 
 --
--- TOC entry 5154 (class 0 OID 16901)
+-- TOC entry 5167 (class 0 OID 16901)
 -- Dependencies: 229
 -- Data for Name: ticket_comments; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -677,17 +730,18 @@ COPY public.ticket_comments (comment_id, ticket_id, commented_by_user_code, comm
 
 
 --
--- TOC entry 5156 (class 0 OID 16912)
+-- TOC entry 5169 (class 0 OID 16912)
 -- Dependencies: 231
 -- Data for Name: ticket_history; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.ticket_history (history_id, ticket_id, field_changed, old_value, new_value, changed_by_user_code, changed_at) FROM stdin;
+1	17	Created		Ticket Created	QC_KRIBHO_7956	2026-06-15 15:03:50.589444
 \.
 
 
 --
--- TOC entry 5158 (class 0 OID 16921)
+-- TOC entry 5171 (class 0 OID 16921)
 -- Dependencies: 233
 -- Data for Name: ticket_priorities; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -705,7 +759,7 @@ COPY public.ticket_priorities (priority_id, company_id, priority_name, priority_
 
 
 --
--- TOC entry 5160 (class 0 OID 16931)
+-- TOC entry 5173 (class 0 OID 16931)
 -- Dependencies: 235
 -- Data for Name: ticket_statuses; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -725,29 +779,43 @@ COPY public.ticket_statuses (status_id, company_id, status_name, status_color, d
 
 
 --
--- TOC entry 5162 (class 0 OID 16943)
--- Dependencies: 237
--- Data for Name: tickets; Type: TABLE DATA; Schema: public; Owner: postgres
+-- TOC entry 5180 (class 0 OID 17102)
+-- Dependencies: 242
+-- Data for Name: ticket_subcategories; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.tickets (ticket_id, company_id, ticket_no, subject, description, category_id, priority_id, status_id, raised_by_user_code, assigned_to_user_code, resolved_by_user_code, due_date, resolution_date, is_recurring, update_timestamp, user_code, department) FROM stdin;
-8	1	TK-1004	Standardize password resets	Allow password change request via secure email tokens.	9	1	5	QC_CUST01	QC_DEV01	\N	2026-06-11 17:16:56.944	2026-06-12 17:16:56.944	f	2026-06-12 17:16:56.953336	SYSTEM	Finance
-9	1	TK-1005	API Gateway timeout on bulk requests	Requests to fetch broker portfolio records fail after 30 seconds.	10	4	1	QC_CUST03	QC_DEV03	\N	2026-06-14 17:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	Finance
-11	1	TK-1007	Billing PDF invoice displays incorrect total	Calculated tax is added twice in the final breakdown.	9	3	3	QC_CUST02	QC_DEV01	\N	2026-06-13 17:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	Finance
-6	1	TK-1002	Implement dark mode toggle	Add a Dark Mode toggle to the dashboard theme provider to allow night view for developer efficiency.	10	2	2	QC_ADMIN	QC_DEV02	\N	2026-06-22 17:16:56.944	\N	f	2026-06-12 17:16:56.950081	SYSTEM	IT
-12	1	TK-1008	LDAP User authentication synchronization	Synchronize new AD users every 4 hours instead of 24.	10	2	4	QC_CUST03	QC_DEV05	\N	2026-06-15 17:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	IT
-15	1	TK-1011	VPN connection drop issues for remote employees	Remote devs disconnected hourly due to security timeout configs.	10	4	2	QC_CUST03	QC_DEV05	\N	2026-06-13 05:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	IT
-7	1	TK-1003	Database connection pool leakage check	Audit pg client queries to ensure pool releases are executed properly under error responses.	11	4	1	QC_MANAGER	QC_ADMIN	\N	2026-06-14 17:16:56.944	\N	f	2026-06-12 17:16:56.951787	SYSTEM	Support
-14	1	TK-1010	Request to update support phone number in email signature	Change phone number extension from 402 to 505.	9	1	5	QC_CUST02	QC_DEV01	\N	2026-06-10 17:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	Support
-10	1	TK-1006	UI misalignment on ticket details screen	The assignee select box goes out of bounds on mobile width.	11	1	2	QC_CUST04	QC_DEV04	\N	2026-06-19 17:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	HR
-13	1	TK-1009	Application crash when uploading 50MB logs	Out of memory error in node runtime when parsing large log files.	11	3	1	QC_CUST04	QC_DEV04	\N	2026-06-16 17:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	Sales
-5	1	TK-1001	Login flow is slow on mobile devices	When testing on mobile viewport, the LoginCard takes ~3 seconds to render because of unnecessary asset pre-rendering.	11	3	1	QC_CUST01	QC_DEV01	\N	2026-06-17 17:16:56.944	\N	f	2026-06-12 17:16:56.948211	SYSTEM	Marketing
-16	1	TKT-1781454316123	Codex verification ticket	Created during frontend routing verification.	9	2	1	QA-CODEX-001	\N	\N	\N	\N	f	2026-06-14 21:55:16.187809	\N	QA
+COPY public.ticket_subcategories (subcategory_id, company_id, category_id, subcategory_name, subcategory_description, assigned_user_code, is_active, update_timestamp, user_code) FROM stdin;
+5	1	10	Login Issues	Authentication problems	QC_KRIBHO_7956	t	2026-06-15 14:22:38.761866+05:30	SYSTEM
+6	1	10	UI Bugs	Frontend issues	QC_KRIBHO_7956	t	2026-06-15 14:22:38.761866+05:30	SYSTEM
+7	1	10	Database Issues	Database problems	QC_KRIBHO_7956	t	2026-06-15 14:22:38.761866+05:30	SYSTEM
 \.
 
 
 --
--- TOC entry 5164 (class 0 OID 16960)
+-- TOC entry 5175 (class 0 OID 16943)
+-- Dependencies: 237
+-- Data for Name: tickets; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.tickets (ticket_id, company_id, ticket_no, subject, description, category_id, priority_id, status_id, raised_by_user_code, assigned_to_user_code, resolved_by_user_code, due_date, resolution_date, is_recurring, update_timestamp, user_code, department, subcategory_id) FROM stdin;
+8	1	TK-1004	Standardize password resets	Allow password change request via secure email tokens.	9	1	5	QC_CUST01	QC_DEV01	\N	2026-06-11 17:16:56.944	2026-06-12 17:16:56.944	f	2026-06-12 17:16:56.953336	SYSTEM	Finance	\N
+9	1	TK-1005	API Gateway timeout on bulk requests	Requests to fetch broker portfolio records fail after 30 seconds.	10	4	1	QC_CUST03	QC_DEV03	\N	2026-06-14 17:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	Finance	\N
+11	1	TK-1007	Billing PDF invoice displays incorrect total	Calculated tax is added twice in the final breakdown.	9	3	3	QC_CUST02	QC_DEV01	\N	2026-06-13 17:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	Finance	\N
+6	1	TK-1002	Implement dark mode toggle	Add a Dark Mode toggle to the dashboard theme provider to allow night view for developer efficiency.	10	2	2	QC_ADMIN	QC_DEV02	\N	2026-06-22 17:16:56.944	\N	f	2026-06-12 17:16:56.950081	SYSTEM	IT	\N
+12	1	TK-1008	LDAP User authentication synchronization	Synchronize new AD users every 4 hours instead of 24.	10	2	4	QC_CUST03	QC_DEV05	\N	2026-06-15 17:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	IT	\N
+15	1	TK-1011	VPN connection drop issues for remote employees	Remote devs disconnected hourly due to security timeout configs.	10	4	2	QC_CUST03	QC_DEV05	\N	2026-06-13 05:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	IT	\N
+7	1	TK-1003	Database connection pool leakage check	Audit pg client queries to ensure pool releases are executed properly under error responses.	11	4	1	QC_MANAGER	QC_ADMIN	\N	2026-06-14 17:16:56.944	\N	f	2026-06-12 17:16:56.951787	SYSTEM	Support	\N
+14	1	TK-1010	Request to update support phone number in email signature	Change phone number extension from 402 to 505.	9	1	5	QC_CUST02	QC_DEV01	\N	2026-06-10 17:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	Support	\N
+10	1	TK-1006	UI misalignment on ticket details screen	The assignee select box goes out of bounds on mobile width.	11	1	2	QC_CUST04	QC_DEV04	\N	2026-06-19 17:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	HR	\N
+13	1	TK-1009	Application crash when uploading 50MB logs	Out of memory error in node runtime when parsing large log files.	11	3	1	QC_CUST04	QC_DEV04	\N	2026-06-16 17:46:18.97588	\N	f	2026-06-12 17:46:18.97588	\N	Sales	\N
+5	1	TK-1001	Login flow is slow on mobile devices	When testing on mobile viewport, the LoginCard takes ~3 seconds to render because of unnecessary asset pre-rendering.	11	3	1	QC_CUST01	QC_DEV01	\N	2026-06-17 17:16:56.944	\N	f	2026-06-12 17:16:56.948211	SYSTEM	Marketing	\N
+16	1	TKT-1781454316123	Codex verification ticket	Created during frontend routing verification.	9	2	1	QA-CODEX-001	\N	\N	\N	\N	f	2026-06-14 21:55:16.187809	\N	QA	\N
+17	1	TKT-1781516030560	Login issue	Unable to login	10	2	1	QC_KRIBHO_7956	QC_KRIBHO_7956	\N	\N	\N	f	2026-06-15 15:03:50.589444	\N	Finance	5
+\.
+
+
+--
+-- TOC entry 5177 (class 0 OID 16960)
 -- Dependencies: 239
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -777,7 +845,7 @@ COPY public.users (user_serial_no, company_id, role_id, user_code, first_name, l
 
 
 --
--- TOC entry 5182 (class 0 OID 0)
+-- TOC entry 5198 (class 0 OID 0)
 -- Dependencies: 220
 -- Name: companies_company_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -786,7 +854,7 @@ SELECT pg_catalog.setval('public.companies_company_id_seq', 2, true);
 
 
 --
--- TOC entry 5183 (class 0 OID 0)
+-- TOC entry 5199 (class 0 OID 0)
 -- Dependencies: 222
 -- Name: roles_role_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -795,7 +863,7 @@ SELECT pg_catalog.setval('public.roles_role_id_seq', 5, true);
 
 
 --
--- TOC entry 5184 (class 0 OID 0)
+-- TOC entry 5200 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: tags_tag_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -804,7 +872,7 @@ SELECT pg_catalog.setval('public.tags_tag_id_seq', 10, true);
 
 
 --
--- TOC entry 5185 (class 0 OID 0)
+-- TOC entry 5201 (class 0 OID 0)
 -- Dependencies: 226
 -- Name: ticket_attachments_attachment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -813,7 +881,7 @@ SELECT pg_catalog.setval('public.ticket_attachments_attachment_id_seq', 1, false
 
 
 --
--- TOC entry 5186 (class 0 OID 0)
+-- TOC entry 5202 (class 0 OID 0)
 -- Dependencies: 228
 -- Name: ticket_categories_category_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -822,7 +890,7 @@ SELECT pg_catalog.setval('public.ticket_categories_category_id_seq', 11, true);
 
 
 --
--- TOC entry 5187 (class 0 OID 0)
+-- TOC entry 5203 (class 0 OID 0)
 -- Dependencies: 230
 -- Name: ticket_comments_comment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -831,16 +899,16 @@ SELECT pg_catalog.setval('public.ticket_comments_comment_id_seq', 1, false);
 
 
 --
--- TOC entry 5188 (class 0 OID 0)
+-- TOC entry 5204 (class 0 OID 0)
 -- Dependencies: 232
 -- Name: ticket_history_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 1, false);
+SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 1, true);
 
 
 --
--- TOC entry 5189 (class 0 OID 0)
+-- TOC entry 5205 (class 0 OID 0)
 -- Dependencies: 234
 -- Name: ticket_priorities_priority_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -849,7 +917,7 @@ SELECT pg_catalog.setval('public.ticket_priorities_priority_id_seq', 8, true);
 
 
 --
--- TOC entry 5190 (class 0 OID 0)
+-- TOC entry 5206 (class 0 OID 0)
 -- Dependencies: 236
 -- Name: ticket_statuses_status_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -858,16 +926,25 @@ SELECT pg_catalog.setval('public.ticket_statuses_status_id_seq', 10, true);
 
 
 --
--- TOC entry 5191 (class 0 OID 0)
+-- TOC entry 5207 (class 0 OID 0)
+-- Dependencies: 241
+-- Name: ticket_subcategories_subcategory_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.ticket_subcategories_subcategory_id_seq', 7, true);
+
+
+--
+-- TOC entry 5208 (class 0 OID 0)
 -- Dependencies: 238
 -- Name: tickets_ticket_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.tickets_ticket_id_seq', 16, true);
+SELECT pg_catalog.setval('public.tickets_ticket_id_seq', 17, true);
 
 
 --
--- TOC entry 5192 (class 0 OID 0)
+-- TOC entry 5209 (class 0 OID 0)
 -- Dependencies: 240
 -- Name: users_user_serial_no_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -876,7 +953,7 @@ SELECT pg_catalog.setval('public.users_user_serial_no_seq', 20, true);
 
 
 --
--- TOC entry 4942 (class 2606 OID 16988)
+-- TOC entry 4950 (class 2606 OID 16988)
 -- Name: companies companies_company_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -885,7 +962,7 @@ ALTER TABLE ONLY public.companies
 
 
 --
--- TOC entry 4944 (class 2606 OID 16990)
+-- TOC entry 4952 (class 2606 OID 16990)
 -- Name: companies companies_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -894,7 +971,7 @@ ALTER TABLE ONLY public.companies
 
 
 --
--- TOC entry 4946 (class 2606 OID 16992)
+-- TOC entry 4954 (class 2606 OID 16992)
 -- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -903,7 +980,7 @@ ALTER TABLE ONLY public.roles
 
 
 --
--- TOC entry 4948 (class 2606 OID 16994)
+-- TOC entry 4956 (class 2606 OID 16994)
 -- Name: roles roles_role_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -912,7 +989,7 @@ ALTER TABLE ONLY public.roles
 
 
 --
--- TOC entry 4950 (class 2606 OID 16996)
+-- TOC entry 4958 (class 2606 OID 16996)
 -- Name: tags tags_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -921,7 +998,7 @@ ALTER TABLE ONLY public.tags
 
 
 --
--- TOC entry 4952 (class 2606 OID 16998)
+-- TOC entry 4960 (class 2606 OID 16998)
 -- Name: ticket_attachments ticket_attachments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -930,7 +1007,7 @@ ALTER TABLE ONLY public.ticket_attachments
 
 
 --
--- TOC entry 4954 (class 2606 OID 17000)
+-- TOC entry 4962 (class 2606 OID 17000)
 -- Name: ticket_categories ticket_categories_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -939,7 +1016,7 @@ ALTER TABLE ONLY public.ticket_categories
 
 
 --
--- TOC entry 4957 (class 2606 OID 17002)
+-- TOC entry 4965 (class 2606 OID 17002)
 -- Name: ticket_comments ticket_comments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -948,7 +1025,7 @@ ALTER TABLE ONLY public.ticket_comments
 
 
 --
--- TOC entry 4960 (class 2606 OID 17004)
+-- TOC entry 4968 (class 2606 OID 17004)
 -- Name: ticket_history ticket_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -957,7 +1034,7 @@ ALTER TABLE ONLY public.ticket_history
 
 
 --
--- TOC entry 4962 (class 2606 OID 17006)
+-- TOC entry 4970 (class 2606 OID 17006)
 -- Name: ticket_priorities ticket_priorities_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -966,7 +1043,7 @@ ALTER TABLE ONLY public.ticket_priorities
 
 
 --
--- TOC entry 4964 (class 2606 OID 17008)
+-- TOC entry 4972 (class 2606 OID 17008)
 -- Name: ticket_statuses ticket_statuses_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -975,7 +1052,16 @@ ALTER TABLE ONLY public.ticket_statuses
 
 
 --
--- TOC entry 4975 (class 2606 OID 17010)
+-- TOC entry 4993 (class 2606 OID 17115)
+-- Name: ticket_subcategories ticket_subcategories_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ticket_subcategories
+    ADD CONSTRAINT ticket_subcategories_pkey PRIMARY KEY (subcategory_id);
+
+
+--
+-- TOC entry 4983 (class 2606 OID 17010)
 -- Name: tickets tickets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -984,7 +1070,7 @@ ALTER TABLE ONLY public.tickets
 
 
 --
--- TOC entry 4977 (class 2606 OID 17012)
+-- TOC entry 4985 (class 2606 OID 17012)
 -- Name: tickets tickets_ticket_no_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -993,7 +1079,7 @@ ALTER TABLE ONLY public.tickets
 
 
 --
--- TOC entry 4979 (class 2606 OID 17014)
+-- TOC entry 4987 (class 2606 OID 17014)
 -- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1002,7 +1088,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 4981 (class 2606 OID 17016)
+-- TOC entry 4989 (class 2606 OID 17016)
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1011,7 +1097,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 4983 (class 2606 OID 17018)
+-- TOC entry 4991 (class 2606 OID 17018)
 -- Name: users users_user_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1020,7 +1106,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 4955 (class 1259 OID 17019)
+-- TOC entry 4963 (class 1259 OID 17019)
 -- Name: idx_comments_ticket; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1028,7 +1114,7 @@ CREATE INDEX idx_comments_ticket ON public.ticket_comments USING btree (ticket_i
 
 
 --
--- TOC entry 4958 (class 1259 OID 17020)
+-- TOC entry 4966 (class 1259 OID 17020)
 -- Name: idx_history_ticket; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1036,7 +1122,7 @@ CREATE INDEX idx_history_ticket ON public.ticket_history USING btree (ticket_id)
 
 
 --
--- TOC entry 4965 (class 1259 OID 17021)
+-- TOC entry 4973 (class 1259 OID 17021)
 -- Name: idx_ticket_department; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1044,7 +1130,7 @@ CREATE INDEX idx_ticket_department ON public.tickets USING btree (department);
 
 
 --
--- TOC entry 4966 (class 1259 OID 17022)
+-- TOC entry 4974 (class 1259 OID 17022)
 -- Name: idx_ticket_no; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1052,7 +1138,7 @@ CREATE INDEX idx_ticket_no ON public.tickets USING btree (ticket_no);
 
 
 --
--- TOC entry 4967 (class 1259 OID 17023)
+-- TOC entry 4975 (class 1259 OID 17023)
 -- Name: idx_ticket_subject; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1060,7 +1146,7 @@ CREATE INDEX idx_ticket_subject ON public.tickets USING btree (subject);
 
 
 --
--- TOC entry 4968 (class 1259 OID 17024)
+-- TOC entry 4976 (class 1259 OID 17024)
 -- Name: idx_tickets_assigned; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1068,7 +1154,7 @@ CREATE INDEX idx_tickets_assigned ON public.tickets USING btree (assigned_to_use
 
 
 --
--- TOC entry 4969 (class 1259 OID 17025)
+-- TOC entry 4977 (class 1259 OID 17025)
 -- Name: idx_tickets_category; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1076,7 +1162,7 @@ CREATE INDEX idx_tickets_category ON public.tickets USING btree (category_id);
 
 
 --
--- TOC entry 4970 (class 1259 OID 17026)
+-- TOC entry 4978 (class 1259 OID 17026)
 -- Name: idx_tickets_company; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1084,7 +1170,7 @@ CREATE INDEX idx_tickets_company ON public.tickets USING btree (company_id);
 
 
 --
--- TOC entry 4971 (class 1259 OID 17027)
+-- TOC entry 4979 (class 1259 OID 17027)
 -- Name: idx_tickets_priority; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1092,7 +1178,7 @@ CREATE INDEX idx_tickets_priority ON public.tickets USING btree (priority_id);
 
 
 --
--- TOC entry 4972 (class 1259 OID 17028)
+-- TOC entry 4980 (class 1259 OID 17028)
 -- Name: idx_tickets_raised; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1100,7 +1186,7 @@ CREATE INDEX idx_tickets_raised ON public.tickets USING btree (raised_by_user_co
 
 
 --
--- TOC entry 4973 (class 1259 OID 17029)
+-- TOC entry 4981 (class 1259 OID 17029)
 -- Name: idx_tickets_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1108,7 +1194,7 @@ CREATE INDEX idx_tickets_status ON public.tickets USING btree (status_id);
 
 
 --
--- TOC entry 4985 (class 2606 OID 17030)
+-- TOC entry 4995 (class 2606 OID 17030)
 -- Name: ticket_attachments fk_attachment_ticket; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1117,7 +1203,7 @@ ALTER TABLE ONLY public.ticket_attachments
 
 
 --
--- TOC entry 4986 (class 2606 OID 17035)
+-- TOC entry 4996 (class 2606 OID 17035)
 -- Name: ticket_categories fk_category_company; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1126,7 +1212,7 @@ ALTER TABLE ONLY public.ticket_categories
 
 
 --
--- TOC entry 4987 (class 2606 OID 17040)
+-- TOC entry 4997 (class 2606 OID 17040)
 -- Name: ticket_comments fk_comment_ticket; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1135,7 +1221,7 @@ ALTER TABLE ONLY public.ticket_comments
 
 
 --
--- TOC entry 4988 (class 2606 OID 17045)
+-- TOC entry 4998 (class 2606 OID 17045)
 -- Name: ticket_history fk_history_ticket; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1144,7 +1230,7 @@ ALTER TABLE ONLY public.ticket_history
 
 
 --
--- TOC entry 4989 (class 2606 OID 17050)
+-- TOC entry 4999 (class 2606 OID 17050)
 -- Name: ticket_priorities fk_priority_company; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1153,7 +1239,7 @@ ALTER TABLE ONLY public.ticket_priorities
 
 
 --
--- TOC entry 4990 (class 2606 OID 17055)
+-- TOC entry 5000 (class 2606 OID 17055)
 -- Name: ticket_statuses fk_status_company; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1162,7 +1248,25 @@ ALTER TABLE ONLY public.ticket_statuses
 
 
 --
--- TOC entry 4984 (class 2606 OID 17060)
+-- TOC entry 5008 (class 2606 OID 17121)
+-- Name: ticket_subcategories fk_subcategory_assignee; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ticket_subcategories
+    ADD CONSTRAINT fk_subcategory_assignee FOREIGN KEY (assigned_user_code) REFERENCES public.users(user_code);
+
+
+--
+-- TOC entry 5009 (class 2606 OID 17116)
+-- Name: ticket_subcategories fk_subcategory_category; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ticket_subcategories
+    ADD CONSTRAINT fk_subcategory_category FOREIGN KEY (category_id) REFERENCES public.ticket_categories(category_id);
+
+
+--
+-- TOC entry 4994 (class 2606 OID 17060)
 -- Name: tags fk_tag_company; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1171,7 +1275,7 @@ ALTER TABLE ONLY public.tags
 
 
 --
--- TOC entry 4991 (class 2606 OID 17065)
+-- TOC entry 5001 (class 2606 OID 17065)
 -- Name: tickets fk_ticket_category; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1180,7 +1284,7 @@ ALTER TABLE ONLY public.tickets
 
 
 --
--- TOC entry 4992 (class 2606 OID 17070)
+-- TOC entry 5002 (class 2606 OID 17070)
 -- Name: tickets fk_ticket_company; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1189,7 +1293,7 @@ ALTER TABLE ONLY public.tickets
 
 
 --
--- TOC entry 4993 (class 2606 OID 17075)
+-- TOC entry 5003 (class 2606 OID 17075)
 -- Name: tickets fk_ticket_priority; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1198,7 +1302,7 @@ ALTER TABLE ONLY public.tickets
 
 
 --
--- TOC entry 4994 (class 2606 OID 17080)
+-- TOC entry 5004 (class 2606 OID 17080)
 -- Name: tickets fk_ticket_status; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1207,7 +1311,16 @@ ALTER TABLE ONLY public.tickets
 
 
 --
--- TOC entry 4995 (class 2606 OID 17085)
+-- TOC entry 5005 (class 2606 OID 17126)
+-- Name: tickets fk_ticket_subcategory; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tickets
+    ADD CONSTRAINT fk_ticket_subcategory FOREIGN KEY (subcategory_id) REFERENCES public.ticket_subcategories(subcategory_id);
+
+
+--
+-- TOC entry 5006 (class 2606 OID 17085)
 -- Name: users fk_users_company; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1216,7 +1329,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 4996 (class 2606 OID 17090)
+-- TOC entry 5007 (class 2606 OID 17090)
 -- Name: users fk_users_role; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1224,11 +1337,11 @@ ALTER TABLE ONLY public.users
     ADD CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES public.roles(role_id);
 
 
--- Completed on 2026-06-15 10:48:27
+-- Completed on 2026-06-15 15:12:44
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 9TI2MvT74zcjvhbXlYxuw2R9TBzhLbdigMMblPNJyaK1ztNA1hPzTfMDNuFZT4P
+\unrestrict fIGeW3YyLa63WhjOU5HTBMwi7c6EQHSiqJbpPCG9q3CMZBdbjgcPixeSGdEJYY8
 
