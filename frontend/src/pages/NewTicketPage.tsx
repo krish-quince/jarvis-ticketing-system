@@ -19,11 +19,8 @@ import {
 } from "@mui/material";
 
 import AttachFileIcon from "@mui/icons-material/AttachFile";
-
+import RichTextEditor from "../components/RichTextEditor";
 import { createTicket } from "../services/ticketService";
-import "trix";
-import "trix/dist/trix.css";
-import { useEffect, useRef } from "react";
 
 const NewTicketPage = () => {
   const navigate = useNavigate();
@@ -127,21 +124,7 @@ const NewTicketPage = () => {
     }
   };
 
-  useEffect(() => {
-    const editor = document.querySelector("trix-editor") as HTMLElement | null;
-
-    if (!editor) return;
-
-    const handleChange = (event: any) => {
-      setDescription(event.target.value);
-    };
-
-    editor.addEventListener("trix-change", handleChange);
-
-    return () => {
-      editor.removeEventListener("trix-change", handleChange);
-    };
-  }, []);
+  
 
   const [attachments, setAttachments] = useState<File[]>([]);
 
@@ -219,14 +202,15 @@ const NewTicketPage = () => {
             }}
           >
             <Typography
-              sx={{
-                fontSize: 16,
-                fontWeight: 500,
-                color: "var(--text-h)",
-              }}
-            >
-              New ticket
-            </Typography>
+  component="h2"
+  sx={{
+    fontSize: 24,
+    fontWeight: 600,
+    color: "var(--text-h)",
+  }}
+>
+  New ticket
+</Typography>
           </Box>
 
           {/* Body */}
@@ -337,48 +321,45 @@ const NewTicketPage = () => {
 
             {/* Editor */}
 
-            <Box
-              sx={{
-                border: "1px solid var(--border)",
-                borderRadius: "8px",
-                overflow: "hidden",
-                mb: 2,
+            
 
-                "& .trix-toolbar": {
-                  background: "var(--bg-header)",
-                  borderBottom: "1px solid var(--border)",
-                  padding: "8px",
-                },
+<Box
+  sx={{
+    mb: 3,
 
-                "& .trix-button-group": {
-                  border: "none",
-                },
+    "& .ProseMirror": {
+      minHeight: "300px",
+      padding: "16px",
+      outline: "none",
+      backgroundColor: "#fff",
+    },
 
-                "& trix-editor": {
-                  minHeight: "280px",
-                  border: "none",
-                  outline: "none",
-                  padding: "16px",
-                  background: "var(--bg-card)",
-                  color: "var(--text)",
-                },
+    "& .ProseMirror p": {
+      margin: "0 0 12px 0",
+    },
 
-                "& .trix-content": {
-                  color: "var(--text)",
-                },
+    "& .ProseMirror h1": {
+      fontSize: "2rem",
+      marginBottom: "12px",
+    },
 
-                "& .trix-button": {
-                  background: "transparent",
-                  border: "none",
-                },
-              }}
-            >
-              <input id="ticket-description" type="hidden" name="description" />
+    "& .ProseMirror h2": {
+      fontSize: "1.5rem",
+      marginBottom: "10px",
+    },
 
-              <trix-editor input="ticket-description" placeholder="Details" />
-            </Box>
-
-            {/* Attachment */}
+    "& .ProseMirror h3": {
+      fontSize: "1.25rem",
+      marginBottom: "8px",
+    },
+  }}
+>
+  <RichTextEditor
+    value={description}
+    onChange={setDescription}
+  />
+</Box>           
+{/* Attachment */}
 
             {attachments.length > 0 && (
               <Box sx={{ mt: 1 }}>
@@ -439,9 +420,11 @@ const NewTicketPage = () => {
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
+                  slotProps={{
+  inputLabel: {
+    shrink: true,
+  },
+}}
                   sx={{
                     width: 150,
                     "& .MuiOutlinedInput-root": {
