@@ -36,3 +36,47 @@ export const getPriorities = async (companyId) => {
 
   return result.rows;
 };
+
+export const getSubCategories = async (
+  companyId,
+  categoryId
+) => {
+
+  const result = await pool.query(
+    `
+    SELECT
+      subcategory_id,
+      subcategory_name,
+      subcategory_description,
+      assigned_user_code
+    FROM ticket_subcategories
+    WHERE company_id = $1
+      AND category_id = $2
+      AND is_active = true
+    ORDER BY subcategory_name
+    `,
+    [companyId, categoryId]
+  );
+
+  return result.rows;
+};
+
+export const getSubCategoryById = async (
+  subcategoryId
+) => {
+
+  const result = await pool.query(
+    `
+    SELECT
+      subcategory_id,
+      subcategory_name,
+      assigned_user_code
+    FROM ticket_subcategories
+    WHERE subcategory_id = $1
+      AND is_active = true
+    `,
+    [subcategoryId]
+  );
+
+  return result.rows[0];
+};

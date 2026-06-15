@@ -15,3 +15,15 @@ export const getPriorities = async (
     companyId
   );
 };
+
+export const getSubCategories = async (
+  companyId,
+  categoryId
+) => {
+
+  return repository.getSubCategories(
+    companyId,
+    categoryId
+  );
+
+};

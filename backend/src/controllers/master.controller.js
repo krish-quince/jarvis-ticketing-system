@@ -49,3 +49,36 @@ export const getPriorities = async (
     });
   }
 };
+
+export const getSubCategories = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const { categoryId } = req.params;
+
+    const data =
+      await service.getSubCategories(
+        req.user.companyId,
+        categoryId
+      );
+
+    return res.status(200).json({
+      success: true,
+      data
+    });
+
+  } catch(error) {
+
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+
+};
