@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict pgsNc0g284YJyCewKWxZthZ7Nsquvh4Agyl8kRcf3uohnZiD4RW1n1JzlYp5Rrh
+\restrict qfGnVvs8Fz5bADYjJiscFsV7WT6NuvAmABBMU5MLzfa2ghakxpAfg0t2hTV3ZC3
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
 
--- Started on 2026-06-15 16:21:12
+-- Started on 2026-06-15 17:14:53
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -716,6 +716,10 @@ COPY public.ticket_categories (category_id, company_id, category_name, category_
 9	1	General Issues	General client issues and queries	t	2026-06-12 17:16:56.935714	SYSTEM
 10	1	Technical	Technical system challenges	t	2026-06-12 17:16:56.935714	SYSTEM
 11	1	Bug reports	Defects and bug reports	t	2026-06-12 17:16:56.935714	SYSTEM
+12	1	General Issues	General support requests	t	2026-06-15 17:11:49.312826	\N
+13	1	Sales	Sales related issues	t	2026-06-15 17:11:49.312826	\N
+14	1	Technical	Technical support issues	t	2026-06-15 17:11:49.312826	\N
+15	1	Temp	Temporary category	t	2026-06-15 17:11:49.312826	\N
 \.
 
 
@@ -739,6 +743,8 @@ COPY public.ticket_history (history_id, ticket_id, field_changed, old_value, new
 1	17	Created		Ticket Created	QC_KRIBHO_7956	2026-06-15 15:03:50.589444
 2	18	Created		Ticket Created	QC_KRIBHO_7956	2026-06-15 15:36:54.133247
 3	19	Created		Ticket Created	QC_KRIBHO_7956	2026-06-15 15:43:31.735542
+4	20	Created		Ticket Created	QC_KRIBHO_7956	2026-06-15 16:28:48.157182
+5	21	Created		Ticket Created	QC_KRIBHO_7956	2026-06-15 16:29:53.899956
 \.
 
 
@@ -790,6 +796,12 @@ COPY public.ticket_subcategories (subcategory_id, company_id, category_id, subca
 5	1	10	Login Issues	Authentication problems	QC_DEV01	t	2026-06-15 14:22:38.761866+05:30	SYSTEM
 6	1	10	UI Bugs	Frontend issues	QC_DEV02	t	2026-06-15 14:22:38.761866+05:30	SYSTEM
 7	1	10	Database Issues	Database problems	QC_DEV03	t	2026-06-15 14:22:38.761866+05:30	SYSTEM
+14	1	13	General Sales	General sales enquiries	QC_MANAGER	t	2026-06-15 17:14:31.380717+05:30	\N
+15	1	13	Payment Issues	Payment and billing issues	QC_MANAGER	t	2026-06-15 17:14:31.380717+05:30	\N
+16	1	10	Bug Reports	Application defects	QC_MANAGER	t	2026-06-15 17:14:31.380717+05:30	\N
+17	1	10	Feature Requests	Feature enhancement requests	QC_MANAGER	t	2026-06-15 17:14:31.380717+05:30	\N
+18	1	10	Jarvis Bugs	Jarvis platform issues	QC_MANAGER	t	2026-06-15 17:14:31.380717+05:30	\N
+19	1	15	Temp	Temporary requests	QC_MANAGER	t	2026-06-15 17:14:31.380717+05:30	\N
 \.
 
 
@@ -815,6 +827,8 @@ COPY public.tickets (ticket_id, company_id, ticket_no, subject, description, cat
 17	1	TKT-1781516030560	Login issue	Unable to login	10	2	1	QC_KRIBHO_7956	QC_KRIBHO_7956	\N	\N	\N	f	2026-06-15 15:03:50.589444	\N	Finance	5
 18	1	TKT-1781518014082	Im Krish	<div>Hi this is ticket by krish</div>	10	3	1	QC_KRIBHO_7956	QC_KRIBHO_7956	\N	\N	\N	f	2026-06-15 15:36:54.133247	\N	Finance	5
 19	1	TKT-1781518411576	Ticket 2 testing	<div>Ticket 2 by krish</div>	10	3	1	QC_KRIBHO_7956	QC_DEV01	\N	\N	\N	f	2026-06-15 15:43:31.735542	\N	Finance	5
+20	1	TKT-1781521128090	Login issue test 2	Unable to login	10	2	1	QC_KRIBHO_7956	QC_MANAGER	\N	\N	\N	f	2026-06-15 16:28:48.157182	\N	Finance	5
+21	1	TKT-1781521193860	Login issue test 2	Unable to login	10	2	1	QC_KRIBHO_7956	QC_ADMIN	\N	\N	\N	f	2026-06-15 16:29:53.899956	\N	Finance	5
 \.
 
 
@@ -890,7 +904,7 @@ SELECT pg_catalog.setval('public.ticket_attachments_attachment_id_seq', 1, false
 -- Name: ticket_categories_category_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ticket_categories_category_id_seq', 11, true);
+SELECT pg_catalog.setval('public.ticket_categories_category_id_seq', 15, true);
 
 
 --
@@ -908,7 +922,7 @@ SELECT pg_catalog.setval('public.ticket_comments_comment_id_seq', 1, false);
 -- Name: ticket_history_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 3, true);
+SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 5, true);
 
 
 --
@@ -935,7 +949,7 @@ SELECT pg_catalog.setval('public.ticket_statuses_status_id_seq', 10, true);
 -- Name: ticket_subcategories_subcategory_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ticket_subcategories_subcategory_id_seq', 7, true);
+SELECT pg_catalog.setval('public.ticket_subcategories_subcategory_id_seq', 19, true);
 
 
 --
@@ -944,7 +958,7 @@ SELECT pg_catalog.setval('public.ticket_subcategories_subcategory_id_seq', 7, tr
 -- Name: tickets_ticket_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.tickets_ticket_id_seq', 19, true);
+SELECT pg_catalog.setval('public.tickets_ticket_id_seq', 21, true);
 
 
 --
@@ -1341,11 +1355,11 @@ ALTER TABLE ONLY public.users
     ADD CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES public.roles(role_id);
 
 
--- Completed on 2026-06-15 16:21:12
+-- Completed on 2026-06-15 17:14:53
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict pgsNc0g284YJyCewKWxZthZ7Nsquvh4Agyl8kRcf3uohnZiD4RW1n1JzlYp5Rrh
+\unrestrict qfGnVvs8Fz5bADYjJiscFsV7WT6NuvAmABBMU5MLzfa2ghakxpAfg0t2hTV3ZC3
 
