@@ -14,6 +14,7 @@ export const createTicket = async (ticketData, user) => {
   let priority_id = ticketData.priority_id;
   let status_id = ticketData.status_id;
   let subcategory_id = ticketData.subcategory_id;
+  let assigned_to_user_code = ticketData.assigned_to_user_code || null;
 
   // Resolve IDs by name if provided
   if (ticketData.category_name) {
@@ -61,7 +62,21 @@ export const createTicket = async (ticketData, user) => {
     status_id = res.rows[0]?.status_id || 1;
   }
 
-  let assigned_to_user_code = null;
+  if (assigned_to_user_code) {
+    const assigneeResult = await pool.query(
+      `
+    SELECT user_code
+    FROM users
+    WHERE user_code = $1
+    AND company_id = $2
+    `,
+      [assigned_to_user_code, user.companyId],
+    );
+
+    if (assigneeResult.rows.length === 0) {
+      throw new Error("Assigned user not found.");
+    }
+  }
 
   if (subcategory_id) {
     const subCategory = await masterRepository.getSubCategoryById(
@@ -73,16 +88,49 @@ export const createTicket = async (ticketData, user) => {
       throw new Error("Subcategory not found.");
     }
 
-    if (
-      Number(subCategory.category_id) !==
-      Number(category_id)
-    ) {
-      throw new Error(
-        "Subcategory does not belong to selected category."
-      );
+    if (Number(subCategory.category_id) !== Number(category_id)) {
+      throw new Error("Subcategory does not belong to selected category.");
     }
 
-    assigned_to_user_code = subCategory.assigned_user_code;
+    // Manual assignment wins
+    if (!assigned_to_user_code) {
+      const routingUser = subCategory.assigned_user_code;
+
+      if (routingUser) {
+        const routingUserResult = await pool.query(
+          `
+          SELECT department
+          FROM users
+          WHERE user_code = $1
+          AND company_id = $2
+          `,
+          [routingUser, user.companyId],
+        );
+
+        const department = routingUserResult.rows[0]?.department;
+
+        if (department) {
+          const departmentUsers = await pool.query(
+            `
+            SELECT user_code
+            FROM users
+            WHERE department = $1
+            AND company_id = $2
+            AND is_active = true
+            `,
+            [department, user.companyId],
+          );
+
+          const users = departmentUsers.rows;
+
+          if (users.length > 0) {
+            const randomIndex = Math.floor(Math.random() * users.length);
+
+            assigned_to_user_code = users[randomIndex].user_code;
+          }
+        }
+      }
+    }
   }
 
   const payload = {

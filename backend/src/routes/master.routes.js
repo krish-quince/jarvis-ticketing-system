@@ -3,7 +3,8 @@ import express from "express";
 import {
   getCategories,
   getPriorities,
-  getSubCategories
+  getSubCategories,
+  getAssignableUsers
 } from "../controllers/master.controller.js";
 
 import { verifyToken } from "../middleware/auth.middleware.js";
@@ -26,6 +27,12 @@ router.get(
   "/subcategories/:categoryId",
   verifyToken,
   getSubCategories
+);
+
+router.get(
+  "/assignable-users/:subcategoryId",
+  verifyToken,
+  getAssignableUsers
 );
 
 export default router;

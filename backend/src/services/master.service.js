@@ -27,3 +27,15 @@ export const getSubCategories = async (
   );
 
 };
+
+export const getAssignableUsers = async (
+  companyId,
+  subcategoryId
+) => {
+
+  return repository.getAssignableUsers(
+    companyId,
+    subcategoryId
+  );
+
+};

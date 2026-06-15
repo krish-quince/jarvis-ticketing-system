@@ -82,3 +82,25 @@ export const getSubCategories = async (
   }
 
 };
+
+export const getAssignableUsers = async (req, res) => {
+  try {
+    const { subcategoryId } = req.params;
+
+    const users =
+      await service.getAssignableUsers(
+        subcategoryId,
+        req.user.companyId
+      );
+
+    res.json({
+      success: true,
+      data: users,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

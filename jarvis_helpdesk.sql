@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict fIGeW3YyLa63WhjOU5HTBMwi7c6EQHSiqJbpPCG9q3CMZBdbjgcPixeSGdEJYY8
+\restrict pgsNc0g284YJyCewKWxZthZ7Nsquvh4Agyl8kRcf3uohnZiD4RW1n1JzlYp5Rrh
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
 
--- Started on 2026-06-15 15:12:44
+-- Started on 2026-06-15 16:21:12
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -737,6 +737,8 @@ COPY public.ticket_comments (comment_id, ticket_id, commented_by_user_code, comm
 
 COPY public.ticket_history (history_id, ticket_id, field_changed, old_value, new_value, changed_by_user_code, changed_at) FROM stdin;
 1	17	Created		Ticket Created	QC_KRIBHO_7956	2026-06-15 15:03:50.589444
+2	18	Created		Ticket Created	QC_KRIBHO_7956	2026-06-15 15:36:54.133247
+3	19	Created		Ticket Created	QC_KRIBHO_7956	2026-06-15 15:43:31.735542
 \.
 
 
@@ -785,9 +787,9 @@ COPY public.ticket_statuses (status_id, company_id, status_name, status_color, d
 --
 
 COPY public.ticket_subcategories (subcategory_id, company_id, category_id, subcategory_name, subcategory_description, assigned_user_code, is_active, update_timestamp, user_code) FROM stdin;
-5	1	10	Login Issues	Authentication problems	QC_KRIBHO_7956	t	2026-06-15 14:22:38.761866+05:30	SYSTEM
-6	1	10	UI Bugs	Frontend issues	QC_KRIBHO_7956	t	2026-06-15 14:22:38.761866+05:30	SYSTEM
-7	1	10	Database Issues	Database problems	QC_KRIBHO_7956	t	2026-06-15 14:22:38.761866+05:30	SYSTEM
+5	1	10	Login Issues	Authentication problems	QC_DEV01	t	2026-06-15 14:22:38.761866+05:30	SYSTEM
+6	1	10	UI Bugs	Frontend issues	QC_DEV02	t	2026-06-15 14:22:38.761866+05:30	SYSTEM
+7	1	10	Database Issues	Database problems	QC_DEV03	t	2026-06-15 14:22:38.761866+05:30	SYSTEM
 \.
 
 
@@ -811,6 +813,8 @@ COPY public.tickets (ticket_id, company_id, ticket_no, subject, description, cat
 5	1	TK-1001	Login flow is slow on mobile devices	When testing on mobile viewport, the LoginCard takes ~3 seconds to render because of unnecessary asset pre-rendering.	11	3	1	QC_CUST01	QC_DEV01	\N	2026-06-17 17:16:56.944	\N	f	2026-06-12 17:16:56.948211	SYSTEM	Marketing	\N
 16	1	TKT-1781454316123	Codex verification ticket	Created during frontend routing verification.	9	2	1	QA-CODEX-001	\N	\N	\N	\N	f	2026-06-14 21:55:16.187809	\N	QA	\N
 17	1	TKT-1781516030560	Login issue	Unable to login	10	2	1	QC_KRIBHO_7956	QC_KRIBHO_7956	\N	\N	\N	f	2026-06-15 15:03:50.589444	\N	Finance	5
+18	1	TKT-1781518014082	Im Krish	<div>Hi this is ticket by krish</div>	10	3	1	QC_KRIBHO_7956	QC_KRIBHO_7956	\N	\N	\N	f	2026-06-15 15:36:54.133247	\N	Finance	5
+19	1	TKT-1781518411576	Ticket 2 testing	<div>Ticket 2 by krish</div>	10	3	1	QC_KRIBHO_7956	QC_DEV01	\N	\N	\N	f	2026-06-15 15:43:31.735542	\N	Finance	5
 \.
 
 
@@ -904,7 +908,7 @@ SELECT pg_catalog.setval('public.ticket_comments_comment_id_seq', 1, false);
 -- Name: ticket_history_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 1, true);
+SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 3, true);
 
 
 --
@@ -940,7 +944,7 @@ SELECT pg_catalog.setval('public.ticket_subcategories_subcategory_id_seq', 7, tr
 -- Name: tickets_ticket_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.tickets_ticket_id_seq', 17, true);
+SELECT pg_catalog.setval('public.tickets_ticket_id_seq', 19, true);
 
 
 --
@@ -1337,11 +1341,11 @@ ALTER TABLE ONLY public.users
     ADD CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES public.roles(role_id);
 
 
--- Completed on 2026-06-15 15:12:44
+-- Completed on 2026-06-15 16:21:12
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict fIGeW3YyLa63WhjOU5HTBMwi7c6EQHSiqJbpPCG9q3CMZBdbjgcPixeSGdEJYY8
+\unrestrict pgsNc0g284YJyCewKWxZthZ7Nsquvh4Agyl8kRcf3uohnZiD4RW1n1JzlYp5Rrh
 
