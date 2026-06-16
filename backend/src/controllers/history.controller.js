@@ -4,7 +4,7 @@ export const getTicketHistory = async(req, res) => {
     try {
         const { ticketId } = req.params;
 
-        const history = await historyService.getTicketHistory(ticketId, req.user.companyId);
+        const history = await historyService.getTicketHistory(ticketId, req.user.companyCode);
 
         return res.status(200).json({
             success: true,

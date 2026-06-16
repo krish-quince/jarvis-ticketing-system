@@ -61,7 +61,7 @@ export const getAllTickets = async (
 
         const tickets =
             await ticketService.getAllTickets(
-                req.user.companyId,
+                req.user.companyCode,
                 req.user,
                 search,
                 Number(page),
@@ -91,7 +91,7 @@ export const getTicketById = async (req, res) => {
     try {
         const { ticketId } = req.params;
 
-        const ticket = await ticketService.getTicketById(ticketId, req.user.companyId, req.user);
+        const ticket = await ticketService.getTicketById(ticketId, req.user.companyCode, req.user);
 
         if(!ticket) {
             return res.status(404).json({

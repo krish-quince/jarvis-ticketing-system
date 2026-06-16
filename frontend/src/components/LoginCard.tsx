@@ -11,6 +11,7 @@ import {
   Select,
   FormControl,
   InputLabel,
+  FormHelperText,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
@@ -21,15 +22,33 @@ type Props = {
   password: string;
   setEmail: React.Dispatch<React.SetStateAction<string>>;
   setPassword: React.Dispatch<React.SetStateAction<string>>;
-  handleLogin: () => Promise<void>;
+  handleLogin: (loginData: {
+    email: string;
+    password: string;
+    company_code: string;
+  }) => Promise<void>;
   handleRegister: (userData: {
     first_name: string;
     last_name: string;
     email: string;
-    department: string;
+    company_code: string;
+    department_id: number;
+    role_id: number;
     password?: string;
   }) => Promise<void>;
 };
+
+const COMPANIES = [
+  { code: "QC", label: "Quince Capital" },
+  { code: "ABC", label: "ABC Company" },
+];
+
+const DEPARTMENTS = [
+  { id: 1, label: "IT" },
+  { id: 2, label: "Support" },
+  { id: 3, label: "Operations" },
+  { id: 4, label: "Billing" },
+];
 
 const LoginCard = ({
   email,
@@ -40,12 +59,16 @@ const LoginCard = ({
   handleRegister,
 }: Props) => {
   const [mode, setMode] = useState<"login" | "register">("login");
-  
+
+  // Login state
+  const [companyCode, setCompanyCode] = useState("");
+
   // Registration local state
   const [regFirstName, setRegFirstName] = useState("");
   const [regLastName, setRegLastName] = useState("");
   const [regEmail, setRegEmail] = useState("");
-  const [regDepartment, setRegDepartment] = useState("General");
+  const [regCompanyCode, setRegCompanyCode] = useState("");
+  const [regDepartmentId, setRegDepartmentId] = useState<number | "">("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
 
@@ -69,6 +92,12 @@ const LoginCard = ({
     } else if (!validateEmail(regEmail)) {
       tempErrors.email = "Please enter a valid email";
     }
+    if (!regCompanyCode) {
+      tempErrors.company = "Company is required";
+    }
+    if (!regDepartmentId) {
+      tempErrors.department = "Department is required";
+    }
     if (!regPassword) {
       tempErrors.password = "Password is required";
     } else if (regPassword.length < 6) {
@@ -89,7 +118,9 @@ const LoginCard = ({
         first_name: regFirstName.trim(),
         last_name: regLastName.trim(),
         email: regEmail.trim().toLowerCase(),
-        department: regDepartment,
+        company_code: regCompanyCode,
+        department_id: Number(regDepartmentId),
+        role_id: 4,
         password: regPassword,
       });
       // Clear form and toggle back to login on success
@@ -99,7 +130,8 @@ const LoginCard = ({
       setRegFirstName("");
       setRegLastName("");
       setRegEmail("");
-      setRegDepartment("General");
+      setRegCompanyCode("");
+      setRegDepartmentId("");
       setRegPassword("");
       setRegConfirmPassword("");
     } catch (err: any) {
@@ -117,6 +149,9 @@ const LoginCard = ({
     if (!password) {
       tempErrors.loginPassword = "Password is required";
     }
+    if (!companyCode) {
+      tempErrors.loginCompany = "Company is required";
+    }
 
     if (Object.keys(tempErrors).length > 0) {
       setErrors(tempErrors);
@@ -124,7 +159,7 @@ const LoginCard = ({
     }
 
     setErrors({});
-    await handleLogin();
+    await handleLogin({ email, password, company_code: companyCode });
   };
 
   return (
@@ -154,6 +189,37 @@ const LoginCard = ({
 
       {mode === "login" ? (
         <>
+          {/* Company Selector on Login */}
+          <FormControl
+            fullWidth
+            error={!!errors.loginCompany}
+            sx={{ mt: 2 }}
+          >
+            <InputLabel id="login-company-label" sx={{ ml: 1 }}>Company</InputLabel>
+            <Select
+              labelId="login-company-label"
+              value={companyCode}
+              label="Company"
+              onChange={(e) => setCompanyCode(e.target.value)}
+              sx={{
+                borderRadius: "30px",
+                backgroundColor: "#EAF1FF",
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 1,
+                },
+              }}
+            >
+              {COMPANIES.map((c) => (
+                <MenuItem key={c.code} value={c.code}>
+                  {c.label}
+                </MenuItem>
+              ))}
+            </Select>
+            {errors.loginCompany && (
+              <FormHelperText>{errors.loginCompany}</FormHelperText>
+            )}
+          </FormControl>
+
           <TextField
             fullWidth
             placeholder="Email"
@@ -211,13 +277,7 @@ const LoginCard = ({
             Forgot Password?
           </Typography>
 
-          <Box
-            sx={{
-              mt: 4,
-              display: "flex",
-              gap: 2,
-            }}
-          >
+          <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
             <Button
               fullWidth
               variant="contained"
@@ -311,19 +371,18 @@ const LoginCard = ({
             }}
           />
 
+          {/* Company Dropdown */}
           <FormControl
             fullWidth
-            sx={{
-              mt: 2.5,
-            }}
+            error={!!errors.company}
+            sx={{ mt: 2.5 }}
           >
-            <InputLabel id="reg-department-label" sx={{ ml: 1 }}>Department</InputLabel>
+            <InputLabel id="reg-company-label" sx={{ ml: 1 }}>Company</InputLabel>
             <Select
-              labelId="reg-department-label"
-              id="reg-department-select"
-              value={regDepartment}
-              label="Department"
-              onChange={(e) => setRegDepartment(e.target.value)}
+              labelId="reg-company-label"
+              value={regCompanyCode}
+              label="Company"
+              onChange={(e) => setRegCompanyCode(e.target.value)}
               sx={{
                 borderRadius: "30px",
                 backgroundColor: "#EAF1FF",
@@ -332,12 +391,46 @@ const LoginCard = ({
                 },
               }}
             >
-              <MenuItem value="General">General</MenuItem>
-              <MenuItem value="IT">IT</MenuItem>
-              <MenuItem value="Support">Support</MenuItem>
-              <MenuItem value="Operations">Operations</MenuItem>
-              <MenuItem value="Billing">Billing</MenuItem>
+              {COMPANIES.map((c) => (
+                <MenuItem key={c.code} value={c.code}>
+                  {c.label}
+                </MenuItem>
+              ))}
             </Select>
+            {errors.company && (
+              <FormHelperText>{errors.company}</FormHelperText>
+            )}
+          </FormControl>
+
+          {/* Department Dropdown — now uses department_id */}
+          <FormControl
+            fullWidth
+            error={!!errors.department}
+            sx={{ mt: 2.5 }}
+          >
+            <InputLabel id="reg-department-label" sx={{ ml: 1 }}>Department</InputLabel>
+            <Select
+              labelId="reg-department-label"
+              value={regDepartmentId}
+              label="Department"
+              onChange={(e) => setRegDepartmentId(Number(e.target.value))}
+              sx={{
+                borderRadius: "30px",
+                backgroundColor: "#EAF1FF",
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 1,
+                },
+              }}
+            >
+              {DEPARTMENTS.map((d) => (
+                <MenuItem key={d.id} value={d.id}>
+                  {d.label}
+                </MenuItem>
+              ))}
+            </Select>
+            {errors.department && (
+              <FormHelperText>{errors.department}</FormHelperText>
+            )}
           </FormControl>
 
           <TextField
@@ -396,13 +489,7 @@ const LoginCard = ({
             }}
           />
 
-          <Box
-            sx={{
-              mt: 4,
-              display: "flex",
-              gap: 2,
-            }}
-          >
+          <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
             <Button
               fullWidth
               variant="contained"

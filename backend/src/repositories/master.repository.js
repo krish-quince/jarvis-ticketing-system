@@ -1,6 +1,6 @@
 import pool from "../config/db.js";
 
-export const getCategories = async (companyId) => {
+export const getCategories = async () => {
   const result = await pool.query(
     `
     SELECT
@@ -8,11 +8,10 @@ export const getCategories = async (companyId) => {
       category_name,
       category_description
     FROM ticket_categories
-    WHERE company_id = $1
-      AND is_active = true
+    WHERE is_active = true
     ORDER BY category_name
     `,
-    [companyId]
+    []
   );
 
   return result.rows;
@@ -36,7 +35,6 @@ export const getPriorities = async () => {
 };
 
 export const getSubCategories = async (
-  companyId,
   categoryId
 ) => {
 
@@ -48,20 +46,18 @@ export const getSubCategories = async (
       subcategory_description,
       assigned_user_code
     FROM ticket_subcategories
-    WHERE company_id = $1
-      AND category_id = $2
-      AND is_active = true
+    WHERE category_id = $1
+    AND is_active = true
     ORDER BY subcategory_name
     `,
-    [companyId, categoryId]
+    [categoryId]
   );
 
   return result.rows;
 };
 
 export const getSubCategoryById = async (
-  subcategoryId,
-  companyId
+  subcategoryId
 ) => {
 
   const result = await pool.query(
@@ -69,15 +65,13 @@ export const getSubCategoryById = async (
     SELECT
       subcategory_id,
       category_id,
-      company_id,
       subcategory_name,
       assigned_user_code
     FROM ticket_subcategories
     WHERE subcategory_id = $1
-      AND company_id = $2
       AND is_active = true
     `,
-    [subcategoryId, companyId]
+    [subcategoryId]
   );
 
   return result.rows[0];
@@ -85,7 +79,7 @@ export const getSubCategoryById = async (
 
 export const getAssignableUsers = async (
   subcategoryId, 
-  companyId
+  companyCode
 ) => {
 
   const subCategoryResult =
@@ -94,9 +88,8 @@ export const getAssignableUsers = async (
       SELECT assigned_user_code
       FROM ticket_subcategories
       WHERE subcategory_id = $1
-      AND company_id = $2
       `,
-      [subcategoryId, companyId]
+      [subcategoryId]
     );
 
   if (
@@ -116,19 +109,19 @@ export const getAssignableUsers = async (
   const departmentResult =
     await pool.query(
       `
-      SELECT department
+      SELECT department_id
       FROM users
       WHERE user_code = $1
-      AND company_id = $2
+      AND company_code = $2
       `,
-      [routingUser, companyId]
+      [routingUser, companyCode]
     );
 
-  const department =
+  const departmentId =
     departmentResult.rows[0]
-      ?.department;
+      ?.department_id;
 
-  if (!department) {
+  if (!departmentId) {
     return [];
   }
 
@@ -140,12 +133,12 @@ export const getAssignableUsers = async (
         first_name,
         last_name
       FROM users
-      WHERE department = $1
-      AND company_id = $2
+      WHERE department_id = $1
+      AND company_code = $2
       AND is_active = true
       ORDER BY first_name
       `,
-      [department, companyId]
+      [departmentId, companyCode]
     );
 
   return usersResult.rows;

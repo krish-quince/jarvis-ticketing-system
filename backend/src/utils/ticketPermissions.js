@@ -8,7 +8,7 @@ export const canAccessTicket = (ticket, user) => {
     return (
         ticket.assigned_to_user_code === user.userCode ||
         ticket.raised_by_user_code === user.userCode ||
-        ticket.department === (user.department || "General")
+        Number(ticket.department_id) === (user.departmentId)
     );
 };
 

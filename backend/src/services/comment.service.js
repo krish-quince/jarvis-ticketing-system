@@ -2,7 +2,7 @@ import * as commmentRepository from "../repositories/comment.repository.js";
 
 export const createComment = async(ticketId, commentText, user) => {
 
-    const ticket = await commmentRepository.getTicketById(ticketId, user.companyId);
+    const ticket = await commmentRepository.getTicketById(ticketId, user.companyCode);
 
     if(!ticket) {
         throw new Error("Ticket not found.");
@@ -11,7 +11,7 @@ export const createComment = async(ticketId, commentText, user) => {
     if (user && Number(user.roleId) !== 1 &&
         ticket.assigned_to_user_code !== user.userCode &&
         ticket.raised_by_user_code !== user.userCode &&
-        ticket.department !== user.department) {
+        Number(ticket.department_id) !== Number(user.departmentId)) {
         throw new Error("Access denied to this ticket.");
     }
 
@@ -21,7 +21,7 @@ export const createComment = async(ticketId, commentText, user) => {
 };
 
 export const getCommentsByTicketId = async(ticketId, user) => {
-    const ticket = await commmentRepository.getTicketById(ticketId, user.companyId);
+    const ticket = await commmentRepository.getTicketById(ticketId, user.companyCode);
 
     if(!ticket) {
         throw new Error("Ticket not found.");
@@ -30,9 +30,9 @@ export const getCommentsByTicketId = async(ticketId, user) => {
     if (user && Number(user.roleId) !== 1 &&
         ticket.assigned_to_user_code !== user.userCode &&
         ticket.raised_by_user_code !== user.userCode &&
-        ticket.department !== user.department) {
+        Number(ticket.department_id) !== Number(user.departmentId)) {
         throw new Error("Access denied to this ticket.");
     }
 
-    return await commmentRepository.getCommentsByTicketId(ticketId, user.companyId);
+    return await commmentRepository.getCommentsByTicketId(ticketId, user.companyCode);
 };

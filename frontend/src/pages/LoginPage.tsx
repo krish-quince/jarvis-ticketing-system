@@ -28,27 +28,25 @@ const LoginPage = () => {
     setToast((prev) => ({ ...prev, open: false }));
   };
 
-  const handleLogin = async () => {
+  const handleLogin = async (loginData: {
+    email: string;
+    password: string;
+    company_code: string;
+  }) => {
     try {
       const data: any = await login(
-        email,
-        password
+        loginData.email,
+        loginData.password,
+        loginData.company_code,
       );
 
-      localStorage.setItem(
-        "token",
-        data.token
-      );
+      localStorage.setItem("token", data.token);
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify(data.user)
-      );
+      localStorage.setItem("user", JSON.stringify(data.user));
 
       console.log("Login Success:", data);
 
       navigate("/tickets");
-
     } catch (error) {
       console.error(error);
       setToast({
@@ -63,26 +61,39 @@ const LoginPage = () => {
     first_name: string;
     last_name: string;
     email: string;
-    department: string;
+
+    company_code: string;
+    department_id: number;
+    role_id: number;
+
     password?: string;
   }) => {
     try {
       // Generate a unique user code (e.g. QC_KRIS_4321)
-      const namePrefix = `${userData.first_name.slice(0, 3)}${userData.last_name.slice(0, 3)}`.toUpperCase();
+      const namePrefix =
+        `${userData.first_name.slice(0, 3)}${userData.last_name.slice(0, 3)}`.toUpperCase();
       const uniqueSuffix = Math.floor(1000 + Math.random() * 9000);
-      const userCode = `QC_${namePrefix}_${uniqueSuffix}`;
+      const userCode = `${userData.company_code}_${namePrefix}_${uniqueSuffix}`;
 
       // Call backend auth/register mapping standard required DB fields
       const result = await register({
-        company_id: 1, // Default to Quince Capital
-        role_id: 4, // Default to Customer role
+        company_code: userData.company_code,
+
+        role_id: userData.role_id,
+
         user_code: userCode,
+
         first_name: userData.first_name,
+
         last_name: userData.last_name,
+
         email: userData.email,
-        password: userData.password || "password123", // Fallback password
-        phone: "", // Optional column
-        department: userData.department || "General",
+
+        password: userData.password || "password123",
+
+        phone: "",
+
+        department_id: userData.department_id,
       });
 
       setToast({
@@ -92,7 +103,9 @@ const LoginPage = () => {
       });
     } catch (error: any) {
       console.error(error);
-      const errMsg = error.response?.data?.message || "Registration failed. Please try again.";
+      const errMsg =
+        error.response?.data?.message ||
+        "Registration failed. Please try again.";
       setToast({
         open: true,
         message: errMsg,
