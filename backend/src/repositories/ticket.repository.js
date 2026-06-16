@@ -359,3 +359,30 @@ export const updateTicketDetails = async (
   );
   return result.rows[0];
 };
+
+export const updateTicketDueDate = async (
+  ticketId,
+  dueDate,
+  companyCode,
+  client = null
+) => {
+
+  const db = client || pool;
+
+  const result = await db.query(
+    `
+      UPDATE tickets
+      SET
+        due_date = $1,
+        update_timestamp = CURRENT_TIMESTAMP
+      WHERE
+        ticket_id = $2
+      AND
+        company_code = $3
+      RETURNING *
+    `,
+    [dueDate, ticketId, companyCode]
+  );
+
+  return result.rows[0];
+};

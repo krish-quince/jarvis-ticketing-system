@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict ETHHZ0hIKaTniZaBvEdjoKmi9HYZwSYsXMkD6RK1hJkISCFfw6qJLZItYTklid0
+\restrict zTDk4sjRxsx9r2rvkzP5O4aQjOR4XGVGXRyrm8GVJGFhnlzhCp9PpxUwvXTGqkn
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
 
--- Started on 2026-06-16 16:05:34
+-- Started on 2026-06-16 16:18:22
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -783,6 +783,11 @@ COPY public.ticket_comments (comment_id, ticket_id, commented_by_user_code, comm
 
 COPY public.ticket_history (history_id, ticket_id, field_changed, old_value, new_value, changed_by_user_code, changed_at) FROM stdin;
 2	5	Created		Ticket Created	QC_KRIBHO_8071	2026-06-16 15:53:30.427804
+3	6	Created		Ticket Created	QC_KRIBHO_8071	2026-06-16 16:11:07.760284
+4	7	Created		Ticket Created	QC_KRIBHO_8071	2026-06-16 16:11:33.797776
+5	8	Created		Ticket Created	QC_KRIBHO_8071	2026-06-16 16:12:28.789536
+6	9	Created		Ticket Created	QC_KRIBHO_8071	2026-06-16 16:12:45.197581
+7	10	Created		Ticket Created	QC_KRIBHO_8071	2026-06-16 16:13:09.295002
 \.
 
 
@@ -836,6 +841,11 @@ COPY public.ticket_subcategories (subcategory_id, category_id, subcategory_name,
 
 COPY public.tickets (ticket_id, ticket_no, subject, description, category_id, priority_id, status_id, raised_by_user_code, assigned_to_user_code, resolved_by_user_code, due_date, resolution_date, is_recurring, update_timestamp, user_code, subcategory_id, department_id, company_code) FROM stdin;
 5	TKT-1781605410382	Hello from krish	<p>Testing by krish.</p>	1	2	1	QC_KRIBHO_8071	SAL001	\N	\N	\N	f	2026-06-16 15:53:30.427804	\N	6	1	QC
+6	TKT-1781606467724	kjyffiyo	<p>k,cty,uyo,y</p>	2	2	1	QC_KRIBHO_8071	IT002	\N	\N	\N	f	2026-06-16 16:11:07.760284	\N	9	1	QC
+7	TKT-1781606493700	?>mnbvfsx	<p>;/ljhmgbf</p>	1	3	1	QC_KRIBHO_8071	FIN001	\N	\N	\N	f	2026-06-16 16:11:33.797776	\N	7	1	QC
+8	TKT-1781606548742	.l/ic.d7od7co/	<p>ct,kutcu7o6c</p>	2	3	1	QC_KRIBHO_8071	IT001	\N	\N	\N	f	2026-06-16 16:12:28.789536	\N	8	1	QC
+9	TKT-1781606565194	jgh c.	<p>hvyhyli,yob</p>	2	1	1	QC_KRIBHO_8071	IT001	\N	\N	\N	f	2026-06-16 16:12:45.197581	\N	8	1	QC
+10	TKT-1781606589251	,vu6f,6o6xcoxs6	<p>mvtliuv,.l</p>	2	3	1	QC_KRIBHO_8071	IT001	\N	\N	\N	f	2026-06-16 16:13:09.295002	\N	9	1	QC
 \.
 
 
@@ -933,7 +943,7 @@ SELECT pg_catalog.setval('public.ticket_comments_comment_id_seq', 1, true);
 -- Name: ticket_history_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 2, true);
+SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 7, true);
 
 
 --
@@ -969,7 +979,7 @@ SELECT pg_catalog.setval('public.ticket_subcategories_subcategory_id_seq', 5, tr
 -- Name: tickets_ticket_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.tickets_ticket_id_seq', 5, true);
+SELECT pg_catalog.setval('public.tickets_ticket_id_seq', 10, true);
 
 
 --
@@ -1323,11 +1333,11 @@ ALTER TABLE ONLY public.users
     ADD CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES public.roles(role_id);
 
 
--- Completed on 2026-06-16 16:05:35
+-- Completed on 2026-06-16 16:18:22
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ETHHZ0hIKaTniZaBvEdjoKmi9HYZwSYsXMkD6RK1hJkISCFfw6qJLZItYTklid0
+\unrestrict zTDk4sjRxsx9r2rvkzP5O4aQjOR4XGVGXRyrm8GVJGFhnlzhCp9PpxUwvXTGqkn
 

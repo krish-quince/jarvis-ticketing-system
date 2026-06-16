@@ -223,3 +223,49 @@ export const resolveTicket = async(req, res) => {
         return sendTicketError(res, error);
     }
 };
+
+export const takeoverTicket = async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+
+        const ticket = await ticketService.takeoverTicket(
+            ticketId,
+            req.user
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: ticket,
+        });
+    } catch (error) {
+        console.error(error);
+
+        return sendTicketError(res, error);
+    }
+};
+
+export const updateTicketDueDate = async (req, res) => {
+    try {
+
+        const { ticketId } = req.params;
+        const { due_date } = req.body;
+
+        const ticket =
+            await ticketService.updateTicketDueDate(
+                ticketId,
+                due_date,
+                req.user
+            );
+
+        return res.status(200).json({
+            success: true,
+            data: ticket,
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return sendTicketError(res, error);
+    }
+};

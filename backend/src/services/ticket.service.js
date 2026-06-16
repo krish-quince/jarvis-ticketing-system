@@ -557,3 +557,131 @@ export const resolveTicket = async (ticketId, statusId, user) => {
     client.release();
   }
 };
+
+export const takeoverTicket = async (ticketId, user) => {
+
+  const ticket = await ticketRepository.getTicketById(
+    ticketId,
+    user.companyCode
+  );
+
+  if (!ticket) {
+    throw new Error("Ticket not found.");
+  }
+
+  if (!canAccessTicket(ticket, user)) {
+    throw new Error("Access denied to this ticket.");
+  }
+
+  const oldValue = ticket.assigned_to_user_code ?? "";
+
+  if (oldValue === user.userCode) {
+    return ticket;
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const updatedTicket =
+      await ticketRepository.updateTicketAssignee(
+        ticketId,
+        user.userCode,
+        user.companyCode,
+        client
+      );
+
+    await historyService.createHistory(
+      ticketId,
+      "Takeover",
+      String(oldValue),
+      String(user.userCode),
+      user.userCode,
+      client
+    );
+
+    await client.query("COMMIT");
+
+    return updatedTicket;
+
+  } catch (error) {
+
+    await client.query("ROLLBACK");
+    throw error;
+
+  } finally {
+
+    client.release();
+  }
+};
+
+export const updateTicketDueDate = async (
+  ticketId,
+  dueDate,
+  user
+) => {
+
+  if (!dueDate) {
+    throw new Error("due_date is required.");
+  }
+
+  const ticket = await ticketRepository.getTicketById(
+    ticketId,
+    user.companyCode
+  );
+
+  if (!ticket) {
+    throw new Error("Ticket not found.");
+  }
+
+  if (!canAccessTicket(ticket, user)) {
+    throw new Error("Access denied to this ticket.");
+  }
+
+  if (!canManageTicket(user)) {
+    throw new Error(
+      "Access denied. Only technicians can update due date."
+    );
+  }
+
+  const client = await pool.connect();
+
+  try {
+
+    await client.query("BEGIN");
+
+    const updatedTicket =
+      await ticketRepository.updateTicketDueDate(
+        ticketId,
+        dueDate,
+        user.companyCode,
+        client
+      );
+
+    await historyService.createHistory(
+      ticketId,
+      "DueDate",
+      ticket.due_date
+        ? String(ticket.due_date)
+        : "",
+      String(dueDate),
+      user.userCode,
+      client
+    );
+
+    await client.query("COMMIT");
+
+    return updatedTicket;
+
+  } catch (error) {
+
+    await client.query("ROLLBACK");
+    throw error;
+
+  } finally {
+
+    client.release();
+  }
+};
+
