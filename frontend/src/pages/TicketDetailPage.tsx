@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import RichTextEditor from "../components/RichTextEditor";
 import {
   Box,
   Typography,
   Card,
   Grid,
   Button,
-  Avatar,
-  TextField,
+  
   Divider,
   CircularProgress,
   Snackbar,
@@ -20,7 +20,6 @@ import {
   Reply as ReplyIcon,
   Input as TakeoverIcon,
   CheckCircleOutlined as CloseIcon,
-  Send as SendIcon,
   MoreHoriz as MoreIcon,
   Info as InfoIcon,
   AccessTime as AccessTimeIcon,
@@ -45,11 +44,12 @@ const TicketDetailPage = () => {
   const [ticket, setTicket] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [newComment, setNewComment] = useState("");
+  
   const [loading, setLoading] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [updatingMetadata, setUpdatingMetadata] = useState(false);
-
+const [showReplyEditor, setShowReplyEditor] = useState(false);
+const [replyHtml, setReplyHtml] = useState("");
   // Dropdown Menu Anchors
   const [statusAnchor, setStatusAnchor] = useState<null | HTMLElement>(null);
   const [priorityAnchor, setPriorityAnchor] = useState<null | HTMLElement>(null);
@@ -72,7 +72,7 @@ const TicketDetailPage = () => {
     }
   })();
 
-  const userInitials = `${loggedInUser.first_name?.[0] || ""}${loggedInUser.last_name?.[0] || ""}`.toUpperCase() || "KB";
+  
   const isAdminOrDev = loggedInUser.role_id === 1 || loggedInUser.role_id === 3;
 
   useEffect(() => {
@@ -114,31 +114,92 @@ const TicketDetailPage = () => {
   };
 
   const handlePostComment = async () => {
-    if (!newComment.trim()) return;
+  const plainText = replyHtml
+  .replace(/<[^>]*>/g, "")
+  .replace(/&nbsp;/g, "")
+  .trim();
 
-    try {
-      setSubmittingComment(true);
-      const comment = await createComment(ticketId, newComment);
-      
-      // Update list
-      setComments((prev) => [...prev, comment]);
-      setNewComment("");
-      setToast({
-        open: true,
-        message: "Reply added successfully",
-        severity: "success",
-      });
-    } catch (error: any) {
-      console.error(error);
-      setToast({
-        open: true,
-        message: error.response?.data?.message || "Failed to add reply",
-        severity: "error",
-      });
-    } finally {
-      setSubmittingComment(false);
-    }
-  };
+if (!plainText) return;
+
+  try {
+    setSubmittingComment(true);
+
+    await createComment(
+      ticketId,
+      replyHtml
+    );
+
+    await fetchData();
+
+    setReplyHtml("");
+    setShowReplyEditor(false);
+
+    setToast({
+      open: true,
+      message: "Reply added successfully",
+      severity: "success",
+    });
+  } catch (error: any) {
+    console.error(error);
+
+    setToast({
+      open: true,
+      message:
+        error.response?.data?.message ||
+        "Failed to add reply",
+      severity: "error",
+    });
+  } finally {
+    setSubmittingComment(false);
+  }
+};
+
+const handleReplyAndResolve = async () => {
+  const plainText = replyHtml
+  .replace(/<[^>]*>/g, "")
+  .replace(/&nbsp;/g, "")
+  .trim();
+
+if (!plainText) return;
+
+  try {
+    setSubmittingComment(true);
+
+    await createComment(
+      ticketId,
+      replyHtml
+    );
+
+    await updateTicketStatus(
+      ticketId,
+      4
+    );
+
+    await fetchData();
+
+    setReplyHtml("");
+    setShowReplyEditor(false);
+
+    setToast({
+      open: true,
+      message:
+        "Reply added and ticket resolved",
+      severity: "success",
+    });
+  } catch (error: any) {
+    console.error(error);
+
+    setToast({
+      open: true,
+      message:
+        error.response?.data?.message ||
+        "Operation failed",
+      severity: "error",
+    });
+  } finally {
+    setSubmittingComment(false);
+  }
+};
 
   const handleCloseTicket = async () => {
     try {
@@ -297,23 +358,23 @@ const TicketDetailPage = () => {
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", flexWrap: "wrap", gap: 1.5 }}>
             <Box sx={{ display: "flex", gap: 1.5 }}>
               <Button
-                variant="outlined"
-                startIcon={<ReplyIcon />}
-                onClick={() => {
-                  document.getElementById("reply-textarea")?.focus();
-                }}
-                sx={{
-                  borderRadius: "6px",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  color: "var(--text)",
-                  borderColor: "var(--border)",
-                  backgroundColor: "var(--bg-card)",
-                  "&:hover": { borderColor: "#3A3482", backgroundColor: "rgba(58, 52, 130, 0.05)" },
-                }}
-              >
-                Reply
-              </Button>
+  variant="outlined"
+  startIcon={<ReplyIcon />}
+  onClick={() => {
+    console.log("Reply clicked");
+    setShowReplyEditor(prev => !prev);
+  }}
+
+  sx={{
+    borderRadius: "6px",
+    textTransform: "none",
+    fontWeight: 600,
+    color: "var(--text)",
+    borderColor: "var(--border)",
+  }}
+>
+  Reply
+</Button>
 
               {isAdminOrDev && ticket.assigned_to_user_code !== loggedInUser.user_code && (
                 <Button
@@ -406,69 +467,118 @@ const TicketDetailPage = () => {
               {ticket.subject}
             </Typography>
 
-            <Typography variant="body1" sx={{ whiteSpace: "pre-wrap", color: "var(--text)", lineHeight: 1.6, fontSize: "15px", mb: 2 }}>
-              {ticket.description || "No description provided."}
-            </Typography>
+            <Box
+  sx={{
+    color: "var(--text)",
+    lineHeight: 1.6,
+    fontSize: "15px",
+    mb: 2,
 
+    "& img": {
+      maxWidth: "100%",
+      borderRadius: "8px",
+    },
+
+    "& p": {
+      margin: "8px 0",
+    },
+
+    "& ul": {
+      paddingLeft: "20px",
+    },
+
+    "& ol": {
+      paddingLeft: "20px",
+    },
+
+    "& pre": {
+      overflowX: "auto",
+    },
+  }}
+  dangerouslySetInnerHTML={{
+    __html:
+      ticket.description ||
+      "No description provided.",
+  }}
+/>
             <Divider sx={{ my: 1, borderColor: "var(--border)" }} />
+            {showReplyEditor && (
+  <Card
+    sx={{
+      mt: 2,
+      border: "1px solid var(--border)",
+      borderRadius: 2,
+      overflow: "hidden",
+    }}
+  >
+    <Box sx={{ p: 2 }}>
+      <Typography
+        variant="subtitle2"
+        sx={{ mb: 2 }}
+      >
+        Reply to:
+        {" "}
+        {ticket.raised_by_name ??
+          ticket.raised_by_user_code}
+      </Typography>
 
-            {/* Quick Reply Box with inner footer */}
-            <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", mt: 1 }}>
-              <Avatar
-                sx={{
-                  width: 36,
-                  height: 36,
-                  fontSize: "14px",
-                  fontWeight: 700,
-                  backgroundColor: "#F4C63D",
-                  color: "#211B5A",
-                }}
-              >
-                {userInitials}
-              </Avatar>
-              <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "1px solid var(--border)", borderRadius: "8px", overflow: "hidden", backgroundColor: "rgba(0,0,0,0.01)" }}>
-                <TextField
-                  id="reply-textarea"
-                  placeholder="Reply..."
-                  multiline
-                  rows={3}
-                  fullWidth
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      padding: "12px",
-                      color: "var(--text)",
-                      "& fieldset": { border: "none" },
-                    },
-                  }}
-                />
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, py: 1, borderTop: "1px solid var(--border)", backgroundColor: "rgba(0,0,0,0.02)" }}>
-                  <Typography variant="caption" sx={{ color: "var(--text-secondary)", fontStyle: "italic" }}>
-                    (subscribers: {ticket.raised_by_user_code})
-                  </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    {newComment.trim() && (
-                      <Typography variant="caption" sx={{ color: "var(--text-secondary)", fontSize: "11px" }}>
-                        Press Submit to send
-                      </Typography>
-                    )}
-                    <IconButton
-                      onClick={handlePostComment}
-                      disabled={submittingComment || !newComment.trim()}
-                      sx={{
-                        color: "#3A3482",
-                        "&:hover": { color: "#2D2675" },
-                        p: 0.5,
-                        "&.Mui-disabled": { color: "var(--text-secondary)", opacity: 0.5 }
-                      }}
-                    >
-                      <SendIcon sx={{ fontSize: 20 }} />
-                    </IconButton>
-                  </Box>
-                </Box>
-              </Box>
-            </Box>
+      <RichTextEditor
+        value={replyHtml}
+        onChange={setReplyHtml}
+      />
+
+      <Box
+        sx={{
+          display: "flex",
+          gap: 2,
+          mt: 2,
+        }}
+      >
+        <Button
+          variant="contained"
+          onClick={handlePostComment}
+        >
+          Reply
+        </Button>
+
+        <Button
+          variant="outlined"
+          onClick={handleReplyAndResolve}
+        >
+          Reply & Resolve
+        </Button>
+
+        <Button
+          onClick={() => {
+            setShowReplyEditor(false);
+            setReplyHtml("");
+          }}
+        >
+          Cancel
+        </Button>
+      </Box>
+    </Box>
+  </Card>
+)}
+<Card
+  sx={{
+    p: 2,
+    border: "1px solid var(--border)",
+    borderRadius: 2,
+    cursor: "pointer",
+    backgroundColor: "var(--bg-card)",
+  }}
+  onClick={() => setShowReplyEditor(true)}
+>
+  <Typography
+    sx={{
+      color: "var(--text-secondary)",
+    }}
+  >
+    Reply...
+  </Typography>
+</Card>
+
           </Card>
 
 
@@ -517,16 +627,33 @@ const TicketDetailPage = () => {
                               {new Date(comment.created_at).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </Typography>
                             <Typography variant="body2" sx={{ fontWeight: 700, color: "#3A3482" }}>
-                              {comment.commented_by_user_code}
+                              {comment.commented_by_name ??
+  comment.commented_by_user_code}
                             </Typography>
                           </Box>
                           <IconButton size="small" sx={{ color: "var(--text-secondary)", p: 0.5 }}>
                             <InfoIcon sx={{ fontSize: 15 }} />
                           </IconButton>
                         </Box>
-                        <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", color: "var(--text)", lineHeight: 1.55 }}>
-                          {comment.comment_text}
-                        </Typography>
+                        <Box
+  sx={{
+    color: "var(--text)",
+    lineHeight: 1.55,
+
+    "& img": {
+      maxWidth: "100%",
+      borderRadius: "8px",
+    },
+
+    "& p": {
+      margin: "6px 0",
+    },
+  }}
+  dangerouslySetInnerHTML={{
+    __html:
+      comment.comment_text,
+  }}
+/>
                       </Box>
                     </Box>
                   );
@@ -623,7 +750,8 @@ const TicketDetailPage = () => {
                   From:
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: "#3A3482", flex: 1 }}>
-                  {ticket.raised_by_user_code}
+                  {ticket.raised_by_name ??
+  ticket.raised_by_user_code}
                 </Typography>
                 {isAdminOrDev && (
                   <IconButton size="small" disabled sx={{ color: "var(--text-secondary)", p: 0.5, opacity: 0.3 }}>
@@ -809,7 +937,7 @@ const TicketDetailPage = () => {
         open={Boolean(assigneeAnchor)}
         onClose={() => setAssigneeAnchor(null)}
       >
-        <MenuItem onClick={() => handleAssigneeChange("")}>
+        <MenuItem onClick={() => handleAssigneeChange("null as any")}>
           <em>Unassigned</em>
         </MenuItem>
         {users.map((u) => (

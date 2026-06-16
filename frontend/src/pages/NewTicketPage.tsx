@@ -58,8 +58,7 @@ const selectedItemSx = {
 const panelSx = {
   width: 240,
   py: "6px",
-  overflowY: "auto" as const,
-  maxHeight: 360,
+  
 };
 
 const NewTicketPage = () => {
@@ -348,104 +347,208 @@ const NewTicketPage = () => {
               </Button>
 
               <Popover
-                open={popoverOpen}
-                anchorEl={categoryBtnRef.current}
-                onClose={closePopover}
-                anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-                transformOrigin={{ vertical: "top", horizontal: "left" }}
-                PaperProps={{
-                  sx: {
-                    mt: 0.5,
-                    background: "var(--bg-card)",
-                    border: "1px solid var(--border)",
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.28)",
-                    borderRadius: "10px",
-                    overflow: "hidden",
-                    width: 240,
-                  },
-                }}
-              >
-                {activePanel === "categories" && (
-                  <Box sx={panelSx}>
-                    <Box
-                      sx={!categoryId && !subcategoryId ? selectedItemSx : menuItemSx}
-                      onClick={() => {
-                        setCategoryId("");
-                        setSubcategoryId("");
-                        setAssignTo("");
-                        setAssignableUsers([]);
-                        closePopover();
-                      }}
-                    >
-                      (Select category)
-                    </Box>
+  open={popoverOpen}
+  anchorEl={categoryBtnRef.current}
+  onClose={closePopover}
+  anchorOrigin={{
+    vertical: "bottom",
+    horizontal: "left",
+  }}
+  transformOrigin={{
+    vertical: "top",
+    horizontal: "left",
+  }}
+  PaperProps={{
+  sx: {
+    mt: 0.5,
+    background: "var(--bg-card)",
+    border: "1px solid var(--border)",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.28)",
+    borderRadius: "10px",
+    overflow: "hidden",
+    width: 240,
+    maxHeight: 360,
+  },
+}}
+>
+  <Box
+    sx={{
+      
+      width: 240,
+      
+      overflow: "hidden",
+    }}
+  >
+    {/* Categories Panel */}
 
-                    <Box sx={{ height: 1, background: "var(--border)", mx: 2, my: "4px" }} />
+    <Box
+  sx={{
+    width: 480,
+    display: "flex",
+    alignItems: "flex-start", // <-- ADD HERE
+    transform:
+      activePanel === "categories"
+        ? "translateX(0)"
+        : "translateX(-240px)",
+    transition: "transform 250ms ease",
+  }}
+>
+  {/* Categories Panel */}
 
-                    {categories.map((cat) => {
-                      const subs = allSubCategories[String(cat.category_id)] || [];
-                      const hasSubs = subs.length > 0;
-                      const isSelected = String(cat.category_id) === categoryId;
+  <Box
+    sx={{
+      ...panelSx,
+      width: 240,
+      flexShrink: 0,
+    }}
+  >
+    <Box
+      sx={
+        !categoryId && !subcategoryId
+          ? selectedItemSx
+          : menuItemSx
+      }
+      onClick={() => {
+        setCategoryId("");
+        setSubcategoryId("");
+        setAssignTo("");
+        setAssignableUsers([]);
+        closePopover();
+      }}
+    >
+      (Select category)
+    </Box>
 
-                      return (
-                        <Box
-                          key={cat.category_id}
-                          sx={isSelected ? selectedItemSx : menuItemSx}
-                          onClick={() => handleCategoryClick(cat)}
-                        >
-                          <span>{cat.category_name}</span>
-                          {hasSubs && (
-                            <KeyboardArrowRightIcon sx={{ fontSize: 16, opacity: 0.6, ml: 1 }} />
-                          )}
-                        </Box>
-                      );
-                    })}
-                  </Box>
-                )}
+    <Box
+      sx={{
+        height: 1,
+        background: "var(--border)",
+        mx: 2,
+        my: "4px",
+      }}
+    />
 
-                {activePanel === "subcategories" && hoveredCat && (
-                  <Box sx={panelSx}>
-                    <Box
-                      sx={{
-                        ...menuItemSx,
-                        color: "var(--text-secondary)",
-                        fontSize: 13,
-                        mb: "2px",
-                      }}
-                      onClick={handleBackToCategories}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                        <KeyboardArrowLeftIcon sx={{ fontSize: 16 }} />
-                        <span>{hoveredCat.category_name}</span>
-                      </Box>
-                    </Box>
+    {categories.map((cat) => {
+      const subs =
+        allSubCategories[
+          String(cat.category_id)
+        ] || [];
 
-                    <Box sx={{ height: 1, background: "var(--border)", mx: 2, my: "4px" }} />
+      const isSelected =
+        String(cat.category_id) ===
+        categoryId;
 
-                    {subPanel.length === 0 ? (
-                      <Box sx={{ px: 2, py: 2, fontSize: 13, color: "var(--text-secondary)" }}>
-                        No subcategories
-                      </Box>
-                    ) : (
-                      subPanel.map((sub) => {
-                        const isSelected =
-                          String(hoveredCat.category_id) === categoryId &&
-                          String(sub.subcategory_id) === subcategoryId;
+      return (
+        <Box
+          key={cat.category_id}
+          sx={
+            isSelected
+              ? selectedItemSx
+              : menuItemSx
+          }
+          onClick={() =>
+            handleCategoryClick(cat)
+          }
+        >
+          <span>{cat.category_name}</span>
 
-                        return (
-                          <Box
-                            key={sub.subcategory_id}
-                            sx={isSelected ? selectedItemSx : menuItemSx}
-                            onClick={() => handleSubcategoryClick(sub)}
-                          >
-                            {sub.subcategory_name}
-                          </Box>
-                        );
-                      })
-                    )}
-                  </Box>
-                )}
-              </Popover>
+          {subs.length > 0 && (
+            <KeyboardArrowRightIcon
+              sx={{
+                fontSize: 16,
+                opacity: 0.6,
+              }}
+            />
+          )}
+        </Box>
+      );
+    })}
+  </Box>
+
+  {/* Subcategory Panel */}
+
+  <Box
+    sx={{
+      ...panelSx,
+      width: 240,
+      flexShrink: 0,
+    }}
+  >
+    <Box
+      sx={{
+        ...menuItemSx,
+        color: "var(--text-secondary)",
+        fontSize: 13,
+      }}
+      onClick={handleBackToCategories}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0.5,
+        }}
+      >
+        <KeyboardArrowLeftIcon
+          sx={{ fontSize: 16 }}
+        />
+        <span>
+          {hoveredCat?.category_name}
+        </span>
+      </Box>
+    </Box>
+
+    <Box
+      sx={{
+        height: 1,
+        background: "var(--border)",
+        mx: 2,
+        my: "4px",
+      }}
+    />
+
+    {subPanel.length === 0 ? (
+      <Box
+        sx={{
+          px: 2,
+          py: 2,
+          fontSize: 13,
+          color: "var(--text-secondary)",
+        }}
+      >
+        No subcategories
+      </Box>
+    ) : (
+      subPanel.map((sub) => {
+        const isSelected =
+          String(
+            hoveredCat?.category_id
+          ) === categoryId &&
+          String(
+            sub.subcategory_id
+          ) === subcategoryId;
+
+        return (
+          <Box
+            key={sub.subcategory_id}
+            sx={
+              isSelected
+                ? selectedItemSx
+                : menuItemSx
+            }
+            onClick={() =>
+              handleSubcategoryClick(sub)
+            }
+          >
+            {sub.subcategory_name}
+          </Box>
+        );
+      })
+    )}
+  </Box>
+</Box>
+  </Box>
+</Popover>
 
               <FormControl sx={{ minWidth: 160 }}>
                 <Select
