@@ -6,9 +6,7 @@ export const getCategories = async (
 ) => {
   try {
     const data =
-      await service.getCategories(
-        req.user.companyId
-      );
+      await service.getCategories();
 
     return res.status(200).json({
       success: true,
@@ -59,7 +57,6 @@ export const getSubCategories = async (
 
     const data =
       await service.getSubCategories(
-        req.user.companyId,
         categoryId
       );
 
@@ -88,7 +85,7 @@ export const getAssignableUsers = async (req, res) => {
     const users =
       await service.getAssignableUsers(
         subcategoryId,
-        req.user.companyId
+        req.user.companyCode
       );
 
     res.json({

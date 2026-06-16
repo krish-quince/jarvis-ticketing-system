@@ -19,8 +19,8 @@ export const createTicket = async (ticketData, user) => {
   // Resolve IDs by name if provided
   if (ticketData.category_name) {
     const res = await pool.query(
-      "SELECT category_id FROM ticket_categories WHERE category_name = $1 AND company_id = $2",
-      [ticketData.category_name, user.companyId],
+      "SELECT category_id FROM ticket_categories WHERE category_name = $1",
+      [ticketData.category_name],
     );
     if (res.rows.length > 0) category_id = res.rows[0].category_id;
   }
@@ -33,8 +33,8 @@ export const createTicket = async (ticketData, user) => {
   }
   if (ticketData.status_name) {
     const res = await pool.query(
-      "SELECT status_id FROM ticket_statuses WHERE status_name = $1 AND company_id = $2",
-      [ticketData.status_name, user.companyId],
+      "SELECT status_id FROM ticket_statuses WHERE status_name = $1",
+      [ticketData.status_name],
     );
     if (res.rows.length > 0) status_id = res.rows[0].status_id;
   }
@@ -42,8 +42,8 @@ export const createTicket = async (ticketData, user) => {
   // Fallbacks
   if (!category_id) {
     const res = await pool.query(
-      "SELECT category_id FROM ticket_categories WHERE company_id = $1 LIMIT 1",
-      [user.companyId],
+      "SELECT category_id FROM ticket_categories LIMIT 1",
+      [],
     );
     category_id = res.rows[0]?.category_id;
   }
@@ -56,8 +56,8 @@ export const createTicket = async (ticketData, user) => {
   }
   if (!status_id) {
     const res = await pool.query(
-      "SELECT status_id FROM ticket_statuses WHERE company_id = $1 AND is_default = true LIMIT 1",
-      [user.companyId],
+      "SELECT status_id FROM ticket_statuses WHERE is_default = true LIMIT 1",
+      [],
     );
     status_id = res.rows[0]?.status_id || 1;
   }
@@ -68,9 +68,9 @@ export const createTicket = async (ticketData, user) => {
     SELECT user_code
     FROM users
     WHERE user_code = $1
-    AND company_id = $2
+    AND company_code = $2
     `,
-      [assigned_to_user_code, user.companyId],
+      [assigned_to_user_code, user.companyCode],
     );
 
     if (assigneeResult.rows.length === 0) {
@@ -81,7 +81,6 @@ export const createTicket = async (ticketData, user) => {
   if (subcategory_id) {
     const subCategory = await masterRepository.getSubCategoryById(
       subcategory_id,
-      user.companyId,
     );
 
     if (!subCategory) {
@@ -99,26 +98,26 @@ export const createTicket = async (ticketData, user) => {
       if (routingUser) {
         const routingUserResult = await pool.query(
           `
-          SELECT department
+          SELECT department_id
           FROM users
           WHERE user_code = $1
-          AND company_id = $2
+          AND company_code = $2
           `,
-          [routingUser, user.companyId],
+          [routingUser, user.companyCode],
         );
 
-        const department = routingUserResult.rows[0]?.department;
+        const departmentId = routingUserResult.rows[0]?.department_id;
 
-        if (department) {
+        if (departmentId) {
           const departmentUsers = await pool.query(
             `
             SELECT user_code
             FROM users
-            WHERE department = $1
-            AND company_id = $2
+            WHERE department_id = $1
+            AND company_code = $2
             AND is_active = true
             `,
-            [department, user.companyId],
+            [departmentId, user.companyCode],
           );
 
           const users = departmentUsers.rows;
@@ -148,9 +147,9 @@ export const createTicket = async (ticketData, user) => {
     ticketNo,
 
     raisedByUserCode: user.userCode,
-    companyId: user.companyId,
+    companyCode: user.companyCode,
 
-    department: user.department || "General",
+    department_id: user.departmentId,
   };
 
   const client = await pool.connect();
@@ -180,9 +179,9 @@ export const createTicket = async (ticketData, user) => {
   }
 };
 
-export const getAllTickets = async (companyId, user, search, page, limit) => {
+export const getAllTickets = async (companyCode, user, search, page, limit) => {
   return await ticketRepository.getAllTickets(
-    companyId,
+    companyCode,
     user,
     search,
     page,
@@ -190,8 +189,8 @@ export const getAllTickets = async (companyId, user, search, page, limit) => {
   );
 };
 
-export const getTicketById = async (ticketId, companyId, user) => {
-  const ticket = await ticketRepository.getTicketById(ticketId, companyId);
+export const getTicketById = async (ticketId, companyCode, user) => {
+  const ticket = await ticketRepository.getTicketById(ticketId, companyCode);
   if (!ticket) return null;
   if (!canAccessTicket(ticket, user)) {
     throw new Error("Access denied to this ticket.");
@@ -204,7 +203,7 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
     throw new Error("status_id is required.");
   }
 
-  const ticket = await ticketRepository.getTicketById(ticketId, user.companyId);
+  const ticket = await ticketRepository.getTicketById(ticketId, user.companyCode);
 
   if (!ticket) {
     throw new Error("Ticket not found.");
@@ -233,8 +232,7 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
   }
 
   const status = await ticketRepository.getStatusByIdAndCompany(
-    statusId,
-    user.companyId,
+    statusId
   );
 
   if (!status) {
@@ -253,7 +251,7 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
     const updatedTicket = await ticketRepository.updateTicketStatus(
       ticketId,
       statusId,
-      user.companyId,
+      user.companyCode,
       client,
     );
 
@@ -282,7 +280,7 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
     throw new Error("assigned_to_user_code is required.");
   }
 
-  const ticket = await ticketRepository.getTicketById(ticketId, user.companyId);
+  const ticket = await ticketRepository.getTicketById(ticketId, user.companyCode);
 
   if (!ticket) {
     throw new Error("Ticket not found.");
@@ -300,7 +298,7 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
 
   const assignee = await ticketRepository.getUserByCodeAndCompany(
     assignedToUserCode,
-    user.companyId,
+    user.companyCode,
   );
 
   if (!assignee) {
@@ -321,7 +319,7 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
     const updatedTicket = await ticketRepository.updateTicketAssignee(
       ticketId,
       assignedToUserCode,
-      user.companyId,
+      user.companyCode,
       client,
     );
 
@@ -350,7 +348,7 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
     throw new Error("priority_id is required.");
   }
 
-  const ticket = await ticketRepository.getTicketById(ticketId, user.companyId);
+  const ticket = await ticketRepository.getTicketById(ticketId, user.companyCode);
 
   if (!ticket) {
     throw new Error("Ticket not found.");
@@ -388,7 +386,7 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
     const updatedTicket = await ticketRepository.updateTicketPriority(
       ticketId,
       priorityId,
-      user.companyId,
+      user.companyCode,
       client,
     );
 
@@ -417,7 +415,7 @@ export const updateTicketCategory = async (ticketId, categoryId, user) => {
     throw new Error("category_id is required.");
   }
 
-  const ticket = await ticketRepository.getTicketById(ticketId, user.companyId);
+  const ticket = await ticketRepository.getTicketById(ticketId, user.companyCode);
 
   if (!ticket) {
     throw new Error("Ticket not found.");
@@ -436,8 +434,7 @@ export const updateTicketCategory = async (ticketId, categoryId, user) => {
   }
 
   const category = await ticketRepository.getCategoryByIdAndCompany(
-    categoryId,
-    user.companyId,
+    categoryId
   );
 
   if (!category) {
@@ -456,7 +453,7 @@ export const updateTicketCategory = async (ticketId, categoryId, user) => {
     const updatedTicket = await ticketRepository.updateTicketCategory(
       ticketId,
       categoryId,
-      user.companyId,
+      user.companyCode,
       client,
     );
 
@@ -481,7 +478,7 @@ export const updateTicketCategory = async (ticketId, categoryId, user) => {
 };
 
 export const resolveTicket = async (ticketId, statusId, user) => {
-  const ticket = await ticketRepository.getTicketById(ticketId, user.companyId);
+  const ticket = await ticketRepository.getTicketById(ticketId, user.companyCode);
 
   if (!ticket) {
     throw new Error("Ticket not found.");
@@ -498,8 +495,8 @@ export const resolveTicket = async (ticketId, statusId, user) => {
   }
 
   const resolvedStatus = statusId
-    ? await ticketRepository.getStatusByIdAndCompany(statusId, user.companyId)
-    : await ticketRepository.getResolvedStatusByCompany(user.companyId);
+    ? await ticketRepository.getStatusByIdAndCompany(statusId)
+    : await ticketRepository.getResolvedStatusByCompany();
 
   if (!resolvedStatus) {
     throw new Error("Resolved status not found.");
@@ -524,7 +521,7 @@ export const resolveTicket = async (ticketId, statusId, user) => {
       ticketId,
       user.userCode,
       nextStatusId,
-      user.companyId,
+      user.companyCode,
       client,
     );
 

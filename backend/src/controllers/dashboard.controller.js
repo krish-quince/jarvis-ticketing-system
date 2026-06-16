@@ -2,7 +2,7 @@ import pool from "../config/db.js";
 
 export const getSummary = async (req, res) => {
     try {
-        const companyId = req.user.companyId;
+        const companyCode = req.user.companyCode;
 
         let query = `
             SELECT 
@@ -14,13 +14,13 @@ export const getSummary = async (req, res) => {
             FROM tickets t
             LEFT JOIN ticket_statuses s ON s.status_id = t.status_id
             LEFT JOIN ticket_priorities p ON p.priority_id = t.priority_id
-            WHERE t.company_id = $1
+            WHERE t.company_code = $1
         `;
-        const params = [companyId];
+        const params = [companyCode];
 
         if (req.user && Number(req.user.roleId) !== 1) {
-            query += ` AND (t.assigned_to_user_code = $2 OR t.raised_by_user_code = $3 OR t.department = $4)`;
-            params.push(req.user.userCode, req.user.userCode, req.user.department || 'General');
+            query += ` AND (t.assigned_to_user_code = $2 OR t.raised_by_user_code = $3 OR t.department_id = $4)`;
+            params.push(req.user.userCode, req.user.userCode, req.user.departmentId);
         }
 
         const result = await pool.query(query, params);
