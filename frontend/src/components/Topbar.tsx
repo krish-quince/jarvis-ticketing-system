@@ -63,7 +63,7 @@ const Topbar = () => {
     <AppBar position="sticky" elevation={0} sx={{ backgroundColor: "#211B5A", color: "#fff" }}>
       <Toolbar
         sx={{
-          minHeight: "76px !important",
+          minHeight: "100px  !important",
           px: { xs: 2, sm: 3, md: 4 },
           py: 0,
         }}
@@ -124,7 +124,7 @@ const Topbar = () => {
                 startIcon={<Add />}
                 onClick={() => navigate("/tickets/new")}
                 sx={{
-                  backgroundColor: "#3A3482",
+                  backgroundColor: "#211b5a",
                   color: "#fff",
                   fontWeight: 600,
                   textTransform: "none",
@@ -225,7 +225,7 @@ const Topbar = () => {
                         height: 28,
                         fontSize: "12px",
                         fontWeight: 700,
-                        backgroundColor: "#3A3482",
+                        backgroundColor: "#211b5a",
                         color: "#fff",
                       }}
                     >
@@ -240,7 +240,7 @@ const Topbar = () => {
                     fullWidth
                     onClick={handleCloseMenu}
                     sx={{
-                      backgroundColor: "#3A3482",
+                      backgroundColor: "#211b5a",
                       color: "#fff",
                       textTransform: "none",
                       fontWeight: 600,
@@ -255,7 +255,7 @@ const Topbar = () => {
                     fullWidth
                     onClick={handleLogout}
                     sx={{
-                      backgroundColor: "#4A5568",
+                      backgroundColor: "#211b5a",
                       color: "#fff",
                       textTransform: "none",
                       fontWeight: 600,
@@ -275,7 +275,7 @@ const Topbar = () => {
       {/* Secondary Navigation Row (Tabs) */}
       <Box
         sx={{
-          backgroundColor: "#3A3482",
+          backgroundColor: "#211b5a",
           display: "flex",
           px: { xs: 2, sm: 3, md: 4 },
         }}

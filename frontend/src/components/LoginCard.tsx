@@ -147,7 +147,7 @@ const LoginCard = ({
             width: 160,
           }}
         />
-        <Typography variant="h6" sx={{ color: "#3A3482", fontWeight: 600, mt: 1 }}>
+        <Typography variant="h6" sx={{ color: "#211b5a", fontWeight: 600, mt: 1 }}>
           {mode === "login" ? "Sign In to Your Account" : "Create New Account"}
         </Typography>
       </Box>
@@ -205,7 +205,7 @@ const LoginCard = ({
               color: "#808080",
               fontSize: "14px",
               cursor: "pointer",
-              "&:hover": { color: "#3A3482" },
+              "&:hover": { color: "#211b5a" },
             }}
           >
             Forgot Password?
@@ -224,7 +224,7 @@ const LoginCard = ({
               onClick={onLoginSubmit}
               sx={{
                 backgroundColor: "#F4C63D",
-                color: "#3A3482",
+                color: "#211b5a",
                 borderRadius: "30px",
                 fontWeight: 600,
                 textTransform: "none",
@@ -247,14 +247,14 @@ const LoginCard = ({
               }}
               sx={{
                 borderRadius: "30px",
-                color: "#3A3482",
+                color: "#211b5a",
                 borderColor: "#D9D9D9",
                 textTransform: "none",
                 fontWeight: 600,
                 height: 50,
                 "&:hover": {
-                  borderColor: "#3A3482",
-                  backgroundColor: "rgba(58, 52, 130, 0.05)",
+                  borderColor: "#211b5a",
+                  backgroundColor: "rgba(30, 58, 138, 0.05)",
                 },
               }}
             >
@@ -409,7 +409,7 @@ const LoginCard = ({
               onClick={onRegisterSubmit}
               sx={{
                 backgroundColor: "#F4C63D",
-                color: "#3A3482",
+                color: "#211b5a",
                 borderRadius: "30px",
                 fontWeight: 600,
                 textTransform: "none",
@@ -432,14 +432,14 @@ const LoginCard = ({
               }}
               sx={{
                 borderRadius: "30px",
-                color: "#3A3482",
+                color: "#211b5a",
                 borderColor: "#D9D9D9",
                 textTransform: "none",
                 fontWeight: 600,
                 height: 50,
                 "&:hover": {
-                  borderColor: "#3A3482",
-                  backgroundColor: "rgba(58, 52, 130, 0.05)",
+                  borderColor: "#211b5a",
+                  backgroundColor: "rgba(30, 58, 138, 0.05)",
                 },
               }}
             >

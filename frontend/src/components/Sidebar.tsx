@@ -58,7 +58,7 @@ const Sidebar = ({
         {collapsed ? (
           <Search
             sx={{
-              color: "#3A3482",
+              color: "#211b5a",
             }}
           />
         ) : (
@@ -211,7 +211,7 @@ const MenuItem = ({
 
         cursor: "pointer",
 
-        color: "#3A3482",
+        color: "#211b5a",
 
         "&:hover": {
           backgroundColor:

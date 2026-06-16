@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Alert,
@@ -53,7 +53,7 @@ const TicketsPage = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set(["Technical"]));
-
+  const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
   const [searchParams] = useSearchParams();
   const activePill = searchParams.get("filter") || "all";
   const [selectedCategory, setSelectedCategory] = useState("All categories");
@@ -176,6 +176,8 @@ const TicketsPage = () => {
   };
 
   const filteredTickets = tickets.filter((t) => filterPill(t) && filterCategory(t));
+  const lastSelectedTicketId =
+  selectedTickets[selectedTickets.length - 1];
 
   const getCategoryCount = (catName: string) => {
     if (catName === "All categories") return tickets.length;
@@ -199,7 +201,13 @@ const TicketsPage = () => {
       hour12: true,
     });
   };
-
+  const handleSelectTicket = (ticketId: number) => {
+  setSelectedTickets((prev) =>
+    prev.includes(ticketId)
+      ? prev.filter((id) => id !== ticketId)
+      : [...prev, ticketId]
+  );
+};
   const wasUpdatedByTech = (ticket: Ticket) => {
     if (!ticket.assigned_to_user_code) return false;
     if (!ticket.update_timestamp || !ticket.created_at) return false;
@@ -301,25 +309,48 @@ const TicketsPage = () => {
             );
           })}
         </Card>
-
+          
         {/* ── Tickets table ── */}
         <TableContainer
-          component={Paper}
-          elevation={0}
-          sx={{
-            borderRadius: "8px",
-            border: "1px solid var(--border)",
-            backgroundColor: "var(--bg-card)",
-            backgroundImage: "none",        /* kills MUI's dark-mode gradient */
-            color: "var(--text)",
-            overflowX: "auto",
-          }}
-        >
-          <Table sx={{ minWidth: 900 }}>
+  component={Paper}
+  elevation={0}
+  sx={{
+    borderRadius: "8px",
+    border: "1px solid var(--border)",
+    backgroundColor: "var(--bg-card)",
+    backgroundImage: "none",
+    color: "var(--text)",
+    overflow: "visible",
+  }}
+>
+  
+
+  <Table sx={{ minWidth: 900 }}>
+     
             <TableHead>
               <TableRow sx={{ backgroundColor: "var(--bg-header)" }}>
                 <TableCell padding="checkbox" sx={headCellSx}>
-                  <Checkbox size="small" sx={checkboxSx} />
+                  <Checkbox
+  size="small"
+  checked={
+    filteredTickets.length > 0 &&
+    selectedTickets.length === filteredTickets.length
+  }
+  indeterminate={
+    selectedTickets.length > 0 &&
+    selectedTickets.length < filteredTickets.length
+  }
+  onChange={(e) => {
+    if (e.target.checked) {
+      setSelectedTickets(
+        filteredTickets.map((t) => t.ticket_id)
+      );
+    } else {
+      setSelectedTickets([]);
+    }
+  }}
+  sx={checkboxSx}
+/>
                 </TableCell>
                 <TableCell sx={{ ...headCellSx, width: "45%" }}>Subject</TableCell>
                 <TableCell sx={{ ...headCellSx, width: 140 }}>Status</TableCell>
@@ -334,6 +365,7 @@ const TicketsPage = () => {
                 </TableCell>
               </TableRow>
             </TableHead>
+            
             <TableBody>
               {filteredTickets.length === 0 ? (
                 <TableRow>
@@ -345,7 +377,10 @@ const TicketsPage = () => {
                     No tickets found matching your selection.
                   </TableCell>
                 </TableRow>
-              ) : (
+              ) : 
+              
+  (
+                
                 filteredTickets.map((ticket, index) => {
                   const statusInfo = getStatusInfo(ticket.status_name);
                   const priorityInfo = getPriorityInfo(ticket.priority_name);
@@ -357,18 +392,27 @@ const TicketsPage = () => {
                   );
 
                   return (
-                    <TableRow
-                      key={ticket.ticket_id}
-                      sx={{
+                    <Fragment key={ticket.ticket_id}>
+                      <TableRow
+                        sx={{
                         cursor: "pointer",
-                        backgroundColor: index % 2 === 0 ? "var(--bg-card)" : "var(--bg-row-alt)",
+                        backgroundColor: selectedTickets.includes(ticket.ticket_id)
+  ? "var(--bg-row-hover)"
+            : index % 2 === 0
+            ? "var(--bg-card)"
+            : "var(--bg-row-alt)",
                         "&:hover": { backgroundColor: "var(--bg-row-hover) !important" },
                         "& td": { borderColor: "var(--border)" },
                       }}
                       onClick={() => navigate(`/tickets/${ticket.ticket_id}`)}
                     >
                       <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox size="small" sx={checkboxSx} />
+                        <Checkbox
+  size="small"
+  checked={selectedTickets.includes(ticket.ticket_id)}
+  onChange={() => handleSelectTicket(ticket.ticket_id)}
+  sx={checkboxSx}
+/>
                       </TableCell>
 
                       {/* Subject */}
@@ -438,15 +482,90 @@ const TicketsPage = () => {
                         )}
                       </TableCell>
                       <TableCell sx={{ ...bodyCellSx, backgroundColor: "inherit" }}>{formatDateTime(ticket.update_timestamp)}</TableCell>
-                    </TableRow>
+                      </TableRow>
+                      {ticket.ticket_id === lastSelectedTicketId &&
+        selectedTickets.length > 0 && (
+        <TableRow>
+          <TableCell
+            colSpan={8}
+            sx={{
+              border: 0,
+              py: 0,
+              position: "relative",
+      height: 0,
+      overflow: "visible",
+            }}
+          >
+            <Box
+  sx={{
+    position: "absolute",
+    top: -6,
+    left: 56,
+    zIndex: 5,
+
+    px: 2,
+    py: 1.2,
+    borderRadius: "8px",
+
+    background:
+      "linear-gradient(90deg,#635BFF 0%,#6D5EF8 100%)",
+
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    gap: 2,
+
+    boxShadow:
+      "0 8px 24px rgba(99,91,255,.25)",
+  }}
+>
+              <Typography sx={{ fontWeight: 600 }}>
+                {selectedTickets.length} Ticket
+                {selectedTickets.length > 1 ? "s" : ""}
+              </Typography>
+
+              <Typography sx={{ cursor: "pointer" }}>
+                Close
+              </Typography>
+
+              <Typography sx={{ cursor: "pointer" }}>
+                Assign
+              </Typography>
+
+              <Typography sx={{ cursor: "pointer" }}>
+                Priority
+              </Typography>
+
+              <Typography sx={{ cursor: "pointer" }}>
+                Category
+              </Typography>
+
+              <Typography sx={{ cursor: "pointer" }}>
+                Due
+              </Typography>
+
+              <Typography sx={{ cursor: "pointer" }}>
+                Tag
+              </Typography>
+
+              <Typography sx={{ cursor: "pointer" }}>
+                Delete
+              </Typography>
+            </Box>
+          </TableCell>
+        </TableRow>
+        )}
+                    </Fragment>
                   );
+                  
                 })
               )}
             </TableBody>
           </Table>
         </TableContainer>
       </Box>
-
+      
+      
       <Snackbar
         open={toast.open}
         autoHideDuration={4000}

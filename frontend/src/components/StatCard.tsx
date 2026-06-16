@@ -16,8 +16,8 @@ const StatCard = ({ title, value }: Props) => {
     const t = titleStr.toLowerCase();
     if (t.includes("total")) {
       return {
-        color: "#3A3482",
-        icon: <ConfirmationNumber sx={{ fontSize: 28, color: "#3A3482" }} />,
+        color: "#211b5a",
+        icon: <ConfirmationNumber sx={{ fontSize: 28, color: "#211b5a" }} />,
       };
     } else if (t.includes("open")) {
       return {

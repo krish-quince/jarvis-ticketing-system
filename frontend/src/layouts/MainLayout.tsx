@@ -147,10 +147,10 @@ const MainLayout = () => {
                     key={pill.id}
                     onClick={() => navigate(`/tickets?filter=${pill.id}`)}
                     sx={{
-                      backgroundColor: isActive ? "#3A3482" : "transparent",
+                      backgroundColor: isActive ? "#211b5a" : "transparent",
                       color: isActive ? "#fff" : "#475569",
                       border: "1px solid",
-                      borderColor: isActive ? "#3A3482" : "transparent",
+                      borderColor: isActive ? "#211b5a" : "transparent",
                       borderRadius: "999px",
                       textTransform: "none",
                       fontWeight: 400,
@@ -174,8 +174,8 @@ const MainLayout = () => {
                         height: 24,
                         px: 1,
                         borderRadius: "999px",
-                        backgroundColor: isActive ? "#F4C63D" : "rgba(58, 52, 130, 0.12)",
-                        color: isActive ? "#211B5A" : "#3A3482",
+                        backgroundColor: isActive ? "#F4C63D" : "rgba(30, 58, 138, 0.12)",
+                        color: isActive ? "#211B5A" : "#211b5a",
                         fontSize: 13,
                         fontWeight: 700,
                         display: "flex",
@@ -205,7 +205,7 @@ const MainLayout = () => {
                     fontSize: 15,
                     px: 0,
                     minWidth: "auto",
-                    "&:hover": { backgroundColor: "transparent", color: "#3A3482" },
+                    "&:hover": { backgroundColor: "transparent", color: "#211b5a" },
                   }}
                 >
                   {label}
@@ -280,11 +280,11 @@ const MainLayout = () => {
                   borderRadius: "4px",
                   color: isActive ? "#fff" : "var(--text)",
                   backgroundColor: isActive
-                    ? "#3A3482"
+                    ? "#211b5a"
                     : "transparent",
                   "&:hover": {
                     backgroundColor: isActive
-                      ? "#3A3482"
+                      ? "#211b5a"
                       : "rgba(0,0,0,0.04)",
                   },
                 }}

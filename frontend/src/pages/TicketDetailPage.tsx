@@ -324,7 +324,7 @@ if (!plainText) return;
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "70vh" }}>
-        <CircularProgress size={50} sx={{ color: "#3A3482" }} />
+        <CircularProgress size={50} sx={{ color: "#211b5a" }} />
       </Box>
     );
   }
@@ -389,7 +389,7 @@ if (!plainText) return;
                     color: "var(--text)",
                     borderColor: "var(--border)",
                     backgroundColor: "var(--bg-card)",
-                    "&:hover": { borderColor: "#3A3482", backgroundColor: "rgba(58, 52, 130, 0.05)" },
+                    "&:hover": { borderColor: "#211b5a", backgroundColor: "rgba(30, 58, 138, 0.05)" },
                   }}
                 >
                   Takeover
@@ -430,7 +430,7 @@ if (!plainText) return;
                   color: "var(--text)",
                   borderColor: "var(--border)",
                   backgroundColor: "var(--bg-card)",
-                  "&:hover": { borderColor: "#3A3482", backgroundColor: "rgba(58, 52, 130, 0.05)" },
+                  "&:hover": { borderColor: "#211b5a", backgroundColor: "rgba(30, 58, 138, 0.05)" },
                 }}
               >
                 More
@@ -626,7 +626,7 @@ if (!plainText) return;
                             <Typography variant="caption" sx={{ color: "var(--text-secondary)", fontWeight: 500 }}>
                               {new Date(comment.created_at).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 700, color: "#3A3482" }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: "#211b5a" }}>
                               {comment.commented_by_name ??
   comment.commented_by_user_code}
                             </Typography>
@@ -749,7 +749,7 @@ if (!plainText) return;
                 <Typography variant="body2" sx={{ color: "var(--text-secondary)", width: 110, flexShrink: 0 }}>
                   From:
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "#3A3482", flex: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "#211b5a", flex: 1 }}>
                   {ticket.raised_by_name ??
   ticket.raised_by_user_code}
                 </Typography>
@@ -825,7 +825,7 @@ if (!plainText) return;
                   Time spent:
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, flex: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: "#3A3482" }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: "#211b5a" }}>
                     00:00:03
                   </Typography>
                   <IconButton size="small" sx={{ p: 0, color: "var(--text-secondary)" }}>
