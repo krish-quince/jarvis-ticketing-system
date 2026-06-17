@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-
+import CloseIcon from "@mui/icons-material/Close";
 import {
   Alert,
   Box,
@@ -199,6 +199,11 @@ const NewTicketPage = () => {
     if (!files) return;
     setAttachments((prev) => [...prev, ...Array.from(files)]);
   };
+  const removeAttachment = (indexToRemove: number) => {
+  setAttachments((prev) =>
+    prev.filter((_, index) => index !== indexToRemove)
+  );
+};
 
   const resetForm = () => {
     setSubject("");
@@ -587,42 +592,125 @@ const NewTicketPage = () => {
             />
 
             {/* Editor */}
-            <Box
-              sx={{
-                mb: 3,
-                "& .ProseMirror": {
-                  minHeight: "300px",
-                  padding: "16px",
-                  outline: "none",
-                  backgroundColor: "#fff",
-                },
-                "& .ProseMirror p": { margin: "0 0 12px 0" },
-                "& .ProseMirror h1": { fontSize: "2rem", marginBottom: "12px" },
-                "& .ProseMirror h2": { fontSize: "1.5rem", marginBottom: "10px" },
-                "& .ProseMirror h3": { fontSize: "1.25rem", marginBottom: "8px" },
-              }}
-            >
-              <RichTextEditor value={description} onChange={setDescription} />
-            </Box>
+<Box
+  sx={{
+    mb: 3,
+    position: "relative",
 
-            {/* Attachments list */}
-            {attachments.length > 0 && (
-              <Box sx={{ mt: 1 }}>
-                {attachments.map((file, index) => (
-                  <Typography key={index} sx={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                    📎 {file.name}
-                  </Typography>
-                ))}
-              </Box>
-            )}
+    "& .ProseMirror": {
+      minHeight: "300px",
+      padding: "16px",
+      paddingBottom: "48px", // space for attachment button
+      outline: "none",
+      backgroundColor: "#fff",
+    },
 
-            {/* Attach button */}
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <IconButton component="label" sx={{ color: "var(--text-secondary)" }}>
-                <AttachFileIcon />
-                <input hidden type="file" multiple onChange={handleFileUpload} />
-              </IconButton>
-            </Box>
+    "& .ProseMirror p": {
+      margin: "0 0 12px 0",
+    },
+
+    "& .ProseMirror h1": {
+      fontSize: "2rem",
+      marginBottom: "12px",
+    },
+
+    "& .ProseMirror h2": {
+      fontSize: "1.5rem",
+      marginBottom: "10px",
+    },
+
+    "& .ProseMirror h3": {
+      fontSize: "1.25rem",
+      marginBottom: "8px",
+    },
+  }}
+>
+  <RichTextEditor
+    value={description}
+    onChange={setDescription}
+  />
+
+  {/* Attachment button */}
+  <IconButton
+    component="label"
+    sx={{
+      position: "absolute",
+      bottom: 12,
+      right: 12,
+      zIndex: 10,
+
+      backgroundColor: "#fff",
+      border: "1px solid var(--border)",
+
+      "&:hover": {
+        backgroundColor: "#f5f5f5",
+      },
+    }}
+  >
+    <AttachFileIcon />
+    <input
+      hidden
+      type="file"
+      multiple
+      onChange={handleFileUpload}
+    />
+  </IconButton>
+</Box> {/* editor box ends here */}
+
+{attachments.length > 0 && (
+  <Box
+    sx={{
+      mt: 1,
+      mb: 3,
+      p: 1.5,
+      border: "1px solid var(--border)",
+      borderRadius: "8px",
+      background: "var(--bg-app)",
+      display: "flex",
+      flexDirection: "column",
+      gap: 1,
+    }}
+  >
+    {attachments.map((file, index) => (
+      <Box
+        key={index}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          px: 1,
+          py: 0.5,
+          borderRadius: "6px",
+          backgroundColor: "var(--bg-card)",
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: 13,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          📎 {file.name}
+        </Typography>
+
+        <IconButton
+          size="small"
+          onClick={() => removeAttachment(index)}
+          sx={{
+            color: "var(--text-secondary)",
+            "&:hover": {
+              color: "#ff4d4f",
+            },
+          }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
+    ))}
+  </Box>
+)}
 
             {/* Advanced Section */}
             <Collapse in={showAdvanced}>
@@ -708,10 +796,12 @@ const NewTicketPage = () => {
                 disabled={loading}
                 onClick={handleSubmit}
                 sx={{
-                  background: "#635BFF",
+                  background: "#211b5a",
+                  color: "#fff",
                   textTransform: "none",
                   minWidth: 100,
-                  "&:hover": { background: "#5449ff" },
+                  "&.Mui-disabled": { color: "#fff" },
+                  "&:hover": { background: "#211b5a" },
                 }}
               >
                 {loading ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : "Submit"}
