@@ -6,50 +6,55 @@ export const createTicket = async (ticket, client = null) => {
   const result = await db.query(
     `
         INSERT INTO tickets
-        (
-            company_code,
-            ticket_no,
-            subject,
-            description,
+(
+    company_code,
+    ticket_no,
+    subject,
+    description,
 
-            category_id,
-            subcategory_id,
+    category_id,
+    subcategory_id,
 
-            priority_id,
-            status_id,
+    priority_id,
+    status_id,
 
-            raised_by_user_code,
-            assigned_to_user_code,
+    raised_by_user_code,
+    assigned_to_user_code,
 
-            department_id
-        )
+    due_date,
+
+    department_id
+)
         VALUES
-        (
-            $1,$2,$3,$4,
-            $5,$6,
-            $7,$8,
-            $9,$10,
-            $11
-        )
+(
+    $1,$2,$3,$4,
+    $5,$6,
+    $7,$8,
+    $9,$10,
+    $11,
+    $12
+)
         RETURNING *
         `,
     [
-      ticket.companyCode,
-      ticket.ticketNo,
-      ticket.subject,
-      ticket.description,
+  ticket.companyCode,
+  ticket.ticketNo,
+  ticket.subject,
+  ticket.description,
 
-      ticket.category_id,
-      ticket.subcategory_id,
+  ticket.category_id,
+  ticket.subcategory_id,
 
-      ticket.priority_id,
-      ticket.status_id,
+  ticket.priority_id,
+  ticket.status_id,
 
-      ticket.raisedByUserCode,
-      ticket.assigned_to_user_code,
+  ticket.raisedByUserCode,
+  ticket.assigned_to_user_code,
 
-      ticket.department_id,
-    ],
+  ticket.due_date,
+
+  ticket.department_id,
+],
   );
 
   return result.rows[0];
