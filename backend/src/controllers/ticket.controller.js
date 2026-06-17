@@ -7,7 +7,9 @@ const sendTicketError = (res, error) => {
         error.message === "Status not found." ||
         error.message === "Resolved status not found." ||
         error.message === "Priority not found." ||
-        error.message === "Category not found."
+        error.message === "Category not found." ||
+        error.message === "Subcategory not found." ||
+        error.message === "Subcategory does not belong to selected category."
     ) {
         return res.status(404).json({
             success: false,
@@ -183,11 +185,12 @@ export const updateTicketPriority = async(req, res) => {
 export const updateTicketCategory = async(req, res) => {
     try {
         const { ticketId } = req.params;
-        const { category_id } = req.body;
+        const { category_id, subcategory_id } = req.body;
 
         const ticket = await ticketService.updateTicketCategory(
             ticketId,
             category_id,
+            subcategory_id,
             req.user
         );
 
@@ -218,6 +221,52 @@ export const resolveTicket = async(req, res) => {
             data: ticket,
         });
     } catch (error) {
+        console.error(error);
+
+        return sendTicketError(res, error);
+    }
+};
+
+export const takeoverTicket = async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+
+        const ticket = await ticketService.takeoverTicket(
+            ticketId,
+            req.user
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: ticket,
+        });
+    } catch (error) {
+        console.error(error);
+
+        return sendTicketError(res, error);
+    }
+};
+
+export const updateTicketDueDate = async (req, res) => {
+    try {
+
+        const { ticketId } = req.params;
+        const { due_date } = req.body;
+
+        const ticket =
+            await ticketService.updateTicketDueDate(
+                ticketId,
+                due_date,
+                req.user
+            );
+
+        return res.status(200).json({
+            success: true,
+            data: ticket,
+        });
+
+    } catch (error) {
+
         console.error(error);
 
         return sendTicketError(res, error);

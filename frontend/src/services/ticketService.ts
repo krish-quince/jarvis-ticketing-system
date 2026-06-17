@@ -80,3 +80,43 @@ export const createComment = async (ticketId: number, commentText: string) => {
   const response = await API.post(`/tickets/${ticketId}/comments`, { comment_text: commentText });
   return unwrapData(response.data);
 };
+
+export const takeoverTicket = async (
+  id: number
+) => {
+  const response = await API.patch(
+    `/tickets/${id}/takeover`
+  );
+
+  return response.data;
+};
+
+export const updateTicketDueDate = async (
+  id: number,
+  dueDate: string
+) => {
+  const response = await API.patch(
+    `/tickets/${id}/due-date`,
+    {
+      due_date: dueDate,
+    }
+  );
+
+  return response.data;
+};
+
+export const updateTicketCategory = async (
+  id: number,
+  categoryId: number,
+  subCategoryId: number
+) => {
+  const response = await API.patch(
+    `/tickets/${id}/category`,
+    {
+      category_id: categoryId,
+      subcategory_id: subCategoryId,
+    }
+  );
+
+  return response.data;
+};

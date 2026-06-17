@@ -8,7 +8,9 @@ import {
     resolveTicket,
     updateTicketCategory,
     updateTicketPriority,
-    updateTicketStatus
+    updateTicketStatus,
+    takeoverTicket,
+    updateTicketDueDate
 } from "../controllers/ticket.controller.js";
 
 import { validate }
@@ -22,6 +24,8 @@ import {
     updateCategorySchema
 }
 from "../validators/ticket.validator.js";
+
+
 
 const router = Router();
 
@@ -40,5 +44,13 @@ router.patch("/:ticketId/assign", verifyToken, validate(assignTicketSchema), ass
 router.patch("/:ticketId/priority", verifyToken, validate(updatePrioritySchema), updateTicketPriority);
 router.patch("/:ticketId/category", verifyToken, validate(updateCategorySchema), updateTicketCategory);
 router.patch("/:ticketId/resolve", verifyToken, resolveTicket);
+router.patch(
+  "/:ticketId/due-date",
+  verifyToken,
+  updateTicketDueDate
+);
+router.patch("/:ticketId/takeover", verifyToken, takeoverTicket);
+
+
 
 export default router;

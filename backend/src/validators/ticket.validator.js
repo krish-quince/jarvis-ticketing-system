@@ -51,6 +51,7 @@ export const updatePrioritySchema = z.object({
 export const updateCategorySchema = z.object({
   body: z.object({
     category_id: z.coerce.number().int().positive(),
+    subcategory_id: z.coerce.number().int().positive(),
   }),
 });
 
