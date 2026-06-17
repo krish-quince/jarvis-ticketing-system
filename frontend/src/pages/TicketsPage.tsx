@@ -243,21 +243,7 @@ const TicketsPage = () => {
     }
   };
 
-  const getStatusInfo = (name?: string) => {
-    switch (name?.toLowerCase()) {
-      case "open":
-        return { color: "#ff727e", label: "New" };
-      case "in progress":
-        return { color: "#149447", label: "In progress" };
-      case "testing":
-        return { color: "#9a8cff", label: "Testing" };
-      case "resolved":
-        return { color: "#149447", label: "Resolved" };
-      case "closed":
-      default:
-        return { color: "#687386", label: "Closed" };
-    }
-  };
+  const getStatusInfo = (name?: string) => { switch (name?.toLowerCase()) { case "new": return { color: "#ff727e", label: "New", }; case "in progress": return { color: "#149447", label: "In Progress", }; case "closed": return { color: "#687386", label: "Closed", }; default: return { color: "#687386", label: name || "Unknown", }; } };
 
   const filterPill = (ticket: Ticket) => {
     switch (activePill) {

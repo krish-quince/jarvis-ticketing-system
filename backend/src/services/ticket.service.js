@@ -142,6 +142,8 @@ export const createTicket = async (ticketData, user) => {
     status_id,
 
     assigned_to_user_code,
+    
+    due_date: ticketData.due_date || null,
 
     ticketNo,
 
