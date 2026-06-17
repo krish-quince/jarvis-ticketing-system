@@ -79,9 +79,8 @@ export const createTicket = async (ticketData, user) => {
   }
 
   if (subcategory_id) {
-    const subCategory = await masterRepository.getSubCategoryById(
-      subcategory_id,
-    );
+    const subCategory =
+      await masterRepository.getSubCategoryById(subcategory_id);
 
     if (!subCategory) {
       throw new Error("Subcategory not found.");
@@ -203,7 +202,10 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
     throw new Error("status_id is required.");
   }
 
-  const ticket = await ticketRepository.getTicketById(ticketId, user.companyCode);
+  const ticket = await ticketRepository.getTicketById(
+    ticketId,
+    user.companyCode,
+  );
 
   if (!ticket) {
     throw new Error("Ticket not found.");
@@ -231,9 +233,7 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
     }
   }
 
-  const status = await ticketRepository.getStatusByIdAndCompany(
-    statusId
-  );
+  const status = await ticketRepository.getStatusByIdAndCompany(statusId);
 
   if (!status) {
     throw new Error("Status not found.");
@@ -280,7 +280,10 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
     throw new Error("assigned_to_user_code is required.");
   }
 
-  const ticket = await ticketRepository.getTicketById(ticketId, user.companyCode);
+  const ticket = await ticketRepository.getTicketById(
+    ticketId,
+    user.companyCode,
+  );
 
   if (!ticket) {
     throw new Error("Ticket not found.");
@@ -348,7 +351,10 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
     throw new Error("priority_id is required.");
   }
 
-  const ticket = await ticketRepository.getTicketById(ticketId, user.companyCode);
+  const ticket = await ticketRepository.getTicketById(
+    ticketId,
+    user.companyCode,
+  );
 
   if (!ticket) {
     throw new Error("Ticket not found.");
@@ -366,9 +372,7 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
     );
   }
 
-  const priority = await ticketRepository.getPriorityByIdAndCompany(
-    priorityId
-  );
+  const priority = await ticketRepository.getPriorityByIdAndCompany(priorityId);
 
   if (!priority) {
     throw new Error("Priority not found.");
@@ -410,12 +414,20 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
   }
 };
 
-export const updateTicketCategory = async (ticketId, categoryId, user) => {
+export const updateTicketCategory = async (
+  ticketId,
+  categoryId,
+  subCategoryId,
+  user,
+) => {
   if (!categoryId) {
     throw new Error("category_id is required.");
   }
 
-  const ticket = await ticketRepository.getTicketById(ticketId, user.companyCode);
+  const ticket = await ticketRepository.getTicketById(
+    ticketId,
+    user.companyCode,
+  );
 
   if (!ticket) {
     throw new Error("Ticket not found.");
@@ -433,15 +445,26 @@ export const updateTicketCategory = async (ticketId, categoryId, user) => {
     );
   }
 
-  const category = await ticketRepository.getCategoryByIdAndCompany(
-    categoryId
-  );
+  const category = await ticketRepository.getCategoryByIdAndCompany(categoryId);
 
   if (!category) {
     throw new Error("Category not found.");
   }
 
-  if (String(ticket.category_id) === String(categoryId)) {
+  const subCategory = await ticketRepository.getSubCategoryById(subCategoryId);
+
+  if (!subCategory) {
+    throw new Error("Subcategory not found.");
+  }
+
+  if (String(subCategory.category_id) !== String(categoryId)) {
+    throw new Error("Subcategory does not belong to selected category.");
+  }
+
+  if (
+    String(ticket.category_id) === String(categoryId) &&
+    String(ticket.subcategory_id) === String(subCategoryId)
+  ) {
     return ticket;
   }
 
@@ -453,6 +476,7 @@ export const updateTicketCategory = async (ticketId, categoryId, user) => {
     const updatedTicket = await ticketRepository.updateTicketCategory(
       ticketId,
       categoryId,
+      subCategoryId,
       user.companyCode,
       client,
     );
@@ -462,6 +486,15 @@ export const updateTicketCategory = async (ticketId, categoryId, user) => {
       "Category",
       String(ticket.category_id),
       String(categoryId),
+      user.userCode,
+      client,
+    );
+
+    await historyService.createHistory(
+      ticketId,
+      "Subcategory",
+      String(ticket.subcategory_id || ""),
+      String(subCategoryId || ""),
       user.userCode,
       client,
     );
@@ -478,7 +511,10 @@ export const updateTicketCategory = async (ticketId, categoryId, user) => {
 };
 
 export const resolveTicket = async (ticketId, statusId, user) => {
-  const ticket = await ticketRepository.getTicketById(ticketId, user.companyCode);
+  const ticket = await ticketRepository.getTicketById(
+    ticketId,
+    user.companyCode,
+  );
 
   if (!ticket) {
     throw new Error("Ticket not found.");
@@ -559,10 +595,9 @@ export const resolveTicket = async (ticketId, statusId, user) => {
 };
 
 export const takeoverTicket = async (ticketId, user) => {
-
   const ticket = await ticketRepository.getTicketById(
     ticketId,
-    user.companyCode
+    user.companyCode,
   );
 
   if (!ticket) {
@@ -584,13 +619,12 @@ export const takeoverTicket = async (ticketId, user) => {
   try {
     await client.query("BEGIN");
 
-    const updatedTicket =
-      await ticketRepository.updateTicketAssignee(
-        ticketId,
-        user.userCode,
-        user.companyCode,
-        client
-      );
+    const updatedTicket = await ticketRepository.updateTicketAssignee(
+      ticketId,
+      user.userCode,
+      user.companyCode,
+      client,
+    );
 
     await historyService.createHistory(
       ticketId,
@@ -598,37 +632,28 @@ export const takeoverTicket = async (ticketId, user) => {
       String(oldValue),
       String(user.userCode),
       user.userCode,
-      client
+      client,
     );
 
     await client.query("COMMIT");
 
     return updatedTicket;
-
   } catch (error) {
-
     await client.query("ROLLBACK");
     throw error;
-
   } finally {
-
     client.release();
   }
 };
 
-export const updateTicketDueDate = async (
-  ticketId,
-  dueDate,
-  user
-) => {
-
+export const updateTicketDueDate = async (ticketId, dueDate, user) => {
   if (!dueDate) {
     throw new Error("due_date is required.");
   }
 
   const ticket = await ticketRepository.getTicketById(
     ticketId,
-    user.companyCode
+    user.companyCode,
   );
 
   if (!ticket) {
@@ -640,48 +665,37 @@ export const updateTicketDueDate = async (
   }
 
   if (!canManageTicket(user)) {
-    throw new Error(
-      "Access denied. Only technicians can update due date."
-    );
+    throw new Error("Access denied. Only technicians can update due date.");
   }
 
   const client = await pool.connect();
 
   try {
-
     await client.query("BEGIN");
 
-    const updatedTicket =
-      await ticketRepository.updateTicketDueDate(
-        ticketId,
-        dueDate,
-        user.companyCode,
-        client
-      );
+    const updatedTicket = await ticketRepository.updateTicketDueDate(
+      ticketId,
+      dueDate,
+      user.companyCode,
+      client,
+    );
 
     await historyService.createHistory(
       ticketId,
       "DueDate",
-      ticket.due_date
-        ? String(ticket.due_date)
-        : "",
+      ticket.due_date ? String(ticket.due_date) : "",
       String(dueDate),
       user.userCode,
-      client
+      client,
     );
 
     await client.query("COMMIT");
 
     return updatedTicket;
-
   } catch (error) {
-
     await client.query("ROLLBACK");
     throw error;
-
   } finally {
-
     client.release();
   }
 };
-

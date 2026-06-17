@@ -228,6 +228,7 @@ export const updateTicketPriority = async (
 export const updateTicketCategory = async (
   ticketId,
   categoryId,
+  subCategoryId,
   companyCode,
   client = null,
 ) => {
@@ -235,11 +236,11 @@ export const updateTicketCategory = async (
   const result = await db.query(
     `
             UPDATE tickets
-            SET category_id = $1, update_timestamp = CURRENT_TIMESTAMP
-            WHERE ticket_id = $2 AND company_code = $3
+            SET category_id = $1, subcategory_id = $2, update_timestamp = CURRENT_TIMESTAMP
+            WHERE ticket_id = $3 AND company_code = $4
             RETURNING *
         `,
-    [categoryId, ticketId, companyCode],
+    [categoryId, subCategoryId, ticketId, companyCode],
   );
 
   return result.rows[0];
@@ -331,6 +332,24 @@ export const getCategoryByIdAndCompany = async (categoryId) => {
             WHERE category_id = $1
         `,
     [categoryId],
+  );
+
+  return result.rows[0];
+};
+
+export const getSubCategoryById = async (
+  subCategoryId
+) => {
+
+  const result = await pool.query(
+    `
+      SELECT
+        subcategory_id,
+        category_id
+      FROM ticket_subcategories
+      WHERE subcategory_id = $1
+    `,
+    [subCategoryId]
   );
 
   return result.rows[0];
