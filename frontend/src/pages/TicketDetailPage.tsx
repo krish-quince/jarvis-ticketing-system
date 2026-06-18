@@ -355,7 +355,23 @@ if (!plainText) return;
         {/* Left main content column */}
         <Grid size={{ xs: 12, md: 8 }} sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {/* Action Row */}
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", flexWrap: "wrap", gap: 1.5 }}>
+          
+
+          {/* Ticket Body Card */}
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: "var(--shadow)",
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--bg-card)",
+              color: "var(--text)",
+              p: 3.5,
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+            }}
+          >
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", flexWrap: "wrap", gap: 1.5 }}>
             <Box sx={{ display: "flex", gap: 1.5 }}>
               <Button
   variant="outlined"
@@ -448,21 +464,6 @@ if (!plainText) return;
               </Menu>
             </Box>
           </Box>
-
-          {/* Ticket Body Card */}
-          <Card
-            sx={{
-              borderRadius: 3,
-              boxShadow: "var(--shadow)",
-              border: "1px solid var(--border)",
-              backgroundColor: "var(--bg-card)",
-              color: "var(--text)",
-              p: 3.5,
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-            }}
-          >
             <Typography variant="h4" sx={{ fontWeight: 700, color: "var(--text-h)", fontSize: "28px" }}>
               {ticket.subject}
             </Typography>

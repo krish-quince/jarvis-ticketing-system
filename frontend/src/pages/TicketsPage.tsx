@@ -607,7 +607,7 @@ const TicketsPage = () => {
         <Card
           elevation={0}
           sx={{
-            borderRadius: "8px",
+            borderRadius: "16px",
             border: "1px solid var(--border)",
             backgroundColor: "var(--bg-card)",
             backgroundImage: "none",
@@ -694,7 +694,7 @@ const TicketsPage = () => {
           component={Paper}
           elevation={0}
           sx={{
-            borderRadius: "8px",
+            borderRadius: "16px",
             border: "1px solid var(--border)",
             backgroundColor: "var(--bg-card)",
             backgroundImage: "none",
@@ -705,9 +705,15 @@ const TicketsPage = () => {
           <Table sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "var(--bg-header)" }}>
-                <TableCell padding="checkbox" sx={headCellSx}>
-                  <Checkbox
-                    size="small"
+                <TableCell
+  padding="checkbox"
+  sx={{
+    ...headCellSx,
+    pl: 2,
+  }}
+>
+  <Checkbox
+    size="small"
                     checked={
                       filteredTickets.length > 0 &&
                       selectedTickets.length === filteredTickets.length
@@ -798,9 +804,12 @@ const TicketsPage = () => {
                         onClick={() => navigate(`/tickets/${ticket.ticket_id}`)}
                       >
                         <TableCell
-                          padding="checkbox"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+  padding="checkbox"
+  onClick={(e) => e.stopPropagation()}
+  sx={{
+    pl: 2,
+  }}
+>
                           <Checkbox
                             size="small"
                             checked={selectedTickets.includes(ticket.ticket_id)}
