@@ -158,7 +158,7 @@ const LoginCard = ({ handleLogin, handleRegister }: Props) => {
     >
       <Box sx={{ textAlign: "center", mb: mode === "register" ? 2 : 4 }}>
         <img src={jarvisLogo} alt="Jarvis" style={{ width: 160 }} />
-        <Typography variant="h6" sx={{ color: "#201a4a", fontWeight: 600, mt: 1 }}>
+        <Typography variant="h6" sx={{ color: "#211b5a", fontWeight: 600, mt: 1 }}>
           {mode === "login" ? "Sign In to Your Account" : "Create New Account"}
         </Typography>
       </Box>
@@ -204,7 +204,7 @@ const LoginCard = ({ handleLogin, handleRegister }: Props) => {
               color: "#808080",
               fontSize: "14px",
               cursor: "pointer",
-              "&:hover": { color: "#201a4a" },
+              "&:hover": { color: "#211b5a" },
             }}
           >
             Forgot Password?
@@ -217,7 +217,7 @@ const LoginCard = ({ handleLogin, handleRegister }: Props) => {
               onClick={onLoginSubmit}
               sx={{
                 backgroundColor: "#F4C63D",
-                color: "#201a4a",
+                color: "#211b5a",
                 borderRadius: "30px",
                 fontWeight: 600,
                 textTransform: "none",
@@ -235,13 +235,13 @@ const LoginCard = ({ handleLogin, handleRegister }: Props) => {
               onClick={() => { setMode("register"); setErrors({}); }}
               sx={{
                 borderRadius: "30px",
-                color: "#201a4a",
+                color: "#211b5a",
                 borderColor: "#D9D9D9",
                 textTransform: "none",
                 fontWeight: 600,
                 height: 50,
                 "&:hover": {
-                  borderColor: "#201a4a",
+                  borderColor: "#211b5a",
                   backgroundColor: "rgba(30, 58, 138, 0.05)",
                 },
               }}
@@ -366,7 +366,7 @@ const LoginCard = ({ handleLogin, handleRegister }: Props) => {
               onClick={onRegisterSubmit}
               sx={{
                 backgroundColor: "#F4C63D",
-                color: "#201a4a",
+                color: "#211b5a",
                 borderRadius: "30px",
                 fontWeight: 600,
                 textTransform: "none",
@@ -384,13 +384,13 @@ const LoginCard = ({ handleLogin, handleRegister }: Props) => {
               onClick={() => { setMode("login"); setErrors({}); }}
               sx={{
                 borderRadius: "30px",
-                color: "#201a4a",
+                color: "#211b5a",
                 borderColor: "#D9D9D9",
                 textTransform: "none",
                 fontWeight: 600,
                 height: 50,
                 "&:hover": {
-                  borderColor: "#201a4a",
+                  borderColor: "#211b5a",
                   backgroundColor: "rgba(30, 58, 138, 0.05)",
                 },
               }}

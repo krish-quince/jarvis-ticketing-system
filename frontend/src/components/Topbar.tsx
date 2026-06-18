@@ -75,7 +75,7 @@ const Topbar = () => {
     <AppBar
       position="sticky"
       elevation={0}
-      sx={{ backgroundColor: "#201a4a", color: "#fff" }}
+      sx={{ backgroundColor: "#211B5A", color: "#fff" }}
     >
       <Toolbar
         sx={{
@@ -201,7 +201,7 @@ const Topbar = () => {
                 startIcon={<Add />}
                 onClick={() => navigate("/tickets/new")}
                 sx={{
-                  backgroundColor: "#201a4a",
+                  backgroundColor: "#211b5a",
                   color: "#fff",
                   fontWeight: 600,
                   textTransform: "none",
@@ -236,7 +236,7 @@ const Topbar = () => {
                     fontSize: "14px",
                     fontWeight: 700,
                     backgroundColor: "#F4C63D",
-                    color: "#201a4a",
+                    color: "#211B5A",
                   }}
                 >
                   {userInitials}
@@ -344,7 +344,7 @@ const Topbar = () => {
                         height: 28,
                         fontSize: "12px",
                         fontWeight: 700,
-                        backgroundColor: "#201a4a",
+                        backgroundColor: "#211b5a",
                         color: "#fff",
                       }}
                     >
@@ -359,7 +359,7 @@ const Topbar = () => {
                     fullWidth
                     onClick={handleCloseMenu}
                     sx={{
-                      backgroundColor: "#201a4a",
+                      backgroundColor: "#211b5a",
                       color: "#fff",
                       textTransform: "none",
                       fontWeight: 600,
@@ -374,7 +374,7 @@ const Topbar = () => {
                     fullWidth
                     onClick={handleLogout}
                     sx={{
-                      backgroundColor: "#201a4a",
+                      backgroundColor: "#211b5a",
                       color: "#fff",
                       textTransform: "none",
                       fontWeight: 600,
@@ -394,7 +394,7 @@ const Topbar = () => {
       {/* Secondary Navigation Row (Tabs) */}
       <Box
         sx={{
-          backgroundColor: "#201a4a",
+          backgroundColor: "#211b5a",
           display: "flex",
           px: { xs: 2, sm: 3, md: 4 },
         }}
