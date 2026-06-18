@@ -35,7 +35,11 @@ import {
   updateTicketDueDate,
 } from "../services/ticketService";
 import { getUsers } from "../services/userService";
-import { getPriorities, getCategories, getSubCategories } from "../services/masterService";
+import {
+  getPriorities,
+  getCategories,
+  getSubCategories,
+} from "../services/masterService";
 
 type Ticket = {
   ticket_id: number;
@@ -70,7 +74,6 @@ type MasterPriority = {
   priority_name: string;
 };
 
-
 type ToastState = {
   open: boolean;
   message: string;
@@ -88,6 +91,7 @@ const TicketsPage = () => {
   );
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
   const [searchParams] = useSearchParams();
+  const searchText = searchParams.get("search") || "";
   const activePill = searchParams.get("filter") || "all";
   const [selectedCategory, setSelectedCategory] = useState("All categories");
   const [toast, setToast] = useState<ToastState>({
@@ -117,7 +121,6 @@ const TicketsPage = () => {
   // Due date panel — value lives in <input type="datetime-local"> format
   const [selectedDueDate, setSelectedDueDate] = useState("");
 
-  
   const currentUser = (() => {
     try {
       return JSON.parse(localStorage.getItem("user") || "{}");
@@ -169,7 +172,7 @@ const TicketsPage = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const ticketsData = await getTickets();
+      const ticketsData = await getTickets(searchText);
       setTickets(ticketsData || []);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -179,13 +182,17 @@ const TicketsPage = () => {
   };
 
   useEffect(() => {
-    if(isAdmin) {
-      loadUsers(); 
+    if (isAdmin) {
+      loadUsers();
     }
     fetchData();
     loadPriorities();
     loadCategories();
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [searchText]);
 
   const buildCategoryTree = (): CategoryTreeItem[] => {
     const tree: CategoryTreeItem[] = [
@@ -248,7 +255,18 @@ const TicketsPage = () => {
     }
   };
 
-  const getStatusInfo = (name?: string) => { switch (name?.toLowerCase()) { case "new": return { color: "#ff727e", label: "New", }; case "in progress": return { color: "#149447", label: "In Progress", }; case "closed": return { color: "#687386", label: "Closed", }; default: return { color: "#687386", label: name || "Unknown", }; } };
+  const getStatusInfo = (name?: string) => {
+    switch (name?.toLowerCase()) {
+      case "new":
+        return { color: "#ff727e", label: "New" };
+      case "in progress":
+        return { color: "#149447", label: "In Progress" };
+      case "closed":
+        return { color: "#687386", label: "Closed" };
+      default:
+        return { color: "#687386", label: name || "Unknown" };
+    }
+  };
 
   const filterPill = (ticket: Ticket) => {
     switch (activePill) {
@@ -371,7 +389,9 @@ const TicketsPage = () => {
 
     if (action === "due") {
       setSelectedDueDate(
-        singleTicket?.due_date ? toDateTimeLocalValue(singleTicket.due_date) : "",
+        singleTicket?.due_date
+          ? toDateTimeLocalValue(singleTicket.due_date)
+          : "",
       );
     }
   };
@@ -600,6 +620,31 @@ const TicketsPage = () => {
         minHeight: "calc(100vh - 255px)",
       }}
     >
+      {/*
+        FIX: this used to be the 2nd of 3 direct children inside the
+        2-column CSS grid below. With grid-template-columns set to
+        "320px minmax(0,1fr)" and default grid-auto-flow (row),
+        auto-placement fills cells in DOM order:
+          child 1 (sidebar Card)      -> row1 / col1
+          child 2 (this text, if any) -> row1 / col2
+          child 3 (TableContainer)    -> bumped to row2 / col1 (the 320px column!)
+        That's why the table only broke once you searched: searchText
+        being truthy is what added the 3rd child and shoved the table
+        into the narrow sidebar column, where its `minWidth: 900` forced
+        an overflow/clip. Moving it outside the grid keeps the grid at a
+        fixed 2 children -> 2 columns mapping every single render.
+      */}
+      {searchText && (
+        <Typography
+          sx={{
+            mb: 2,
+            color: "#999",
+          }}
+        >
+          Search Results For: "{searchText}"
+        </Typography>
+      )}
+
       <Box
         sx={{
           display: "grid",
@@ -711,14 +756,14 @@ const TicketsPage = () => {
             <TableHead>
               <TableRow sx={{ backgroundColor: "var(--bg-header)" }}>
                 <TableCell
-  padding="checkbox"
-  sx={{
-    ...headCellSx,
-    pl: 2,
-  }}
->
-  <Checkbox
-    size="small"
+                  padding="checkbox"
+                  sx={{
+                    ...headCellSx,
+                    pl: 2,
+                  }}
+                >
+                  <Checkbox
+                    size="small"
                     checked={
                       filteredTickets.length > 0 &&
                       selectedTickets.length === filteredTickets.length
@@ -809,12 +854,12 @@ const TicketsPage = () => {
                         onClick={() => navigate(`/tickets/${ticket.ticket_id}`)}
                       >
                         <TableCell
-  padding="checkbox"
-  onClick={(e) => e.stopPropagation()}
-  sx={{
-    pl: 2,
-  }}
->
+                          padding="checkbox"
+                          onClick={(e) => e.stopPropagation()}
+                          sx={{
+                            pl: 2,
+                          }}
+                        >
                           <Checkbox
                             size="small"
                             checked={selectedTickets.includes(ticket.ticket_id)}
@@ -1225,7 +1270,9 @@ const TicketsPage = () => {
                                     <CategoryTreeSelect
                                       categories={categories}
                                       selectedCategoryId={selectedCategoryId}
-                                      selectedSubCategoryId={selectedSubCategoryId}
+                                      selectedSubCategoryId={
+                                        selectedSubCategoryId
+                                      }
                                       subCategories={subCategories}
                                       onCategorySelect={async (catId) => {
                                         setSelectedCategoryId(catId);
@@ -1240,7 +1287,10 @@ const TicketsPage = () => {
                                     <Button
                                       variant="contained"
                                       onClick={handleCategoryUpdate}
-                                      disabled={!selectedCategoryId || !selectedSubCategoryId}
+                                      disabled={
+                                        !selectedCategoryId ||
+                                        !selectedSubCategoryId
+                                      }
                                       sx={primaryBtnSx}
                                     >
                                       Change category
@@ -1648,8 +1698,7 @@ const CategoryTreeSelect = ({
                                         ? "rgba(99,91,255,0.3)"
                                         : "transparent",
                                       "&:hover": {
-                                        backgroundColor:
-                                          "rgba(99,91,255,0.18)",
+                                        backgroundColor: "rgba(99,91,255,0.18)",
                                         color: "#fff",
                                       },
                                     }}

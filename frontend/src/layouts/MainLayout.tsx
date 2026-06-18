@@ -1,5 +1,10 @@
 import { Box, Button } from "@mui/material";
-import { Outlet, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import {
+  Outlet,
+  useNavigate,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
   LightMode as LightModeIcon,
@@ -18,9 +23,14 @@ const MainLayout = () => {
   const [searchParams] = useSearchParams();
   const [tickets, setTickets] = useState<any[]>([]);
 
-  const [themeMode, setThemeModeState] = useState<"light" | "dark" | "auto">(() => {
-    return (localStorage.getItem("theme-mode") as "light" | "dark" | "auto") || "auto";
-  });
+  const [themeMode, setThemeModeState] = useState<"light" | "dark" | "auto">(
+    () => {
+      return (
+        (localStorage.getItem("theme-mode") as "light" | "dark" | "auto") ||
+        "auto"
+      );
+    },
+  );
 
   const setThemeMode = (mode: "light" | "dark" | "auto") => {
     localStorage.setItem("theme-mode", mode);
@@ -31,13 +41,15 @@ const MainLayout = () => {
     const applyTheme = (mode: string) => {
       const root = document.documentElement;
       root.classList.remove("dark-theme", "light-theme");
-      
+
       if (mode === "dark") {
         root.classList.add("dark-theme");
       } else if (mode === "light") {
         root.classList.add("light-theme");
       } else {
-        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const isDark = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
         if (isDark) {
           root.classList.add("dark-theme");
         } else {
@@ -86,10 +98,20 @@ const MainLayout = () => {
     fetchTickets();
   }, [location.pathname]);
 
-  const unansweredCount = tickets.filter((t) => t.status_name?.toLowerCase() === "open").length;
-  const unclosedCount = tickets.filter((t) => t.status_name?.toLowerCase() !== "closed").length;
-  const unassignedCount = tickets.filter((t) => !t.assigned_to_user_code).length;
-  const assignedCount = tickets.filter((t) => t.assigned_to_user_code === currentUser.user_code || t.assigned_to_user_code === currentUser.userCode).length;
+  const unansweredCount = tickets.filter(
+    (t) => t.status_name?.toLowerCase() === "open",
+  ).length;
+  const unclosedCount = tickets.filter(
+    (t) => t.status_name?.toLowerCase() !== "closed",
+  ).length;
+  const unassignedCount = tickets.filter(
+    (t) => !t.assigned_to_user_code,
+  ).length;
+  const assignedCount = tickets.filter(
+    (t) =>
+      t.assigned_to_user_code === currentUser.user_code ||
+      t.assigned_to_user_code === currentUser.userCode,
+  ).length;
   const allCount = tickets.length;
 
   const activePill = searchParams.get("filter") || "all";
@@ -133,12 +155,31 @@ const MainLayout = () => {
               overflowX: "auto",
             }}
           >
-            <Box sx={{ display: "flex", gap: { xs: 1, md: 2.4 }, alignItems: "center", minWidth: "max-content" }}>
+            <Box
+              sx={{
+                display: "flex",
+                gap: { xs: 1, md: 2.4 },
+                alignItems: "center",
+                minWidth: "max-content",
+              }}
+            >
               {[
-                { id: "unanswered", label: "Unanswered", count: unansweredCount },
+                {
+                  id: "unanswered",
+                  label: "Unanswered",
+                  count: unansweredCount,
+                },
                 { id: "unclosed", label: "Unclosed", count: unclosedCount },
-                { id: "unassigned", label: "Unassigned", count: unassignedCount },
-                { id: "assigned", label: "Assigned to you", count: assignedCount },
+                {
+                  id: "unassigned",
+                  label: "Unassigned",
+                  count: unassignedCount,
+                },
+                {
+                  id: "assigned",
+                  label: "Assigned to you",
+                  count: assignedCount,
+                },
                 { id: "all", label: "All", count: allCount },
               ].map((pill) => {
                 const isActive = activePill === pill.id;
@@ -148,7 +189,11 @@ const MainLayout = () => {
                     onClick={() => navigate(`/tickets?filter=${pill.id}`)}
                     sx={{
                       backgroundColor: isActive ? "#211b5a" : "transparent",
-                      color: isActive ? "#fff" : "#475569",
+                      color: isActive
+                        ? "#fff"
+                        : themeMode === "dark" || themeMode === "auto"
+                          ? "#fff"
+                          : "#111",
                       border: "1px solid",
                       borderColor: isActive ? "#211b5a" : "transparent",
                       borderRadius: "999px",
@@ -158,29 +203,44 @@ const MainLayout = () => {
                       px: isActive ? 1.7 : 1,
                       py: 0.75,
                       minWidth: "auto",
-                      "&:hover": {
-                        backgroundColor: isActive ? "#2D2675" : "rgba(58, 52, 130, 0.08)",
-                        color: isActive ? "#fff" : "#211B5A",
-                      },
                       display: "flex",
                       alignItems: "center",
                       gap: 1.3,
+
+                      "&:hover": {
+                        backgroundColor: "#211b5a",
+                        color: "#fff",
+
+                        "& .pill-count": {
+                          backgroundColor: "#F4C63D",
+                          color: "#fff",
+                        },
+                      },
                     }}
                   >
                     {pill.label}
+
                     <Box
+                      className="pill-count"
                       sx={{
                         minWidth: 30,
                         height: 24,
                         px: 1,
                         borderRadius: "999px",
-                        backgroundColor: isActive ? "#F4C63D" : "rgba(30, 58, 138, 0.12)",
-                        color: isActive ? "#211B5A" : "#211b5a",
+                        backgroundColor: isActive
+                          ? "#F4C63D"
+                          : "rgba(30, 58, 138, 0.12)",
+                        color: isActive
+                          ? "#fff"
+                          : themeMode === "dark" || themeMode === "auto"
+                            ? "#fff"
+                            : "#111",
                         fontSize: 13,
                         fontWeight: 700,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        transition: "all 0.2s ease",
                       }}
                     >
                       {pill.count}
@@ -189,7 +249,13 @@ const MainLayout = () => {
                 );
               })}
             </Box>
-            <Box sx={{ display: "flex", gap: { xs: 1.3, md: 2.2 }, minWidth: "max-content" }}>
+            <Box
+              sx={{
+                display: "flex",
+                gap: { xs: 1.3, md: 2.2 },
+                minWidth: "max-content",
+              }}
+            >
               {[
                 { label: "Columns", icon: ViewColumn },
                 { label: "Sort by", icon: Sort },
@@ -205,7 +271,10 @@ const MainLayout = () => {
                     fontSize: 15,
                     px: 0,
                     minWidth: "auto",
-                    "&:hover": { backgroundColor: "transparent", color: "#211b5a" },
+                    "&:hover": {
+                      backgroundColor: "transparent",
+                      color: "#211b5a",
+                    },
                   }}
                 >
                   {label}
@@ -218,7 +287,9 @@ const MainLayout = () => {
 
       <Box
         sx={{
-          p: isTicketListRoute ? { xs: 2, sm: "0 40px 40px" } : { xs: 2, sm: 3, md: 4 },
+          p: isTicketListRoute
+            ? { xs: 2, sm: "0 40px 40px" }
+            : { xs: 2, sm: 3, md: 4 },
           maxWidth: isTicketListRoute ? "none" : 1440,
           mx: "auto",
           width: "100%",
@@ -261,8 +332,8 @@ const MainLayout = () => {
               mode === "light"
                 ? LightModeIcon
                 : mode === "dark"
-                ? DarkModeIcon
-                : AutoModeIcon;
+                  ? DarkModeIcon
+                  : AutoModeIcon;
             return (
               <Button
                 key={mode}
@@ -279,13 +350,9 @@ const MainLayout = () => {
                   fontWeight: 600,
                   borderRadius: "4px",
                   color: isActive ? "#fff" : "var(--text)",
-                  backgroundColor: isActive
-                    ? "#211b5a"
-                    : "transparent",
+                  backgroundColor: isActive ? "#211b5a" : "transparent",
                   "&:hover": {
-                    backgroundColor: isActive
-                      ? "#211b5a"
-                      : "rgba(0,0,0,0.04)",
+                    backgroundColor: isActive ? "#211b5a" : "rgba(0,0,0,0.04)",
                   },
                 }}
                 startIcon={<Icon sx={{ fontSize: "14px !important" }} />}

@@ -110,10 +110,15 @@ export const getAllTickets = async (
     query += `
             AND (
                 t.ticket_no ILIKE $${params.length + 1}
-                OR
-                t.subject ILIKE $${params.length + 1}
-                OR
-                t.description ILIKE $${params.length + 1}
+                OR t.subject ILIKE $${params.length + 1}
+                OR t.description ILIKE $${params.length + 1}
+                OR c.category_name ILIKE $${params.length + 1}
+                OR sc.subcategory_name ILIKE $${params.length + 1}
+                OR s.status_name ILIKE $${params.length + 1}
+                OR p.priority_name ILIKE $${params.length + 1}
+                OR t.raised_by_user_code ILIKE $${params.length + 1}
+                OR COALESCE(t.assigned_to_user_code, '') ILIKE $${params.length + 1}
+            
             )
         `;
 
