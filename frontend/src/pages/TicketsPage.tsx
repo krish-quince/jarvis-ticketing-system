@@ -117,6 +117,7 @@ const TicketsPage = () => {
   // Due date panel — value lives in <input type="datetime-local"> format
   const [selectedDueDate, setSelectedDueDate] = useState("");
 
+  
   const currentUser = (() => {
     try {
       return JSON.parse(localStorage.getItem("user") || "{}");
@@ -124,6 +125,8 @@ const TicketsPage = () => {
       return {};
     }
   })();
+
+  const isAdmin = currentUser.role_id === 1;
 
   const loadUsers = async () => {
     try {
@@ -176,8 +179,10 @@ const TicketsPage = () => {
   };
 
   useEffect(() => {
+    if(isAdmin) {
+      loadUsers(); 
+    }
     fetchData();
-    loadUsers();
     loadPriorities();
     loadCategories();
   }, []);
