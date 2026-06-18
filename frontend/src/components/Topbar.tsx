@@ -17,10 +17,8 @@ import {
   Add,
   KeyboardArrowDown,
   ConfirmationNumberOutlined,
-  MenuBookOutlined,
-  Inventory2Outlined,
   InsertChartOutlined,
-  SettingsOutlined,
+  SettingsOutlined
 } from "@mui/icons-material";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -40,7 +38,9 @@ const Topbar = () => {
   
   const userInitials = `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase() || "KB";
   const userName = user.first_name || "Krish";
-  const isAdmin = user.role_id === 1;
+  const isAdmin = user.role_id == 1;
+
+  console.log(user);
 
   // Profile Menu Popover state
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -283,10 +283,8 @@ const Topbar = () => {
         <Box sx={{ display: "flex", gap: { xs: 2, md: 3 }, width: "100%", maxWidth: "none", mx: "auto", overflowX: "auto" }}>
           {[
             { label: "Tickets", path: "/tickets", icon: ConfirmationNumberOutlined },
-            { label: "Knowledge base", path: "/knowledge-base", disabled: true, icon: MenuBookOutlined },
-            { label: "Assets", path: "/assets", disabled: true, icon: Inventory2Outlined },
             { label: "Reports", path: "/reports", disabled: true, icon: InsertChartOutlined },
-            ...(isAdmin ? [{ label: "Administration", path: "/users", icon: SettingsOutlined }] : [{ label: "Administration", path: "/users", disabled: true, icon: SettingsOutlined }]),
+            ...(isAdmin ? [{ label: "Administration", path: "/users", icon: SettingsOutlined }] : []),
           ].map((tab) => {
             const isTabActive = location.pathname === tab.path;
             const Icon = tab.icon;
