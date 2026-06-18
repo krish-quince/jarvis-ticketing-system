@@ -31,7 +31,6 @@ const Topbar = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
-  // User details
   const user = (() => {
     try {
       return JSON.parse(localStorage.getItem("user") || "{}");
@@ -46,8 +45,6 @@ const Topbar = () => {
   const userName = user.first_name || "Krish";
   const isAdmin = user.role_id == 1;
 
-
-  // Profile Menu Popover state
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -64,7 +61,6 @@ const Topbar = () => {
   const [searchText, setSearchText] = useState("");
   const [searchParams] = useSearchParams();
 
-  // Toast feedback state
   const [toast, setToast] = useState({
     open: false,
     message: "",
@@ -79,333 +75,309 @@ const Topbar = () => {
     >
       <Toolbar
         sx={{
-          minHeight: "100px  !important",
-          px: { xs: 2, sm: 3, md: 4 },
+          px: { xs: 2, md: 4 },
           py: 0,
+          minHeight: "64px !important",
         }}
       >
+        {/* ── Zone 1: Logo (left) ── */}
         <Box
           sx={{
             display: "flex",
-            justifyContent: "space-between",
             alignItems: "center",
-            width: "100%",
-            maxWidth: "none",
-            mx: "auto",
+            gap: 1.5,
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+          onClick={() => navigate("/tickets")}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              color: "#fff",
+              lineHeight: 1.05,
+              fontSize: { xs: 18, md: 22 },
+              whiteSpace: "nowrap",
+            }}
+          >
+            Quincecapital Helpdesk
+          </Typography>
+        </Box>
+
+        {/* ── Zone 2: Search (center, expands to fill space) ── */}
+        <Box
+          sx={{
+            flex: 1,
+            display: { xs: "none", md: "flex" },
+            justifyContent: "center",
+            px: 4,
           }}
         >
+          <OutlinedInput
+            size="small"
+            placeholder="Search... (or ticket ID)"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                navigate(`/tickets?search=${encodeURIComponent(searchText)}`);
+              }
+            }}
+            sx={{
+              width: "100%",
+              maxWidth: 480,
+              borderRadius: "8px",
+              bgcolor: isDark ? "#312A70" : "#fff",
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: isDark
+                  ? "rgba(255,255,255,0.15)"
+                  : "rgba(0,0,0,0.15)",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: isDark
+                  ? "rgba(255,255,255,0.3)"
+                  : "rgba(0,0,0,0.3)",
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#F4C63D",
+              },
+              "& input": {
+                color: "#F4C63D",
+                fontSize: "15px",
+                py: 0.9,
+              },
+              "& input::placeholder": {
+                color: "#F4C63D",
+                opacity: 1,
+              },
+            }}
+            startAdornment={
+              <InputAdornment
+                position="start"
+                sx={{ cursor: "pointer" }}
+                onClick={() =>
+                  navigate(`/tickets?search=${encodeURIComponent(searchText)}`)
+                }
+              >
+                <SearchIcon sx={{ color: "#F4C63D", fontSize: 22 }} />
+              </InputAdornment>
+            }
+          />
+        </Box>
+
+        {/* ── Zone 3: Actions (right) ── */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: { xs: 1, md: 1.5 },
+            flexShrink: 0,
+            ml: { xs: "auto", md: 0 },
+          }}
+        >
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => navigate("/tickets/new")}
+            sx={{
+              backgroundColor: "#F4C63D",
+              color: "#211B5A",
+              fontWeight: 700,
+              textTransform: "none",
+              borderRadius: "8px",
+              fontSize: 15,
+              px: 2,
+              py: 0.8,
+              boxShadow: "none",
+              whiteSpace: "nowrap",
+              "&:hover": {
+                backgroundColor: "#e0b22d",
+                boxShadow: "none",
+              },
+            }}
+          >
+            New ticket
+          </Button>
+
+          {/* User Profile dropdown */}
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 1.5,
+              gap: 1,
               cursor: "pointer",
             }}
-            onClick={() => navigate("/tickets")}
+            onClick={handleOpenMenu}
           >
-            <Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 700,
-                  color: "#fff",
-                  lineHeight: 1.05,
-                  fontSize: { xs: 20, md: 24 },
-                }}
-              >
-                Quincecapital Helpdesk
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: { xs: 1.25, md: 2 },
-            }}
-          >
-            <OutlinedInput
-              size="small"
-              placeholder="Search... (or ticket ID)"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  navigate(`/tickets?search=${encodeURIComponent(searchText)}`);
-                }
-              }}
+            <Avatar
               sx={{
-                width: { xs: 0, md: 320 },
-                display: { xs: "none", md: "flex" },
-                borderRadius: "8px",
-
-                bgcolor: isDark ? "#312A70" : "#fff",
-
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: isDark
-                    ? "rgba(255,255,255,0.15)"
-                    : "rgba(0,0,0,0.15)",
-                },
-
-                "&:hover .MuiOutlinedInput-notchedOutline": {
-                  borderColor: isDark
-                    ? "rgba(255,255,255,0.3)"
-                    : "rgba(0,0,0,0.3)",
-                },
-
-                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#F4C63D",
-                },
-
-                "& input": {
-                  color: "#F4C63D",
-                  fontSize: "15px",
-                  py: 0.9,
-                },
-
-                "& input::placeholder": {
-                  color: "#F4C63D",
-                  opacity: 1,
-                },
-              }}
-              startAdornment={
-                <InputAdornment
-                  position="start"
-                  sx={{ cursor: "pointer" }}
-                  onClick={() => {
-                    navigate(
-                      `/tickets?search=${encodeURIComponent(searchText)}`,
-                    );
-                  }}
-                >
-                  <SearchIcon
-                    sx={{
-                      color: "#F4C63D",
-                      fontSize: 22,
-                    }}
-                  />
-                </InputAdornment>
-              }
-            />
-
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: { xs: 1, md: 1.5 },
+                width: 40,
+                height: 40,
+                fontSize: "14px",
+                fontWeight: 700,
+                backgroundColor: "#F4C63D",
+                color: "#211B5A",
               }}
             >
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                onClick={() => navigate("/tickets/new")}
-                sx={{
-                  backgroundColor: "#211b5a",
-                  color: "#fff",
-                  fontWeight: 600,
-                  textTransform: "none",
-                  borderRadius: "8px",
-                  fontSize: 15,
-                  px: 1.7,
-                  py: 0.8,
-                  boxShadow: "none",
-                  "&:hover": {
-                    backgroundColor: "#2D2675",
-                    boxShadow: "none",
-                  },
-                }}
-              >
-                New ticket
-              </Button>
+              {userInitials}
+            </Avatar>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 15,
+                display: { xs: "none", sm: "block" },
+              }}
+            >
+              {userName}
+            </Typography>
+            <KeyboardArrowDown sx={{ color: "#F4C63D", fontSize: 22 }} />
+          </Box>
 
-              {/* User Profile dropdown */}
-              <Box
+          {/* Profile Popover */}
+          <Popover
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleCloseMenu}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+            slotProps={{
+              paper: {
+                sx: {
+                  p: 3,
+                  width: 290,
+                  borderRadius: 3,
+                  backgroundColor: "#242038",
+                  color: "#fff",
+                  boxShadow: "0px 8px 30px rgba(0, 0, 0, 0.35)",
+                  mt: 1.5,
+                },
+              },
+            }}
+          >
+            <Box
+              sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+            >
+              <Avatar
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  cursor: "pointer",
+                  width: 48,
+                  height: 48,
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  backgroundColor: "rgba(255, 255, 255, 0.12)",
+                  color: "#fff",
                 }}
-                onClick={handleOpenMenu}
               >
-                <Avatar
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    fontSize: "14px",
-                    fontWeight: 700,
-                    backgroundColor: "#F4C63D",
-                    color: "#211B5A",
-                  }}
-                >
-                  {userInitials}
-                </Avatar>
+                {userInitials}
+              </Avatar>
+              <Box sx={{ overflow: "hidden" }}>
                 <Typography
-                  variant="body2"
-                  sx={{
-                    color: "#fff",
-                    fontWeight: 600,
-                    fontSize: 15,
-                    display: { xs: "none", sm: "block" },
-                  }}
+                  variant="subtitle1"
+                  noWrap
+                  sx={{ fontWeight: 700, lineHeight: 1.2 }}
                 >
                   {userName}
                 </Typography>
-                <KeyboardArrowDown sx={{ color: "#F4C63D", fontSize: 22 }} />
+                <Typography
+                  variant="caption"
+                  noWrap
+                  sx={{
+                    color: "rgba(255, 255, 255, 0.55)",
+                    display: "block",
+                    mt: 0.2,
+                  }}
+                >
+                  {user.email}
+                </Typography>
               </Box>
+            </Box>
 
-              {/* Custom Dark Profile Popover Pop-up matching Jitbit reference */}
-              <Popover
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleCloseMenu}
-                anchorOrigin={{
-                  vertical: "bottom",
-                  horizontal: "right",
-                }}
-                transformOrigin={{
-                  vertical: "top",
-                  horizontal: "right",
-                }}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      p: 3,
-                      width: 290,
-                      borderRadius: 3,
-                      backgroundColor: "#242038", // custom dark shade from Jitbit dropdown
-                      color: "#fff",
-                      boxShadow: "0px 8px 30px rgba(0, 0, 0, 0.35)",
-                      mt: 1.5,
-                    },
-                  },
+            <Divider
+              sx={{ borderColor: "rgba(255, 255, 255, 0.08)", my: 1.5 }}
+            />
+
+            <Box sx={{ mb: 2.5 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "rgba(255, 255, 255, 0.35)",
+                  fontWeight: 600,
+                  display: "block",
+                  mb: 1,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
                 }}
               >
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+                Recently viewed tickets
+              </Typography>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Avatar
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    backgroundColor: "#211b5a",
+                    color: "#fff",
+                  }}
                 >
-                  <Avatar
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      backgroundColor: "rgba(255, 255, 255, 0.12)",
-                      color: "#fff",
-                    }}
-                  >
-                    {userInitials}
-                  </Avatar>
-                  <Box sx={{ overflow: "hidden" }}>
-                    <Typography
-                      variant="subtitle1"
-                      noWrap
-                      sx={{ fontWeight: 700, lineHeight: 1.2 }}
-                    >
-                      {userName}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      noWrap
-                      sx={{
-                        color: "rgba(255, 255, 255, 0.55)",
-                        display: "block",
-                        mt: 0.2,
-                      }}
-                    >
-                      {user.email}
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Divider
-                  sx={{ borderColor: "rgba(255, 255, 255, 0.08)", my: 1.5 }}
-                />
-
-                <Box sx={{ mb: 2.5 }}>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: "rgba(255, 255, 255, 0.35)",
-                      fontWeight: 600,
-                      display: "block",
-                      mb: 1,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    Recently viewed tickets
-                  </Typography>
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <Avatar
-                      sx={{
-                        width: 28,
-                        height: 28,
-                        fontSize: "12px",
-                        fontWeight: 700,
-                        backgroundColor: "#211b5a",
-                        color: "#fff",
-                      }}
-                    >
-                      C
-                    </Avatar>
-                  </Box>
-                </Box>
-
-                <Box sx={{ display: "flex", gap: 1.5 }}>
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    onClick={handleCloseMenu}
-                    sx={{
-                      backgroundColor: "#211b5a",
-                      color: "#fff",
-                      textTransform: "none",
-                      fontWeight: 600,
-                      borderRadius: "6px",
-                      "&:hover": { backgroundColor: "#2D2675" },
-                    }}
-                  >
-                    Profile
-                  </Button>
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    onClick={handleLogout}
-                    sx={{
-                      backgroundColor: "#211b5a",
-                      color: "#fff",
-                      textTransform: "none",
-                      fontWeight: 600,
-                      borderRadius: "6px",
-                      "&:hover": { backgroundColor: "#2D3748" },
-                    }}
-                  >
-                    Log out
-                  </Button>
-                </Box>
-              </Popover>
+                  C
+                </Avatar>
+              </Box>
             </Box>
-          </Box>
+
+            <Box sx={{ display: "flex", gap: 1.5 }}>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={handleCloseMenu}
+                sx={{
+                  backgroundColor: "#211b5a",
+                  color: "#fff",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  borderRadius: "6px",
+                  "&:hover": { backgroundColor: "#2D2675" },
+                }}
+              >
+                Profile
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={handleLogout}
+                sx={{
+                  backgroundColor: "#211b5a",
+                  color: "#fff",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  borderRadius: "6px",
+                  "&:hover": { backgroundColor: "#2D3748" },
+                }}
+              >
+                Log out
+              </Button>
+            </Box>
+          </Popover>
         </Box>
       </Toolbar>
 
       {/* Secondary Navigation Row (Tabs) */}
       <Box
         sx={{
-          backgroundColor: "#211b5a",
+          backgroundColor: "",
           display: "flex",
-          px: { xs: 2, sm: 3, md: 4 },
+          px: { xs: 0, md: 4 },
+          
         }}
       >
         <Box
           sx={{
             display: "flex",
-            gap: { xs: 2, md: 3 },
+            gap: { xs: 0, md: 3 },
             width: "100%",
-            maxWidth: "none",
-            mx: "auto",
             overflowX: "auto",
           }}
         >

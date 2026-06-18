@@ -32,6 +32,16 @@ const MainLayout = () => {
     },
   );
 
+  // Resolve the actual applied theme (light or dark) for conditional styling
+  const resolvedTheme = (() => {
+    if (themeMode === "dark") return "dark";
+    if (themeMode === "light") return "light";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  })();
+  const isDark = resolvedTheme === "dark";
+
   const setThemeMode = (mode: "light" | "dark" | "auto") => {
     localStorage.setItem("theme-mode", mode);
     setThemeModeState(mode);
@@ -41,20 +51,15 @@ const MainLayout = () => {
     const applyTheme = (mode: string) => {
       const root = document.documentElement;
       root.classList.remove("dark-theme", "light-theme");
-
       if (mode === "dark") {
         root.classList.add("dark-theme");
       } else if (mode === "light") {
         root.classList.add("light-theme");
       } else {
-        const isDark = window.matchMedia(
+        const isDarkSystem = window.matchMedia(
           "(prefers-color-scheme: dark)",
         ).matches;
-        if (isDark) {
-          root.classList.add("dark-theme");
-        } else {
-          root.classList.add("light-theme");
-        }
+        root.classList.add(isDarkSystem ? "dark-theme" : "light-theme");
       }
     };
 
@@ -65,18 +70,13 @@ const MainLayout = () => {
       const handleChange = (e: MediaQueryListEvent) => {
         const root = document.documentElement;
         root.classList.remove("dark-theme", "light-theme");
-        if (e.matches) {
-          root.classList.add("dark-theme");
-        } else {
-          root.classList.add("light-theme");
-        }
+        root.classList.add(e.matches ? "dark-theme" : "light-theme");
       };
       mediaQuery.addEventListener("change", handleChange);
       return () => mediaQuery.removeEventListener("change", handleChange);
     }
   }, [themeMode]);
 
-  // Current logged in user info
   const currentUser = (() => {
     try {
       return JSON.parse(localStorage.getItem("user") || "{}");
@@ -117,11 +117,34 @@ const MainLayout = () => {
   const activePill = searchParams.get("filter") || "all";
   const isTicketListRoute = location.pathname === "/tickets";
 
+  // Dark mode palette — matches the dark bg visible in the screenshot
+  const darkBg = "#0f1117";
+  const darkCard = "#161b27";
+  const darkBorder = "rgba(255,255,255,0.08)";
+  const darkText = "rgba(255,255,255,0.88)";
+  const darkSubtext = "rgba(255,255,255,0.45)";
+
+  const lightBg = "#f5f6fa";
+  const lightCard = "#ffffff";
+  const lightBorder = "rgba(0,0,0,0.08)";
+  const lightText = "#111827";
+
+  const bg = isDark ? darkBg : lightBg;
+  const cardBg = isDark ? darkCard : lightCard;
+  const border = isDark ? darkBorder : lightBorder;
+  const text = isDark ? darkText : lightText;
+
+  // Pill: inactive styling
+  const pillInactiveBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(33,27,90,0.06)";
+  const pillInactiveColor = isDark ? darkText : "#374151";
+  const pillCountInactiveBg = isDark ? "rgba(255,255,255,0.1)" : "rgba(33,27,90,0.1)";
+  const pillCountInactiveColor = isDark ? darkText : "#374151";
+
   return (
     <Box
       sx={{
-        backgroundColor: "var(--bg-app)",
-        color: "var(--text)",
+        backgroundColor: bg,
+        color: text,
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
@@ -133,7 +156,7 @@ const MainLayout = () => {
       {isTicketListRoute && (
         <Box
           sx={{
-            backgroundColor: "var(--bg-app)",
+            backgroundColor: bg,
             pt: 2,
             pb: 3,
             px: { xs: 2, sm: 3, md: 4 },
@@ -150,37 +173,24 @@ const MainLayout = () => {
               alignItems: "center",
               gap: 2,
               width: "100%",
-              maxWidth: "none",
-              mx: "auto",
               overflowX: "auto",
             }}
           >
+            {/* Filter Pills */}
             <Box
               sx={{
                 display: "flex",
-                gap: { xs: 1, md: 2.4 },
+                gap: { xs: 1, md: 1.5 },
                 alignItems: "center",
                 minWidth: "max-content",
               }}
             >
               {[
-                {
-                  id: "unanswered",
-                  label: "Unanswered",
-                  count: unansweredCount,
-                },
-                { id: "unclosed", label: "Unclosed", count: unclosedCount },
-                {
-                  id: "unassigned",
-                  label: "Unassigned",
-                  count: unassignedCount,
-                },
-                {
-                  id: "assigned",
-                  label: "Assigned to you",
-                  count: assignedCount,
-                },
-                { id: "all", label: "All", count: allCount },
+                { id: "unanswered", label: "Unanswered", count: unansweredCount },
+                { id: "unclosed",   label: "Unclosed",   count: unclosedCount   },
+                { id: "unassigned", label: "Unassigned", count: unassignedCount },
+                { id: "assigned",   label: "Assigned to you", count: assignedCount },
+                { id: "all",        label: "All",        count: allCount        },
               ].map((pill) => {
                 const isActive = activePill === pill.id;
                 return (
@@ -188,59 +198,52 @@ const MainLayout = () => {
                     key={pill.id}
                     onClick={() => navigate(`/tickets?filter=${pill.id}`)}
                     sx={{
-                      backgroundColor: isActive ? "#211b5a" : "transparent",
-                      color: isActive
-                        ? "#fff"
-                        : themeMode === "dark" || themeMode === "auto"
-                          ? "#fff"
-                          : "#111",
+                      backgroundColor: isActive ? "#211b5a" : pillInactiveBg,
+                      color: isActive ? "#fff" : pillInactiveColor,
                       border: "1px solid",
-                      borderColor: isActive ? "#211b5a" : "transparent",
+                      borderColor: isActive
+                        ? "#211b5a"
+                        : isDark
+                        ? "rgba(255,255,255,0.1)"
+                        : "rgba(33,27,90,0.12)",
                       borderRadius: "999px",
                       textTransform: "none",
-                      fontWeight: 400,
-                      fontSize: 15,
-                      px: isActive ? 1.7 : 1,
-                      py: 0.75,
+                      fontWeight: isActive ? 600 : 400,
+                      fontSize: 14,
+                      px: 1.5,
+                      py: 0.65,
                       minWidth: "auto",
                       display: "flex",
                       alignItems: "center",
-                      gap: 1.3,
-
+                      gap: 1,
+                      transition: "all 0.15s ease",
                       "&:hover": {
-                        backgroundColor: "#211b5a",
-                        color: "#fff",
-
+                        backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "#211b5a",
+                        color: isDark ? "#fff" : "#fff",
+                        borderColor: isDark ? "rgba(255,255,255,0.2)" : "#211b5a",
                         "& .pill-count": {
                           backgroundColor: "#F4C63D",
-                          color: "#fff",
+                          color: "#211b5a",
                         },
                       },
                     }}
                   >
                     {pill.label}
-
                     <Box
                       className="pill-count"
                       sx={{
-                        minWidth: 30,
-                        height: 24,
-                        px: 1,
+                        minWidth: 26,
+                        height: 22,
+                        px: 0.8,
                         borderRadius: "999px",
-                        backgroundColor: isActive
-                          ? "#F4C63D"
-                          : "rgba(30, 58, 138, 0.12)",
-                        color: isActive
-                          ? "#fff"
-                          : themeMode === "dark" || themeMode === "auto"
-                            ? "#fff"
-                            : "#111",
-                        fontSize: 13,
+                        backgroundColor: isActive ? "#F4C63D" : pillCountInactiveBg,
+                        color: isActive ? "#211b5a" : pillCountInactiveColor,
+                        fontSize: 12,
                         fontWeight: 700,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        transition: "all 0.2s ease",
+                        transition: "all 0.15s ease",
                       }}
                     >
                       {pill.count}
@@ -249,31 +252,33 @@ const MainLayout = () => {
                 );
               })}
             </Box>
+
+            {/* Columns / Sort / Filter */}
             <Box
               sx={{
                 display: "flex",
-                gap: { xs: 1.3, md: 2.2 },
+                gap: { xs: 1.3, md: 2 },
                 minWidth: "max-content",
               }}
             >
               {[
                 { label: "Columns", icon: ViewColumn },
                 { label: "Sort by", icon: Sort },
-                { label: "Filter", icon: FilterList },
+                { label: "Filter",  icon: FilterList },
               ].map(({ label, icon: Icon }) => (
                 <Button
                   key={label}
-                  startIcon={<Icon sx={{ fontSize: "21px !important" }} />}
+                  startIcon={<Icon sx={{ fontSize: "20px !important" }} />}
                   sx={{
-                    color: "#475569",
+                    color: isDark ? darkSubtext : "#6b7280",
                     textTransform: "none",
                     fontWeight: 400,
-                    fontSize: 15,
+                    fontSize: 14,
                     px: 0,
                     minWidth: "auto",
                     "&:hover": {
                       backgroundColor: "transparent",
-                      color: "#211b5a",
+                      color: isDark ? "#fff" : "#211b5a",
                     },
                   }}
                 >
@@ -300,30 +305,30 @@ const MainLayout = () => {
         <Outlet />
       </Box>
 
-      {/* Footer matching Jitbit HelpDesk */}
+      {/* Footer */}
       <Box
         sx={{
           mt: "auto",
-          py: 3,
+          py: 2.5,
           px: { xs: 3, md: 5 },
-          borderTop: "1px solid var(--border)",
-          backgroundColor: "var(--bg-card)",
+          borderTop: `1px solid ${border}`,
+          backgroundColor: cardBg,
           display: "flex",
           justifyContent: "flex-start",
           alignItems: "center",
           gap: 2,
         }}
       >
-        {/* Left: Theme Switcher Selector */}
+        {/* Theme switcher */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             gap: 0.5,
-            bgcolor: "rgba(0,0,0,0.03)",
+            bgcolor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
             p: 0.5,
             borderRadius: "6px",
-            border: "1px solid var(--border)",
+            border: `1px solid ${border}`,
           }}
         >
           {(["light", "dark", "auto"] as const).map((mode) => {
@@ -332,8 +337,8 @@ const MainLayout = () => {
               mode === "light"
                 ? LightModeIcon
                 : mode === "dark"
-                  ? DarkModeIcon
-                  : AutoModeIcon;
+                ? DarkModeIcon
+                : AutoModeIcon;
             return (
               <Button
                 key={mode}
@@ -349,10 +354,14 @@ const MainLayout = () => {
                   fontSize: "12px",
                   fontWeight: 600,
                   borderRadius: "4px",
-                  color: isActive ? "#fff" : "var(--text)",
+                  color: isActive ? "#fff" : isDark ? darkSubtext : "#6b7280",
                   backgroundColor: isActive ? "#211b5a" : "transparent",
                   "&:hover": {
-                    backgroundColor: isActive ? "#211b5a" : "rgba(0,0,0,0.04)",
+                    backgroundColor: isActive
+                      ? "#211b5a"
+                      : isDark
+                      ? "rgba(255,255,255,0.07)"
+                      : "rgba(0,0,0,0.04)",
                   },
                 }}
                 startIcon={<Icon sx={{ fontSize: "14px !important" }} />}
