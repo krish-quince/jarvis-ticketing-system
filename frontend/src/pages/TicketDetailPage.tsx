@@ -320,7 +320,7 @@ const TicketDetailPage = () => {
           minHeight: "70vh",
         }}
       >
-        <CircularProgress size={50} sx={{ color: "#211b5a" }} />
+        <CircularProgress size={50} sx={{ color: "#201a4a" }} />
       </Box>
     );
   }
@@ -412,7 +412,7 @@ const TicketDetailPage = () => {
                         borderColor: "var(--border)",
                         backgroundColor: "var(--bg-card)",
                         "&:hover": {
-                          borderColor: "#211b5a",
+                          borderColor: "#201a4a",
                           backgroundColor: "rgba(30, 58, 138, 0.05)",
                         },
                       }}
@@ -459,7 +459,7 @@ const TicketDetailPage = () => {
                     borderColor: "var(--border)",
                     backgroundColor: "var(--bg-card)",
                     "&:hover": {
-                      borderColor: "#211b5a",
+                      borderColor: "#201a4a",
                       backgroundColor: "rgba(30, 58, 138, 0.05)",
                     },
                   }}
@@ -708,7 +708,7 @@ const TicketDetailPage = () => {
                             </Typography>
                             <Typography
                               variant="body2"
-                              sx={{ fontWeight: 700, color: "#211b5a" }}
+                              sx={{ fontWeight: 700, color: "#201a4a" }}
                             >
                               {comment.commented_by_name ??
                                 comment.commented_by_user_code}
@@ -945,7 +945,7 @@ const TicketDetailPage = () => {
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ fontWeight: 600, color: "#211b5a", flex: 1 }}
+                  sx={{ fontWeight: 600, color: "#201a4a", flex: 1 }}
                 >
                   {ticket.raised_by_name ?? ticket.raised_by_user_code}
                 </Typography>
@@ -1151,7 +1151,7 @@ const TicketDetailPage = () => {
                 >
                   <Typography
                     variant="body2"
-                    sx={{ fontWeight: 600, color: "#211b5a" }}
+                    sx={{ fontWeight: 600, color: "#201a4a" }}
                   >
                     00:00:03
                   </Typography>

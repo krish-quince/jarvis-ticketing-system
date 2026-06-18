@@ -188,14 +188,14 @@ const MainLayout = () => {
                     key={pill.id}
                     onClick={() => navigate(`/tickets?filter=${pill.id}`)}
                     sx={{
-                      backgroundColor: isActive ? "#211b5a" : "transparent",
+                      backgroundColor: isActive ? "#201a4a" : "transparent",
                       color: isActive
                         ? "#fff"
                         : themeMode === "dark" || themeMode === "auto"
                           ? "#fff"
                           : "#111",
                       border: "1px solid",
-                      borderColor: isActive ? "#211b5a" : "transparent",
+                      borderColor: isActive ? "#201a4a" : "transparent",
                       borderRadius: "999px",
                       textTransform: "none",
                       fontWeight: 400,
@@ -208,7 +208,7 @@ const MainLayout = () => {
                       gap: 1.3,
 
                       "&:hover": {
-                        backgroundColor: "#211b5a",
+                        backgroundColor: "#201a4a",
                         color: "#fff",
 
                         "& .pill-count": {
@@ -273,7 +273,7 @@ const MainLayout = () => {
                     minWidth: "auto",
                     "&:hover": {
                       backgroundColor: "transparent",
-                      color: "#211b5a",
+                      color: "#201a4a",
                     },
                   }}
                 >
@@ -350,9 +350,9 @@ const MainLayout = () => {
                   fontWeight: 600,
                   borderRadius: "4px",
                   color: isActive ? "#fff" : "var(--text)",
-                  backgroundColor: isActive ? "#211b5a" : "transparent",
+                  backgroundColor: isActive ? "#201a4a" : "transparent",
                   "&:hover": {
-                    backgroundColor: isActive ? "#211b5a" : "rgba(0,0,0,0.04)",
+                    backgroundColor: isActive ? "#201a4a" : "rgba(0,0,0,0.04)",
                   },
                 }}
                 startIcon={<Icon sx={{ fontSize: "14px !important" }} />}

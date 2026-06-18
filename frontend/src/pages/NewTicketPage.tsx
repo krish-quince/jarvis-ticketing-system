@@ -796,12 +796,12 @@ const NewTicketPage = () => {
                 disabled={loading}
                 onClick={handleSubmit}
                 sx={{
-                  background: "#211b5a",
+                  background: "#201a4a",
                   color: "#fff",
                   textTransform: "none",
                   minWidth: 100,
                   "&.Mui-disabled": { color: "#fff" },
-                  "&:hover": { background: "#211b5a" },
+                  "&:hover": { background: "#201a4a" },
                 }}
               >
                 {loading ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : "Submit"}

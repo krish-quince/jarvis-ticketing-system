@@ -80,7 +80,7 @@ const DashboardPage = () => {
   if (loading || !stats) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "80vh" }}>
-        <CircularProgress size={50} sx={{ color: "#211b5a" }} />
+        <CircularProgress size={50} sx={{ color: "#201a4a" }} />
       </Box>
     );
   }
@@ -105,7 +105,7 @@ const DashboardPage = () => {
         sx={{
           p: { xs: 2.5, md: 3 },
           borderRadius: 2,
-          background: "linear-gradient(135deg, #211B5A 0%, #211b5a 78%, #F4C63D 180%)",
+          background: "linear-gradient(135deg, #201a4a 0%, #201a4a 78%, #F4C63D 180%)",
           color: "#fff",
           boxShadow: "0px 8px 32px rgba(33, 27, 90, 0.15)",
           display: "flex",
@@ -141,7 +141,7 @@ const DashboardPage = () => {
       {/* Recent Activity / Tickets Table */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#211B5A" }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#201a4a" }}>
             Recent Activity
           </Typography>
           <Button
@@ -149,14 +149,14 @@ const DashboardPage = () => {
             endIcon={<ArrowForward />}
             onClick={() => navigate("/tickets")}
             sx={{
-              color: "#211b5a",
-              borderColor: "#211b5a",
+              color: "#201a4a",
+              borderColor: "#201a4a",
               borderRadius: "8px",
               fontWeight: 600,
               fontSize: 14,
               textTransform: "none",
               "&:hover": {
-                borderColor: "#211B5A",
+                borderColor: "#201a4a",
                 backgroundColor: "rgba(58, 52, 130, 0.04)",
               },
             }}
@@ -177,12 +177,12 @@ const DashboardPage = () => {
           <Table size="small">
             <TableHead sx={{ backgroundColor: "#F8F9FA" }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600, color: "#211b5a" }}>Ticket No</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "#211b5a" }}>Subject</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "#211b5a" }}>Category</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "#211b5a" }}>Priority</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "#211b5a" }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "#211b5a" }} align="right">Actions</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#201a4a" }}>Ticket No</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#201a4a" }}>Subject</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#201a4a" }}>Category</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#201a4a" }}>Priority</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#201a4a" }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#201a4a" }} align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -208,7 +208,7 @@ const DashboardPage = () => {
                       }}
                       onClick={() => navigate(`/tickets/${ticket.ticket_id}`)}
                     >
-                      <TableCell sx={{ fontWeight: 600, color: "#211b5a" }}>
+                      <TableCell sx={{ fontWeight: 600, color: "#201a4a" }}>
                         {ticket.ticket_no}
                       </TableCell>
                       <TableCell sx={{ fontWeight: 500, color: "#2D3748" }}>
@@ -220,7 +220,7 @@ const DashboardPage = () => {
                           size="small"
                           sx={{
                             backgroundColor: "#E2E8F0",
-                            color: "#211b5a",
+                            color: "#201a4a",
                             fontWeight: 600,
                             borderRadius: "6px",
                           }}
@@ -255,7 +255,7 @@ const DashboardPage = () => {
                           size="small"
                           variant="text"
                           sx={{
-                            color: "#211b5a",
+                            color: "#201a4a",
                             fontWeight: 600,
                             textTransform: "none",
                             "&:hover": {
