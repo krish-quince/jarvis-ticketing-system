@@ -29,16 +29,11 @@ const LoginPage = () => {
   };
 
   const handleLogin = async (loginData: {
-    email: string;
+    user_code: string;
     password: string;
-    company_code: string;
   }) => {
     try {
-      const data: any = await login(
-        loginData.email,
-        loginData.password,
-        loginData.company_code,
-      );
+      const data: any = await login(loginData.user_code, loginData.password);
 
       localStorage.setItem("token", data.token);
 
@@ -139,14 +134,7 @@ const LoginPage = () => {
           },
         }}
       >
-        <LoginCard
-          email={email}
-          password={password}
-          setEmail={setEmail}
-          setPassword={setPassword}
-          handleLogin={handleLogin}
-          handleRegister={handleRegister}
-        />
+        <LoginCard handleLogin={handleLogin} handleRegister={handleRegister} />
 
         <Box
           sx={{

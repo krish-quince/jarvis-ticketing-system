@@ -97,13 +97,13 @@ export const registerUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { user_code, password } = req.body;
 
     const userResult = await pool.query(
       `
-            SELECT * FROM users WHERE email = $1
+            SELECT * FROM users WHERE user_code = $1
             `,
-      [email],
+      [user_code],
     );
 
     if (userResult.rows.length === 0) {

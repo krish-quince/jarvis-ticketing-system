@@ -18,14 +18,9 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import jarvisLogo from "../assets/logos/q-Jarvis-logo.jpg";
 
 type Props = {
-  email: string;
-  password: string;
-  setEmail: React.Dispatch<React.SetStateAction<string>>;
-  setPassword: React.Dispatch<React.SetStateAction<string>>;
   handleLogin: (loginData: {
-    email: string;
+    user_code: string;
     password: string;
-    company_code: string;
   }) => Promise<void>;
   handleRegister: (userData: {
     first_name: string;
@@ -50,18 +45,12 @@ const DEPARTMENTS = [
   { id: 4, label: "Billing" },
 ];
 
-const LoginCard = ({
-  email,
-  password,
-  setEmail,
-  setPassword,
-  handleLogin,
-  handleRegister,
-}: Props) => {
+const LoginCard = ({ handleLogin, handleRegister }: Props) => {
   const [mode, setMode] = useState<"login" | "register">("login");
 
   // Login state
-  const [companyCode, setCompanyCode] = useState("");
+  const [userCode, setUserCode] = useState("");
+  const [password, setPassword] = useState("");
 
   // Registration local state
   const [regFirstName, setRegFirstName] = useState("");
@@ -75,12 +64,22 @@ const LoginCard = ({
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const handleTogglePassword = () => {
-    setShowPassword(!showPassword);
-  };
+  const handleTogglePassword = () => setShowPassword((prev) => !prev);
 
-  const validateEmail = (emailStr: string) => {
-    return /\S+@\S+\.\S+/.test(emailStr);
+  const validateEmail = (emailStr: string) => /\S+@\S+\.\S+/.test(emailStr);
+
+  const onLoginSubmit = async () => {
+    const tempErrors: { [key: string]: string } = {};
+    if (!userCode.trim()) tempErrors.userCode = "User code is required";
+    if (!password) tempErrors.loginPassword = "Password is required";
+
+    if (Object.keys(tempErrors).length > 0) {
+      setErrors(tempErrors);
+      return;
+    }
+
+    setErrors({});
+    await handleLogin({ user_code: userCode.trim(), password });
   };
 
   const onRegisterSubmit = async () => {
@@ -92,12 +91,8 @@ const LoginCard = ({
     } else if (!validateEmail(regEmail)) {
       tempErrors.email = "Please enter a valid email";
     }
-    if (!regCompanyCode) {
-      tempErrors.company = "Company is required";
-    }
-    if (!regDepartmentId) {
-      tempErrors.department = "Department is required";
-    }
+    if (!regCompanyCode) tempErrors.company = "Company is required";
+    if (!regDepartmentId) tempErrors.department = "Department is required";
     if (!regPassword) {
       tempErrors.password = "Password is required";
     } else if (regPassword.length < 6) {
@@ -123,9 +118,6 @@ const LoginCard = ({
         role_id: 4,
         password: regPassword,
       });
-      // Clear form and toggle back to login on success
-      setEmail(regEmail.trim().toLowerCase());
-      setPassword("");
       setMode("login");
       setRegFirstName("");
       setRegLastName("");
@@ -139,27 +131,17 @@ const LoginCard = ({
     }
   };
 
-  const onLoginSubmit = async () => {
-    const tempErrors: { [key: string]: string } = {};
-    if (!email.trim()) {
-      tempErrors.loginEmail = "Email is required";
-    } else if (!validateEmail(email)) {
-      tempErrors.loginEmail = "Please enter a valid email";
-    }
-    if (!password) {
-      tempErrors.loginPassword = "Password is required";
-    }
-    if (!companyCode) {
-      tempErrors.loginCompany = "Company is required";
-    }
+  const inputSx = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: "30px",
+      backgroundColor: "#EAF1FF",
+    },
+  };
 
-    if (Object.keys(tempErrors).length > 0) {
-      setErrors(tempErrors);
-      return;
-    }
-
-    setErrors({});
-    await handleLogin({ email, password, company_code: companyCode });
+  const selectSx = {
+    borderRadius: "30px",
+    backgroundColor: "#EAF1FF",
+    "& .MuiOutlinedInput-notchedOutline": { borderWidth: 1 },
   };
 
   return (
@@ -175,13 +157,7 @@ const LoginCard = ({
       }}
     >
       <Box sx={{ textAlign: "center", mb: mode === "register" ? 2 : 4 }}>
-        <img
-          src={jarvisLogo}
-          alt="Jarvis"
-          style={{
-            width: 160,
-          }}
-        />
+        <img src={jarvisLogo} alt="Jarvis" style={{ width: 160 }} />
         <Typography variant="h6" sx={{ color: "#211b5a", fontWeight: 600, mt: 1 }}>
           {mode === "login" ? "Sign In to Your Account" : "Create New Account"}
         </Typography>
@@ -189,51 +165,14 @@ const LoginCard = ({
 
       {mode === "login" ? (
         <>
-          {/* Company Selector on Login */}
-          <FormControl
-            fullWidth
-            error={!!errors.loginCompany}
-            sx={{ mt: 2 }}
-          >
-            <InputLabel id="login-company-label" sx={{ ml: 1 }}>Company</InputLabel>
-            <Select
-              labelId="login-company-label"
-              value={companyCode}
-              label="Company"
-              onChange={(e) => setCompanyCode(e.target.value)}
-              sx={{
-                borderRadius: "30px",
-                backgroundColor: "#EAF1FF",
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderWidth: 1,
-                },
-              }}
-            >
-              {COMPANIES.map((c) => (
-                <MenuItem key={c.code} value={c.code}>
-                  {c.label}
-                </MenuItem>
-              ))}
-            </Select>
-            {errors.loginCompany && (
-              <FormHelperText>{errors.loginCompany}</FormHelperText>
-            )}
-          </FormControl>
-
           <TextField
             fullWidth
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={!!errors.loginEmail}
-            helperText={errors.loginEmail}
-            sx={{
-              mt: 2,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "30px",
-                backgroundColor: "#EAF1FF",
-              },
-            }}
+            placeholder="User Code"
+            value={userCode}
+            onChange={(e) => setUserCode(e.target.value)}
+            error={!!errors.userCode}
+            helperText={errors.userCode}
+            sx={{ mt: 2, ...inputSx }}
           />
 
           <TextField
@@ -244,13 +183,7 @@ const LoginCard = ({
             onChange={(e) => setPassword(e.target.value)}
             error={!!errors.loginPassword}
             helperText={errors.loginPassword}
-            sx={{
-              mt: 3,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "30px",
-                backgroundColor: "#EAF1FF",
-              },
-            }}
+            sx={{ mt: 3, ...inputSx }}
             slotProps={{
               input: {
                 endAdornment: (
@@ -290,9 +223,7 @@ const LoginCard = ({
                 textTransform: "none",
                 height: 50,
                 boxShadow: "0px 4px 12px rgba(244, 198, 61, 0.3)",
-                "&:hover": {
-                  backgroundColor: "#e2b635",
-                },
+                "&:hover": { backgroundColor: "#e2b635" },
               }}
             >
               Sign In
@@ -301,10 +232,7 @@ const LoginCard = ({
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => {
-                setMode("register");
-                setErrors({});
-              }}
+              onClick={() => { setMode("register"); setErrors({}); }}
               sx={{
                 borderRadius: "30px",
                 color: "#211b5a",
@@ -332,12 +260,7 @@ const LoginCard = ({
               onChange={(e) => setRegFirstName(e.target.value)}
               error={!!errors.firstName}
               helperText={errors.firstName}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "30px",
-                  backgroundColor: "#EAF1FF",
-                },
-              }}
+              sx={inputSx}
             />
             <TextField
               fullWidth
@@ -346,12 +269,7 @@ const LoginCard = ({
               onChange={(e) => setRegLastName(e.target.value)}
               error={!!errors.lastName}
               helperText={errors.lastName}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "30px",
-                  backgroundColor: "#EAF1FF",
-                },
-              }}
+              sx={inputSx}
             />
           </Box>
 
@@ -362,75 +280,39 @@ const LoginCard = ({
             onChange={(e) => setRegEmail(e.target.value)}
             error={!!errors.email}
             helperText={errors.email}
-            sx={{
-              mt: 2.5,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "30px",
-                backgroundColor: "#EAF1FF",
-              },
-            }}
+            sx={{ mt: 2.5, ...inputSx }}
           />
 
-          {/* Company Dropdown */}
-          <FormControl
-            fullWidth
-            error={!!errors.company}
-            sx={{ mt: 2.5 }}
-          >
+          <FormControl fullWidth error={!!errors.company} sx={{ mt: 2.5 }}>
             <InputLabel id="reg-company-label" sx={{ ml: 1 }}>Company</InputLabel>
             <Select
               labelId="reg-company-label"
               value={regCompanyCode}
               label="Company"
               onChange={(e) => setRegCompanyCode(e.target.value)}
-              sx={{
-                borderRadius: "30px",
-                backgroundColor: "#EAF1FF",
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderWidth: 1,
-                },
-              }}
+              sx={selectSx}
             >
               {COMPANIES.map((c) => (
-                <MenuItem key={c.code} value={c.code}>
-                  {c.label}
-                </MenuItem>
+                <MenuItem key={c.code} value={c.code}>{c.label}</MenuItem>
               ))}
             </Select>
-            {errors.company && (
-              <FormHelperText>{errors.company}</FormHelperText>
-            )}
+            {errors.company && <FormHelperText>{errors.company}</FormHelperText>}
           </FormControl>
 
-          {/* Department Dropdown — now uses department_id */}
-          <FormControl
-            fullWidth
-            error={!!errors.department}
-            sx={{ mt: 2.5 }}
-          >
+          <FormControl fullWidth error={!!errors.department} sx={{ mt: 2.5 }}>
             <InputLabel id="reg-department-label" sx={{ ml: 1 }}>Department</InputLabel>
             <Select
               labelId="reg-department-label"
               value={regDepartmentId}
               label="Department"
               onChange={(e) => setRegDepartmentId(Number(e.target.value))}
-              sx={{
-                borderRadius: "30px",
-                backgroundColor: "#EAF1FF",
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderWidth: 1,
-                },
-              }}
+              sx={selectSx}
             >
               {DEPARTMENTS.map((d) => (
-                <MenuItem key={d.id} value={d.id}>
-                  {d.label}
-                </MenuItem>
+                <MenuItem key={d.id} value={d.id}>{d.label}</MenuItem>
               ))}
             </Select>
-            {errors.department && (
-              <FormHelperText>{errors.department}</FormHelperText>
-            )}
+            {errors.department && <FormHelperText>{errors.department}</FormHelperText>}
           </FormControl>
 
           <TextField
@@ -441,13 +323,7 @@ const LoginCard = ({
             onChange={(e) => setRegPassword(e.target.value)}
             error={!!errors.password}
             helperText={errors.password}
-            sx={{
-              mt: 2.5,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "30px",
-                backgroundColor: "#EAF1FF",
-              },
-            }}
+            sx={{ mt: 2.5, ...inputSx }}
             slotProps={{
               input: {
                 endAdornment: (
@@ -469,13 +345,7 @@ const LoginCard = ({
             onChange={(e) => setRegConfirmPassword(e.target.value)}
             error={!!errors.confirmPassword}
             helperText={errors.confirmPassword}
-            sx={{
-              mt: 2.5,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "30px",
-                backgroundColor: "#EAF1FF",
-              },
-            }}
+            sx={{ mt: 2.5, ...inputSx }}
             slotProps={{
               input: {
                 endAdornment: (
@@ -502,9 +372,7 @@ const LoginCard = ({
                 textTransform: "none",
                 height: 50,
                 boxShadow: "0px 4px 12px rgba(244, 198, 61, 0.3)",
-                "&:hover": {
-                  backgroundColor: "#e2b635",
-                },
+                "&:hover": { backgroundColor: "#e2b635" },
               }}
             >
               Submit
@@ -513,10 +381,7 @@ const LoginCard = ({
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => {
-                setMode("login");
-                setErrors({});
-              }}
+              onClick={() => { setMode("login"); setErrors({}); }}
               sx={{
                 borderRadius: "30px",
                 color: "#211b5a",
