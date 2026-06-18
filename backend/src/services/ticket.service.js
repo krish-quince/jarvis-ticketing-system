@@ -3,7 +3,7 @@ import * as ticketRepository from "../repositories/ticket.repository.js";
 import * as historyService from "./history.service.js";
 import {
   canAccessTicket,
-  canManageTicket,
+  canManageTicket
 } from "../utils/ticketPermissions.js";
 import * as masterRepository from "../repositories/master.repository.js";
 
@@ -213,13 +213,17 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
     throw new Error("Ticket not found.");
   }
 
+  if(ticket.status_name == "Closed") {
+    throw new Error("Cant update closed ticket.");
+  }
+
   // Check Read Access
   if (!canAccessTicket(ticket, user)) {
     throw new Error("Access denied to this ticket.");
   }
 
   // Check Update status permission:
-  if (!canManageTicket(user)) {
+  if (!canManageTicket(ticket, user)) {
     const isCreator = ticket.raised_by_user_code === user.userCode;
     const statusRes = await pool.query(
       "SELECT status_name FROM ticket_statuses WHERE status_id = $1",
@@ -291,13 +295,17 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
     throw new Error("Ticket not found.");
   }
 
+  if(ticket.status_name == "Closed") {
+    throw new Error("Cant update closed ticket.");
+  }
+
   // Check Read Access
   if (!canAccessTicket(ticket, user)) {
     throw new Error("Access denied to this ticket.");
   }
 
   // Check Assign Permission
-  if (!canManageTicket(user)) {
+  if (!canManageTicket(ticket, user)) {
     throw new Error("Access denied. Only technicians can assign tickets.");
   }
 
@@ -362,13 +370,17 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
     throw new Error("Ticket not found.");
   }
 
-  // Check Read Access
+  if(ticket.status_name == "Closed") {
+    throw new Error("Cant update closed ticket.");
+  }
+
+  // Check Read & update Access
   if (!canAccessTicket(ticket, user)) {
     throw new Error("Access denied to this ticket.");
   }
 
   // Check Priority Permission
-  if (!canManageTicket(user)) {
+  if (!canManageTicket(ticket, user)) {
     throw new Error(
       "Access denied. Only technicians can update ticket priority.",
     );
@@ -435,13 +447,17 @@ export const updateTicketCategory = async (
     throw new Error("Ticket not found.");
   }
 
-  // Check Read Access
+  if(ticket.status_name == "Closed") {
+    throw new Error("Cant update closed ticket.");
+  }
+
+  // Check Read & update access 
   if (!canAccessTicket(ticket, user)) {
     throw new Error("Access denied to this ticket.");
   }
 
   // Check Category Permission
-  if (!canManageTicket(user)) {
+  if (!canManageTicket(ticket, user)) {
     throw new Error(
       "Access denied. Only technicians can update ticket category.",
     );
@@ -522,14 +538,13 @@ export const resolveTicket = async (ticketId, statusId, user) => {
     throw new Error("Ticket not found.");
   }
 
-  // Check Read Access
-  if (!canAccessTicket(ticket, user)) {
-    throw new Error("Access denied to this ticket.");
+  if(ticket.status_name == "Closed") {
+    throw new Error("Cant update closed ticket.");
   }
 
-  // Check Resolve Permission
-  if (!canManageTicket(user)) {
-    throw new Error("Access denied. Only technicians can resolve tickets.");
+  // Check Read & update access
+  if (!canAccessTicket(ticket, user)) {
+    throw new Error("Access denied to this ticket.");
   }
 
   const resolvedStatus = statusId
@@ -606,6 +621,10 @@ export const takeoverTicket = async (ticketId, user) => {
     throw new Error("Ticket not found.");
   }
 
+  if(ticket.status_name == "Closed") {
+    throw new Error("Cant update closed ticket.");
+  }
+
   if (!canAccessTicket(ticket, user)) {
     throw new Error("Access denied to this ticket.");
   }
@@ -662,11 +681,15 @@ export const updateTicketDueDate = async (ticketId, dueDate, user) => {
     throw new Error("Ticket not found.");
   }
 
+  if(ticket.status_name == "Closed") {
+    throw new Error("Cant update closed ticket.");
+  }
+
   if (!canAccessTicket(ticket, user)) {
     throw new Error("Access denied to this ticket.");
   }
 
-  if (!canManageTicket(user)) {
+  if (!canManageTicket(ticket, user)) {
     throw new Error("Access denied. Only technicians can update due date.");
   }
 

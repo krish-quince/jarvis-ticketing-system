@@ -46,7 +46,6 @@ const Topbar = () => {
   const userName = user.first_name || "Krish";
   const isAdmin = user.role_id == 1;
 
-  console.log(user);
 
   // Profile Menu Popover state
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

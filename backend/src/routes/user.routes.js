@@ -17,7 +17,6 @@ const router = Router();
 router.get(
     "/",
     verifyToken,
-    requireAdmin,
     getAllUsers
 );
 

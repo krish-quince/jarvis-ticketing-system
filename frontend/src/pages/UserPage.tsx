@@ -26,7 +26,6 @@ const UsersPage = () => {
   const fetchUsers = async () => {
     try {
       const data = await getUsers();
-      console.log("Users:", data);
       setUsers(data);
     } catch (error) {
       console.error(error);

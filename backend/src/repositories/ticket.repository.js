@@ -37,24 +37,24 @@ export const createTicket = async (ticket, client = null) => {
         RETURNING *
         `,
     [
-  ticket.companyCode,
-  ticket.ticketNo,
-  ticket.subject,
-  ticket.description,
+      ticket.companyCode,
+      ticket.ticketNo,
+      ticket.subject,
+      ticket.description,
 
-  ticket.category_id,
-  ticket.subcategory_id,
+      ticket.category_id,
+      ticket.subcategory_id,
 
-  ticket.priority_id,
-  ticket.status_id,
+      ticket.priority_id,
+      ticket.status_id,
 
-  ticket.raisedByUserCode,
-  ticket.assigned_to_user_code,
+      ticket.raisedByUserCode,
+      ticket.assigned_to_user_code,
 
-  ticket.due_date,
+      ticket.due_date,
 
-  ticket.department_id,
-],
+      ticket.department_id,
+    ],
   );
 
   return result.rows[0];
@@ -70,71 +70,65 @@ export const getAllTickets = async (
   const offset = (page - 1) * limit;
 
   let query = `
-         SELECT
-            t.*,
-            s.status_name,
-            s.status_color,
-            c.category_name,
-            sc.subcategory_name,
-            p.priority_name,
-            p.priority_color
-         FROM tickets t
-         LEFT JOIN ticket_statuses s
-            ON s.status_id = t.status_id
-         LEFT JOIN ticket_categories c
-            ON c.category_id = t.category_id
-         LEFT JOIN ticket_subcategories sc
-            ON sc.subcategory_id = t.subcategory_id
-         LEFT JOIN ticket_priorities p
-            ON p.priority_id = t.priority_id
-         WHERE t.company_code = $1
-    `;
+    SELECT
+      t.*,
+      s.status_name,
+      s.status_color,
+      c.category_name,
+      sc.subcategory_name,
+      p.priority_name,
+      p.priority_color
+    FROM tickets t
+    LEFT JOIN ticket_statuses s
+      ON s.status_id = t.status_id
+    LEFT JOIN ticket_categories c
+      ON c.category_id = t.category_id
+    LEFT JOIN ticket_subcategories sc
+      ON sc.subcategory_id = t.subcategory_id
+    LEFT JOIN ticket_priorities p
+      ON p.priority_id = t.priority_id
+    WHERE t.company_code = $1
+  `;
 
   const params = [companyCode];
 
-  if (user && Number(user.roleId) !== 1) {
-    query += `
-            AND (
-                t.assigned_to_user_code = $2
-                OR
-                t.raised_by_user_code = $3
-                OR
-                t.department_id = $4
-            )
-        `;
+  const isAdmin = user && Number(user.roleId) === 1;
 
-    params.push(user.userCode, user.userCode, user.departmentId);
+  if (!isAdmin) {
+    query += `
+      AND (
+        t.assigned_to_user_code = $${params.length + 1}
+        OR t.raised_by_user_code = $${params.length + 1}
+      )
+    `;
+    params.push(user.userCode);
   }
 
   if (search) {
     query += `
-            AND (
-                t.ticket_no ILIKE $${params.length + 1}
-                OR t.subject ILIKE $${params.length + 1}
-                OR t.description ILIKE $${params.length + 1}
-                OR c.category_name ILIKE $${params.length + 1}
-                OR sc.subcategory_name ILIKE $${params.length + 1}
-                OR s.status_name ILIKE $${params.length + 1}
-                OR p.priority_name ILIKE $${params.length + 1}
-                OR t.raised_by_user_code ILIKE $${params.length + 1}
-                OR COALESCE(t.assigned_to_user_code, '') ILIKE $${params.length + 1}
-            
-            )
-        `;
-
+      AND (
+        t.ticket_no ILIKE $${params.length + 1}
+        OR t.subject ILIKE $${params.length + 1}
+        OR t.description ILIKE $${params.length + 1}
+        OR c.category_name ILIKE $${params.length + 1}
+        OR sc.subcategory_name ILIKE $${params.length + 1}
+        OR s.status_name ILIKE $${params.length + 1}
+        OR p.priority_name ILIKE $${params.length + 1}
+        OR t.raised_by_user_code ILIKE $${params.length + 1}
+        OR COALESCE(t.assigned_to_user_code, '') ILIKE $${params.length + 1}
+      )
+    `;
     params.push(`%${search}%`);
   }
 
   query += `
-        ORDER BY t.ticket_id DESC
-        LIMIT $${params.length + 1}
-        OFFSET $${params.length + 2}
-    `;
-
+    ORDER BY t.ticket_id DESC
+    LIMIT $${params.length + 1}
+    OFFSET $${params.length + 2}
+  `;
   params.push(Number(limit), Number(offset));
 
   const result = await pool.query(query, params);
-
   return result.rows;
 };
 
@@ -347,10 +341,7 @@ export const getCategoryByIdAndCompany = async (categoryId) => {
   return result.rows[0];
 };
 
-export const getSubCategoryById = async (
-  subCategoryId
-) => {
-
+export const getSubCategoryById = async (subCategoryId) => {
   const result = await pool.query(
     `
       SELECT
@@ -359,7 +350,7 @@ export const getSubCategoryById = async (
       FROM ticket_subcategories
       WHERE subcategory_id = $1
     `,
-    [subCategoryId]
+    [subCategoryId],
   );
 
   return result.rows[0];
@@ -393,9 +384,8 @@ export const updateTicketDueDate = async (
   ticketId,
   dueDate,
   companyCode,
-  client = null
+  client = null,
 ) => {
-
   const db = client || pool;
 
   const result = await db.query(
@@ -410,7 +400,7 @@ export const updateTicketDueDate = async (
         company_code = $3
       RETURNING *
     `,
-    [dueDate, ticketId, companyCode]
+    [dueDate, ticketId, companyCode],
   );
 
   return result.rows[0];

@@ -12,6 +12,12 @@ export const canAccessTicket = (ticket, user) => {
     );
 };
 
-export const canManageTicket = (user) => {
-    return Number(user.roleId) === 1 || Number(user.roleId) === 3;
+export const canManageTicket = (ticket, user) => {
+    if (!user) return false;
+
+    if (Number(user.roleId) === 1) {
+        return true;
+    }
+
+    return ticket.assigned_to_user_code === user.userCode || ticket.raised_by_user_code === user.userCode;
 };

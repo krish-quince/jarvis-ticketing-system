@@ -131,6 +131,28 @@ const TicketsPage = () => {
 
   const isAdmin = currentUser.role_id === 1;
 
+  // Matches the same userCode/user_code dance used elsewhere in this file
+  // (see filterPill's "assigned" case) so the comparison stays consistent.
+  const isCurrentUser = (code?: string | null) =>
+    !!code &&
+    (code === currentUser.userCode || code === currentUser.user_code);
+
+  // Permission rule:
+  // - Admins can always bulk-assign.
+  // - Non-admins can only bulk-assign when EVERY selected ticket is already
+  //   assigned to them. Mixed selections (some theirs, some not, or some
+  //   unassigned) do not get the option — that's an all-or-nothing bulk op,
+  //   and partial permission on a bulk action is just a confusing UI to ship.
+  // NOTE: this only controls what renders. The server-side assignTicket()
+  // call must enforce this same rule independently — never trust the client.
+  const canBulkAssign =
+    isAdmin ||
+    (selectedTickets.length > 0 &&
+      selectedTickets.every((id) => {
+        const t = tickets.find((tk) => tk.ticket_id === id);
+        return t ? isCurrentUser(t.assigned_to_user_code) : false;
+      }));
+
   const loadUsers = async () => {
     try {
       const data = await getUsers();
@@ -182,9 +204,12 @@ const TicketsPage = () => {
   };
 
   useEffect(() => {
-    if (isAdmin) {
-      loadUsers();
-    }
+    // Load for everyone now — admins need it, and so does a non-admin who is
+    // currently assigned to ticket(s) and is allowed to reassign them.
+    // Visibility of the Assign action itself is still controlled by
+    // canBulkAssign; this just makes sure the dropdown isn't empty when it
+    // IS shown. Backend must still gate the actual update.
+    loadUsers();
     fetchData();
     loadPriorities();
     loadCategories();
@@ -193,6 +218,15 @@ const TicketsPage = () => {
   useEffect(() => {
     fetchData();
   }, [searchText]);
+
+  // If the selection changes (or tickets reload) while the Assign panel is
+  // open and the user no longer qualifies, close it instead of leaving a
+  // stale panel the user technically shouldn't be looking at.
+  useEffect(() => {
+    if (activeBulkAction === "assign" && !canBulkAssign) {
+      closeBulkPanel();
+    }
+  }, [canBulkAssign]);
 
   const buildCategoryTree = (): CategoryTreeItem[] => {
     const tree: CategoryTreeItem[] = [
@@ -415,12 +449,12 @@ const TicketsPage = () => {
       closeBulkPanel();
       setSelectedTickets([]);
       await fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       setToast({
         open: true,
         severity: "error",
-        message: "Failed to assign tickets",
+        message: error.response?.data?.message || "Failed to assign tickets",
       });
     }
   };
@@ -444,12 +478,11 @@ const TicketsPage = () => {
       closeBulkPanel();
       setSelectedTickets([]);
       await fetchData();
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
       setToast({
         open: true,
         severity: "error",
-        message: "Failed to update priority",
+        message: error.response?.data?.message || "Failed to update priority",
       });
     }
   };
@@ -479,12 +512,12 @@ const TicketsPage = () => {
       closeBulkPanel();
       setSelectedTickets([]);
       await fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       setToast({
         open: true,
         severity: "error",
-        message: "Failed to update category",
+        message: error.response?.data?.message || "Failed to update category",
       });
     }
   };
@@ -508,12 +541,12 @@ const TicketsPage = () => {
       closeBulkPanel();
       setSelectedTickets([]);
       await fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       setToast({
         open: true,
         severity: "error",
-        message: "Failed to update due date",
+        message: error.response?.data?.message || "Failed to update due date",
       });
     }
   };
@@ -542,12 +575,12 @@ const TicketsPage = () => {
 
       setSelectedTickets([]);
       await fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       setToast({
         open: true,
         severity: "error",
-        message: "Failed to close tickets",
+        message: error.response?.data?.message || "Failed to close tickets",
       });
     }
   };
@@ -566,12 +599,12 @@ const TicketsPage = () => {
 
       setSelectedTickets([]);
       await fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       setToast({
         open: true,
         severity: "error",
-        message: "Failed to takeover tickets",
+        message: error.response?.data?.message || "Failed to takeover tickets",
       });
     }
   };
@@ -584,7 +617,9 @@ const TicketsPage = () => {
 
   const dropdownActions: { label: string; onClick: () => void }[] = [
     { label: "Close", onClick: handleCloseTickets },
-    { label: "Assign", onClick: () => openBulkPanel("assign") },
+    ...(canBulkAssign
+      ? [{ label: "Assign", onClick: () => openBulkPanel("assign") }]
+      : []),
     { label: "Priority", onClick: () => openBulkPanel("priority") },
     { label: "Category", onClick: () => openBulkPanel("category") },
     { label: "Due", onClick: () => openBulkPanel("due") },
@@ -620,20 +655,6 @@ const TicketsPage = () => {
         minHeight: "calc(100vh - 255px)",
       }}
     >
-      {/*
-        FIX: this used to be the 2nd of 3 direct children inside the
-        2-column CSS grid below. With grid-template-columns set to
-        "320px minmax(0,1fr)" and default grid-auto-flow (row),
-        auto-placement fills cells in DOM order:
-          child 1 (sidebar Card)      -> row1 / col1
-          child 2 (this text, if any) -> row1 / col2
-          child 3 (TableContainer)    -> bumped to row2 / col1 (the 320px column!)
-        That's why the table only broke once you searched: searchText
-        being truthy is what added the 3rd child and shoved the table
-        into the narrow sidebar column, where its `minWidth: 900` forced
-        an overflow/clip. Moving it outside the grid keeps the grid at a
-        fixed 2 children -> 2 columns mapping every single render.
-      */}
       {searchText && (
         <Typography
           sx={{
@@ -1399,8 +1420,6 @@ const checkboxSx = {
   "&.Mui-checked": { color: "var(--accent)" },
 };
 
-// ── Shared styles for every bulk-action panel (Assign/Priority/Category/Due) ──
-
 const panelRowSx = {
   backgroundColor: "#16151f",
   display: "flex",
@@ -1468,10 +1487,6 @@ const cancelBtnSx = {
   "&:hover": { backgroundColor: "rgba(124,108,255,0.35)" },
 };
 
-// ── CategoryTreeSelect ────────────────────────────────────────────────────────
-// Opens a portal-based dropdown that escapes all overflow:hidden ancestors.
-// The menu opens UPWARD (above the bulk bar) matching the reference screenshot.
-
 type CategoryTreeSelectProps = {
   categories: MasterCategory[];
   selectedCategoryId: string;
@@ -1514,11 +1529,9 @@ const CategoryTreeSelect = ({
   const handleOpen = () => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    // Open upward: bottom of menu aligns with top of trigger
     setMenuStyle({
       position: "fixed",
       left: rect.left,
-      // bottom edge = top of the trigger, offset slightly
       bottom: window.innerHeight - rect.top + 6,
       minWidth: rect.width,
       zIndex: 9999,
@@ -1528,7 +1541,6 @@ const CategoryTreeSelect = ({
 
   return (
     <>
-      {/* Trigger button */}
       <Box
         ref={triggerRef}
         onClick={() => (open ? setOpen(false) : handleOpen())}
@@ -1570,17 +1582,14 @@ const CategoryTreeSelect = ({
         />
       </Box>
 
-      {/* Portal dropdown — renders at document.body level, escapes all overflow */}
       {open &&
         ReactDOM.createPortal(
           <>
-            {/* Full-screen backdrop */}
             <Box
               onClick={() => setOpen(false)}
               sx={{ position: "fixed", inset: 0, zIndex: 9998 }}
             />
 
-            {/* Menu */}
             <Box
               style={menuStyle}
               sx={{
@@ -1600,7 +1609,6 @@ const CategoryTreeSelect = ({
 
                 return (
                   <Box key={parent.category_id}>
-                    {/* Bold parent header */}
                     <Box
                       onClick={async () => {
                         if (kids.length === 0) {
@@ -1631,7 +1639,6 @@ const CategoryTreeSelect = ({
                       {parent.category_name}
                     </Box>
 
-                    {/* Child rows */}
                     {kids.map((kid) => {
                       const isKidSelected =
                         String(kid.category_id) === selectedCategoryId;
@@ -1640,7 +1647,6 @@ const CategoryTreeSelect = ({
                           <Box
                             onClick={async () => {
                               await onCategorySelect(String(kid.category_id));
-                              // Stay open so user can pick subcategory
                             }}
                             sx={{
                               pl: 3.5,
@@ -1664,7 +1670,6 @@ const CategoryTreeSelect = ({
                             {kid.category_name}
                           </Box>
 
-                          {/* Subcategory rows inline under selected child */}
                           {isKidSelected && subCategories.length > 0 && (
                             <Box
                               sx={{
@@ -1713,7 +1718,6 @@ const CategoryTreeSelect = ({
                       );
                     })}
 
-                    {/* Subcategories under a leaf parent (no children) */}
                     {isParentSelected &&
                       kids.length === 0 &&
                       subCategories.length > 0 && (

@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict gwRkZENRFi1nnm337aPyUGEw9KtoZNEuWHFFocLpkoy9u91cO8Fk6HFkFoSRauL
+\restrict hJovGsDUdmaI4VoBd7hBKhaHJk9eqYu8uYjroDVEngSkZoXALELj9guqWHnk3g5
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
 
--- Started on 2026-06-17 15:49:52
+-- Started on 2026-06-18 16:17:40
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -772,6 +772,10 @@ COPY public.ticket_categories (category_id, category_name, category_description,
 --
 
 COPY public.ticket_comments (comment_id, ticket_id, commented_by_user_code, comment_text, created_at) FROM stdin;
+2	11	SAL001	<p>write comment heredfgh</p>	2026-06-18 15:49:02.085048
+3	11	SAL001	<p>2nd 3rd comment</p>	2026-06-18 15:49:47.387839
+4	11	FIN002	<p>reply replyscvbn dfghj</p>	2026-06-18 15:50:44.642879
+5	11	FIN002	<p>conversation</p>	2026-06-18 15:54:48.406516
 \.
 
 
@@ -805,6 +809,7 @@ COPY public.ticket_history (history_id, ticket_id, field_changed, old_value, new
 22	8	Subcategory	9	10	QC_ADMIN	2026-06-17 15:24:24.477952
 23	8	Category	2	2	QC_ADMIN	2026-06-17 15:24:44.323243
 24	8	Subcategory	10	9	QC_ADMIN	2026-06-17 15:24:44.323243
+25	11	Created		Ticket Created	SAL001	2026-06-18 15:48:32.907114
 \.
 
 
@@ -863,6 +868,7 @@ COPY public.tickets (ticket_id, ticket_no, subject, description, category_id, pr
 9	TKT-1781606565194	jgh c.	<p>hvyhyli,yob</p>	2	1	1	QC_KRIBHO_8071	IT001	\N	\N	\N	f	2026-06-16 16:12:45.197581	\N	8	1	QC
 10	TKT-1781606589251	,vu6f,6o6xcoxs6	<p>mvtliuv,.l</p>	2	4	3	QC_KRIBHO_8071	QC_ADMIN	\N	2026-07-02 14:00:00	\N	f	2026-06-17 15:07:17.47032	\N	9	1	QC
 8	TKT-1781606548742	.l/ic.d7od7co/	<p>ct,kutcu7o6c</p>	2	3	1	QC_KRIBHO_8071	IT001	\N	\N	\N	f	2026-06-17 15:24:44.323243	\N	9	1	QC
+11	TKT-1781777912848	Urgent ticket	<p>ticket with info</p>	1	4	1	SAL001	FIN002	\N	\N	\N	f	2026-06-18 15:48:32.907114	\N	7	1	QC
 \.
 
 
@@ -888,6 +894,7 @@ COPY public.users (user_serial_no, role_id, user_code, first_name, last_name, em
 13	2	AT_IT001	Aditya	Sharma	it@alphatng.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999013	t	2026-06-16 11:34:40.977106	7	ATNG
 14	2	AT_FIN001	Megha	Jain	finance@alphatng.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999014	t	2026-06-16 11:34:40.977106	8	ATNG
 37	3	QC_KRIBHO_8071	krish	bhojwani	k@gmail.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu		t	2026-06-16 15:52:51.649012	1	QC
+38	3	QC_KRIBHO_4612	krish	bhojwani	krish@gmail.com	$2b$10$TEJpuzphiN02oNMsPgPkxe2PpVEUKiy1rBRNhOLHkqt5f2ZPol5S2		t	2026-06-17 18:22:30.64704	1	QC
 \.
 
 
@@ -951,7 +958,7 @@ SELECT pg_catalog.setval('public.ticket_categories_category_id_seq', 3, true);
 -- Name: ticket_comments_comment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ticket_comments_comment_id_seq', 1, true);
+SELECT pg_catalog.setval('public.ticket_comments_comment_id_seq', 5, true);
 
 
 --
@@ -960,7 +967,7 @@ SELECT pg_catalog.setval('public.ticket_comments_comment_id_seq', 1, true);
 -- Name: ticket_history_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 24, true);
+SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 25, true);
 
 
 --
@@ -996,7 +1003,7 @@ SELECT pg_catalog.setval('public.ticket_subcategories_subcategory_id_seq', 5, tr
 -- Name: tickets_ticket_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.tickets_ticket_id_seq', 10, true);
+SELECT pg_catalog.setval('public.tickets_ticket_id_seq', 11, true);
 
 
 --
@@ -1005,7 +1012,7 @@ SELECT pg_catalog.setval('public.tickets_ticket_id_seq', 10, true);
 -- Name: users_user_serial_no_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_user_serial_no_seq', 37, true);
+SELECT pg_catalog.setval('public.users_user_serial_no_seq', 38, true);
 
 
 --
@@ -1350,11 +1357,11 @@ ALTER TABLE ONLY public.users
     ADD CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES public.roles(role_id);
 
 
--- Completed on 2026-06-17 15:49:53
+-- Completed on 2026-06-18 16:17:40
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict gwRkZENRFi1nnm337aPyUGEw9KtoZNEuWHFFocLpkoy9u91cO8Fk6HFkFoSRauL
+\unrestrict hJovGsDUdmaI4VoBd7hBKhaHJk9eqYu8uYjroDVEngSkZoXALELj9guqWHnk3g5
 
