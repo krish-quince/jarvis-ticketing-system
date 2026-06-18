@@ -2,9 +2,14 @@ import API from "./api";
 
 const unwrapData = (responseData: any) => responseData.data ?? responseData;
 
-export const getTickets = async () => {
-  const response =
-    await API.get("/tickets");
+export const getTickets = async (
+  search = ""
+) => {
+  const response = await API.get("/tickets", {
+    params: {
+      search,
+    },
+  });
 
   return unwrapData(response.data);
 };
