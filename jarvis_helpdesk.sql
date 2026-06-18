@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict zTDk4sjRxsx9r2rvkzP5O4aQjOR4XGVGXRyrm8GVJGFhnlzhCp9PpxUwvXTGqkn
+\restrict gwRkZENRFi1nnm337aPyUGEw9KtoZNEuWHFFocLpkoy9u91cO8Fk6HFkFoSRauL
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
 
--- Started on 2026-06-16 16:18:22
+-- Started on 2026-06-17 15:49:52
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -788,6 +788,23 @@ COPY public.ticket_history (history_id, ticket_id, field_changed, old_value, new
 5	8	Created		Ticket Created	QC_KRIBHO_8071	2026-06-16 16:12:28.789536
 6	9	Created		Ticket Created	QC_KRIBHO_8071	2026-06-16 16:12:45.197581
 7	10	Created		Ticket Created	QC_KRIBHO_8071	2026-06-16 16:13:09.295002
+8	10	Status	1	3	QC_ADMIN	2026-06-17 11:29:16.48049
+9	10	Takeover	IT001	QC_ADMIN	QC_ADMIN	2026-06-17 11:29:21.737698
+10	10	AssignedTo	QC_ADMIN	SAL002	QC_ADMIN	2026-06-17 12:01:53.580556
+11	10	Takeover	SAL002	QC_ADMIN	QC_ADMIN	2026-06-17 12:02:17.26831
+12	10	Priority	3	4	QC_ADMIN	2026-06-17 13:58:44.880846
+13	10	AssignedTo	QC_ADMIN	SAL001	QC_ADMIN	2026-06-17 13:59:04.090521
+14	10	AssignedTo	SAL001	QC_ADMIN	QC_ADMIN	2026-06-17 13:59:17.804223
+15	10	Category	2	1	QC_ADMIN	2026-06-17 13:59:27.058433
+16	10	DueDate		2026-07-02T14:00	QC_ADMIN	2026-06-17 14:00:06.722125
+17	10	Category	1	2	QC_ADMIN	2026-06-17 15:07:17.47032
+18	10	Subcategory	9	9	QC_ADMIN	2026-06-17 15:07:17.47032
+19	8	Category	2	2	QC_ADMIN	2026-06-17 15:23:33.000275
+20	8	Subcategory	8	9	QC_ADMIN	2026-06-17 15:23:33.000275
+21	8	Category	2	2	QC_ADMIN	2026-06-17 15:24:24.477952
+22	8	Subcategory	9	10	QC_ADMIN	2026-06-17 15:24:24.477952
+23	8	Category	2	2	QC_ADMIN	2026-06-17 15:24:44.323243
+24	8	Subcategory	10	9	QC_ADMIN	2026-06-17 15:24:44.323243
 \.
 
 
@@ -843,9 +860,9 @@ COPY public.tickets (ticket_id, ticket_no, subject, description, category_id, pr
 5	TKT-1781605410382	Hello from krish	<p>Testing by krish.</p>	1	2	1	QC_KRIBHO_8071	SAL001	\N	\N	\N	f	2026-06-16 15:53:30.427804	\N	6	1	QC
 6	TKT-1781606467724	kjyffiyo	<p>k,cty,uyo,y</p>	2	2	1	QC_KRIBHO_8071	IT002	\N	\N	\N	f	2026-06-16 16:11:07.760284	\N	9	1	QC
 7	TKT-1781606493700	?>mnbvfsx	<p>;/ljhmgbf</p>	1	3	1	QC_KRIBHO_8071	FIN001	\N	\N	\N	f	2026-06-16 16:11:33.797776	\N	7	1	QC
-8	TKT-1781606548742	.l/ic.d7od7co/	<p>ct,kutcu7o6c</p>	2	3	1	QC_KRIBHO_8071	IT001	\N	\N	\N	f	2026-06-16 16:12:28.789536	\N	8	1	QC
 9	TKT-1781606565194	jgh c.	<p>hvyhyli,yob</p>	2	1	1	QC_KRIBHO_8071	IT001	\N	\N	\N	f	2026-06-16 16:12:45.197581	\N	8	1	QC
-10	TKT-1781606589251	,vu6f,6o6xcoxs6	<p>mvtliuv,.l</p>	2	3	1	QC_KRIBHO_8071	IT001	\N	\N	\N	f	2026-06-16 16:13:09.295002	\N	9	1	QC
+10	TKT-1781606589251	,vu6f,6o6xcoxs6	<p>mvtliuv,.l</p>	2	4	3	QC_KRIBHO_8071	QC_ADMIN	\N	2026-07-02 14:00:00	\N	f	2026-06-17 15:07:17.47032	\N	9	1	QC
+8	TKT-1781606548742	.l/ic.d7od7co/	<p>ct,kutcu7o6c</p>	2	3	1	QC_KRIBHO_8071	IT001	\N	\N	\N	f	2026-06-17 15:24:44.323243	\N	9	1	QC
 \.
 
 
@@ -856,20 +873,20 @@ COPY public.tickets (ticket_id, ticket_no, subject, description, category_id, pr
 --
 
 COPY public.users (user_serial_no, role_id, user_code, first_name, last_name, email, password_hash, phone, is_active, update_timestamp, department_id, company_code) FROM stdin;
-1	1	QC_ADMIN	Krish	Bhojwani	admin@quincecapital.com	<HASH>	9999999001	t	2026-06-16 11:34:40.977106	3	QC
-2	2	SAL001	Rahul	Patil	sales1@quincecapital.com	<HASH>	9999999002	t	2026-06-16 11:34:40.977106	1	QC
-3	3	SAL002	Priya	Shah	sales2@quincecapital.com	<HASH>	9999999003	t	2026-06-16 11:34:40.977106	1	QC
-4	2	HR001	Anjali	Verma	hr1@quincecapital.com	<HASH>	9999999004	t	2026-06-16 11:34:40.977106	2	QC
-5	3	HR002	Sneha	Iyer	hr2@quincecapital.com	<HASH>	9999999005	t	2026-06-16 11:34:40.977106	2	QC
-6	2	IT001	Amit	Sharma	it1@quincecapital.com	<HASH>	9999999006	t	2026-06-16 11:34:40.977106	3	QC
-7	3	IT002	Rohit	Kulkarni	it2@quincecapital.com	<HASH>	9999999007	t	2026-06-16 11:34:40.977106	3	QC
-8	2	FIN001	Pooja	Deshmukh	finance1@quincecapital.com	<HASH>	9999999008	t	2026-06-16 11:34:40.977106	4	QC
-9	3	FIN002	Neha	Joshi	finance2@quincecapital.com	<HASH>	9999999009	t	2026-06-16 11:34:40.977106	4	QC
-10	1	AT_ADMIN	Vikram	Singh	admin@alphatng.com	<HASH>	9999999010	t	2026-06-16 11:34:40.977106	7	ATNG
-11	2	AT_SAL001	Karan	Patel	sales@alphatng.com	<HASH>	9999999011	t	2026-06-16 11:34:40.977106	5	ATNG
-12	2	AT_HR001	Ritika	Gupta	hr@alphatng.com	<HASH>	9999999012	t	2026-06-16 11:34:40.977106	6	ATNG
-13	2	AT_IT001	Aditya	Sharma	it@alphatng.com	<HASH>	9999999013	t	2026-06-16 11:34:40.977106	7	ATNG
-14	2	AT_FIN001	Megha	Jain	finance@alphatng.com	<HASH>	9999999014	t	2026-06-16 11:34:40.977106	8	ATNG
+1	1	QC_ADMIN	Krish	Bhojwani	admin@quincecapital.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999001	t	2026-06-16 11:34:40.977106	3	QC
+2	2	SAL001	Rahul	Patil	sales1@quincecapital.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999002	t	2026-06-16 11:34:40.977106	1	QC
+3	3	SAL002	Priya	Shah	sales2@quincecapital.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999003	t	2026-06-16 11:34:40.977106	1	QC
+4	2	HR001	Anjali	Verma	hr1@quincecapital.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999004	t	2026-06-16 11:34:40.977106	2	QC
+5	3	HR002	Sneha	Iyer	hr2@quincecapital.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999005	t	2026-06-16 11:34:40.977106	2	QC
+6	2	IT001	Amit	Sharma	it1@quincecapital.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999006	t	2026-06-16 11:34:40.977106	3	QC
+7	3	IT002	Rohit	Kulkarni	it2@quincecapital.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999007	t	2026-06-16 11:34:40.977106	3	QC
+8	2	FIN001	Pooja	Deshmukh	finance1@quincecapital.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999008	t	2026-06-16 11:34:40.977106	4	QC
+9	3	FIN002	Neha	Joshi	finance2@quincecapital.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999009	t	2026-06-16 11:34:40.977106	4	QC
+10	1	AT_ADMIN	Vikram	Singh	admin@alphatng.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999010	t	2026-06-16 11:34:40.977106	7	ATNG
+11	2	AT_SAL001	Karan	Patel	sales@alphatng.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999011	t	2026-06-16 11:34:40.977106	5	ATNG
+12	2	AT_HR001	Ritika	Gupta	hr@alphatng.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999012	t	2026-06-16 11:34:40.977106	6	ATNG
+13	2	AT_IT001	Aditya	Sharma	it@alphatng.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999013	t	2026-06-16 11:34:40.977106	7	ATNG
+14	2	AT_FIN001	Megha	Jain	finance@alphatng.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu	9999999014	t	2026-06-16 11:34:40.977106	8	ATNG
 37	3	QC_KRIBHO_8071	krish	bhojwani	k@gmail.com	$2b$10$kwvMXD1QpF5I.eetZ8cy2.jX1.H3BOVvZhVOFfzcP43K894E7/pvu		t	2026-06-16 15:52:51.649012	1	QC
 \.
 
@@ -943,7 +960,7 @@ SELECT pg_catalog.setval('public.ticket_comments_comment_id_seq', 1, true);
 -- Name: ticket_history_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 7, true);
+SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 24, true);
 
 
 --
@@ -1333,11 +1350,11 @@ ALTER TABLE ONLY public.users
     ADD CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES public.roles(role_id);
 
 
--- Completed on 2026-06-16 16:18:22
+-- Completed on 2026-06-17 15:49:53
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict zTDk4sjRxsx9r2rvkzP5O4aQjOR4XGVGXRyrm8GVJGFhnlzhCp9PpxUwvXTGqkn
+\unrestrict gwRkZENRFi1nnm337aPyUGEw9KtoZNEuWHFFocLpkoy9u91cO8Fk6HFkFoSRauL
 
