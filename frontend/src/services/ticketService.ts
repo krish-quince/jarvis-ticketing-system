@@ -81,6 +81,11 @@ export const getComments = async (ticketId: number) => {
   return unwrapData(response.data);
 };
 
+export const getTicketHistory = async (ticketId: number) => {
+  const response = await API.get(`/tickets/${ticketId}/history`);
+  return unwrapData(response.data);
+};
+
 export const createComment = async (ticketId: number, commentText: string) => {
   const response = await API.post(`/tickets/${ticketId}/comments`, { comment_text: commentText });
   return unwrapData(response.data);

@@ -15,7 +15,19 @@ export const getPriorities = async () => {
 };
 
 export const getStatuses = async () => {
-  const response = await API.get("/master/statuses");
+  const response = await API.get(
+    "/master/statuses"
+  );
+
+  return unwrapData(response.data);
+};
+
+export const getSubCategories = async (
+  categoryId: number
+) => {
+  const response = await API.get(
+    `/master/subcategories/${categoryId}`
+  );
 
   return unwrapData(response.data);
 };

@@ -9,6 +9,7 @@ import {
   deleteStatus,
   getCategories,
   getPriorities,
+  getStatuses,
   getSubCategories,
   getAssignableUsers,
   getCompanies,
