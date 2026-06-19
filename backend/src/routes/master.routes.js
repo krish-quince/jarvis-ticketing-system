@@ -9,7 +9,6 @@ import {
   deleteStatus,
   getCategories,
   getPriorities,
-  getStatuses,
   getSubCategories,
   getAssignableUsers,
   getCompanies,
@@ -18,126 +17,39 @@ import {
   getStatuses,
   updateCategory,
   updatePriority,
-  updateStatus
+  updateStatus,
 } from "../controllers/master.controller.js";
 
 import { verifyToken } from "../middleware/auth.middleware.js";
 import { requireAdmin } from "../middleware/role.middleware.js";
 
 const router = express.Router();
+const adminOnly = [verifyToken, requireAdmin];
 
-router.get(
-  "/categories",
-  verifyToken,
-  getCategories
-);
-
-router.get(
-  "/priorities",
-  verifyToken,
-  getPriorities
-);
-
-router.get(
-  "/statuses",
-  verifyToken,
-  getStatuses
-);
-
-router.post(
-  "/categories",
-  verifyToken,
-  requireAdmin,
-  createCategory
-);
-
-router.patch(
-  "/categories/:categoryId",
-  verifyToken,
-  requireAdmin,
-  updateCategory
-);
-
-router.delete(
-  "/categories/:categoryId",
-  verifyToken,
-  requireAdmin,
-  deleteCategory
-);
-
-router.post(
-  "/statuses",
-  verifyToken,
-  requireAdmin,
-  createStatus
-);
-
-router.patch(
-  "/statuses/:statusId",
-  verifyToken,
-  requireAdmin,
-  updateStatus
-);
-
-router.delete(
-  "/statuses/:statusId",
-  verifyToken,
-  requireAdmin,
-  deleteStatus
-);
-
-router.post(
-  "/priorities",
-  verifyToken,
-  requireAdmin,
-  createPriority
-);
-
-router.patch(
-  "/priorities/:priorityId",
-  verifyToken,
-  requireAdmin,
-  updatePriority
-);
-
-router.delete(
-  "/priorities/:priorityId",
-  verifyToken,
-  requireAdmin,
-  deletePriority
-);
-
-router.get(
-  "/roles",
-  verifyToken,
-  requireAdmin,
-  getRoles
-);
-
-router.get(
-  "/departments",
-  verifyToken,
-  requireAdmin,
-  getDepartments
-);
-
-router.get(
-  "/companies",
-  verifyToken,
-  requireAdmin,
-  getCompanies
-);
-
-router.get(
-  "/subcategories/:categoryId",
-  verifyToken,
-  getSubCategories
-);
-
+router.get("/categories", verifyToken, getCategories);
+router.get("/priorities", verifyToken, getPriorities);
+router.get("/statuses", verifyToken, getStatuses);
+router.get("/subcategories/:categoryId", verifyToken, getSubCategories);
 router.get(
   "/assignable-users/:subcategoryId",
   verifyToken,
-  getAssignableUsers
+  getAssignableUsers,
 );
+
+router.post("/categories", ...adminOnly, createCategory);
+router.patch("/categories/:categoryId", ...adminOnly, updateCategory);
+router.delete("/categories/:categoryId", ...adminOnly, deleteCategory);
+
+router.post("/statuses", ...adminOnly, createStatus);
+router.patch("/statuses/:statusId", ...adminOnly, updateStatus);
+router.delete("/statuses/:statusId", ...adminOnly, deleteStatus);
+
+router.post("/priorities", ...adminOnly, createPriority);
+router.patch("/priorities/:priorityId", ...adminOnly, updatePriority);
+router.delete("/priorities/:priorityId", ...adminOnly, deletePriority);
+
+router.get("/roles", ...adminOnly, getRoles);
+router.get("/departments", ...adminOnly, getDepartments);
+router.get("/companies", ...adminOnly, getCompanies);
 
 export default router;

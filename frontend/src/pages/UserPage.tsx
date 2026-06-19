@@ -32,96 +32,27 @@ import {
 
 import { getUsersWithAllData, updateUser } from "../services/userService";
 import {
-  getRoles,
-  getDepartments,
-  getCompanies,
-} from "../services/masterService";
+  ACTION_FETCH_MAP,
+  buildBulkPayload,
+  buildUserUpdatePayload,
+  getAvatarColor,
+  getInitials,
+} from "./users/userHelpers";
+import { ROLE_CONFIG } from "./users/roleConfig";
+import type { OptionItem, UserRecord } from "./users/userTypes";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface OptionItem {
-  value: string;
-  label: string;
-}
-
-interface ActionFetchEntry {
-  fetch: () => Promise<any[]>;
-  normalise: (data: any[]) => OptionItem[];
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const getInitials = (first: string, last: string) =>
-  `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase();
-
-const getAvatarColor = (code: string) => {
-  const colors = ["#7c3aed", "#0369a1", "#b45309", "#0f766e", "#be185d", "#1d4ed8"];
-  let hash = 0;
-  for (let i = 0; i < code.length; i++) hash = code.charCodeAt(i) + ((hash << 5) - hash);
-  return colors[Math.abs(hash) % colors.length];
-};
-
-const buildBulkPayload = (action: string, value: string): Record<string, any> => {
-  switch (action) {
-    case "Role":                       return { role_id: Number(value) };
-    case "Department":                 return { department_id: Number(value) };
-    case "Company":                    return { company_code: value };
-    case "Enable email notifications": return { email_notifications: value === "enable" };
-    default:                           return {};
-  }
-};
-
-const buildUserUpdatePayload = (
-  user: any,
-  actionPayload: Record<string, any>,
-): Record<string, any> => ({
-  first_name: user.first_name,
-  last_name: user.last_name,
-  role_id: user.role_id,
-  company_code: user.company_code,
-  department_id: user.department_id,
-  is_active: user.is_active ?? true,
-  ...actionPayload,
-});
-
-const normaliseRoles = (data: any[]): OptionItem[] =>
-  data.map((r) => ({ value: String(r.role_id), label: r.role_name }));
-
-const normaliseDepartments = (data: any[]): OptionItem[] =>
-  data.map((d) => ({ value: String(d.department_id), label: d.department_name }));
-
-const normaliseCompanies = (data: any[]): OptionItem[] =>
-  data.map((c) => ({ value: c.company_code, label: c.company_name }));
-
-// ─── Action map ───────────────────────────────────────────────────────────────
-
-const ACTION_FETCH_MAP: Record<string, ActionFetchEntry> = {
-  Role:        { fetch: getRoles,       normalise: normaliseRoles },
-  Department:  { fetch: getDepartments, normalise: normaliseDepartments },
-  Company:     { fetch: getCompanies,   normalise: normaliseCompanies },
-  "Enable email notifications": {
-    fetch: async () => [
-      { value: "enable",  label: "Enable" },
-      { value: "disable", label: "Disable" },
-    ],
-    normalise: (d) => d as OptionItem[],
-  },
-};
-
-// ─── Role badge config (for table rows) ──────────────────────────────────────
-
-const ROLE_CONFIG: Record<number, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-  1: { label: "Admin",      color: "#7c3aed", bg: "#ede9fe", icon: <AdminPanelSettings sx={{ fontSize: 12 }} /> },
-  2: { label: "Technician", color: "#0369a1", bg: "#e0f2fe", icon: <Engineering sx={{ fontSize: 12 }} /> },
-  3: { label: "User",       color: "#15803d", bg: "#dcfce7", icon: <Person sx={{ fontSize: 12 }} /> },
-};
-
-// ─── Component ────────────────────────────────────────────────────────────────
+const BarDivider = () => (
+  <Box sx={{
+    width: "1px", height: 20,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    alignSelf: "center", mx: 0.5, flexShrink: 0,
+  }} />
+);
 
 const UsersPage = () => {
   const navigate = useNavigate();
 
-  const [users, setUsers]               = useState<any[]>([]);
+  const [users, setUsers]               = useState<UserRecord[]>([]);
   const [searchText, setSearchText]     = useState("");
   const [activeTab, setActiveTab]       = useState("all");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -130,7 +61,6 @@ const UsersPage = () => {
   const [bulkSaving, setBulkSaving]     = useState(false);
   const [optionsCache, setOptionsCache] = useState<Record<string, OptionItem[]>>({});
 
-  // ─── Page load: fetch users + all dropdown options in parallel ────────────
 
   const fetchUsers = async () => {
     try {
@@ -164,7 +94,6 @@ const UsersPage = () => {
     Promise.all([fetchUsers(), prefetchAllOptions()]);
   }, []);
 
-  // ─── Handlers ─────────────────────────────────────────────────────────────
 
   const handleActionClick = (label: string) => {
     setActiveAction(label);
@@ -214,7 +143,6 @@ const UsersPage = () => {
     setActionValue("");
   };
 
-  // ─── Derived data ──────────────────────────────────────────────────────────
 
   const filteredUsers = useMemo(() => {
     let list = [...users];
@@ -258,7 +186,6 @@ const UsersPage = () => {
   const someSelected = visibleSelectedCount > 0 && !allSelected;
   const currentOptions: OptionItem[] = activeAction ? (optionsCache[activeAction] ?? []) : [];
 
-  // ─── Shared sx ─────────────────────────────────────────────────────────────
 
   const actionBtnSx = {
     color: "#fff",
@@ -270,16 +197,6 @@ const UsersPage = () => {
     borderRadius: 0,
     "&:hover": { backgroundColor: "rgba(255,255,255,0.12)" },
   };
-
-  const BarDivider = () => (
-    <Box sx={{
-      width: "1px", height: 20,
-      backgroundColor: "rgba(255,255,255,0.25)",
-      alignSelf: "center", mx: 0.5, flexShrink: 0,
-    }} />
-  );
-
-  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "var(--bg)", p: 3 }}>

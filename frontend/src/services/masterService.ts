@@ -15,19 +15,13 @@ export const getPriorities = async () => {
 };
 
 export const getStatuses = async () => {
-  const response = await API.get(
-    "/master/statuses"
-  );
+  const response = await API.get("/master/statuses");
 
   return unwrapData(response.data);
 };
 
-export const getSubCategories = async (
-  categoryId: number
-) => {
-  const response = await API.get(
-    `/master/subcategories/${categoryId}`
-  );
+export const getSubCategories = async (categoryId: number) => {
+  const response = await API.get(`/master/subcategories/${categoryId}`);
 
   return unwrapData(response.data);
 };
@@ -98,12 +92,6 @@ export const getDepartments = async () => {
 
 export const getCompanies = async () => {
   const response = await API.get("/master/companies");
-  return unwrapData(response.data);
-};
-
-export const getSubCategories = async (categoryId: number) => {
-  const response = await API.get(`/master/subcategories/${categoryId}`);
-
   return unwrapData(response.data);
 };
 
