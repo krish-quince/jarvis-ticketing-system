@@ -214,7 +214,7 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
   }
 
   if(ticket.status_name == "Closed") {
-    throw new Error("Cant update closed ticket.");
+    throw new Error("Can't update closed ticket.");
   }
 
   // Check Read Access
@@ -296,7 +296,7 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
   }
 
   if(ticket.status_name == "Closed") {
-    throw new Error("Cant update closed ticket.");
+    throw new Error("Can't update closed ticket.");
   }
 
   // Check Read Access
@@ -371,7 +371,7 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
   }
 
   if(ticket.status_name == "Closed") {
-    throw new Error("Cant update closed ticket.");
+    throw new Error("Can't update closed ticket.");
   }
 
   // Check Read & update Access
@@ -448,7 +448,7 @@ export const updateTicketCategory = async (
   }
 
   if(ticket.status_name == "Closed") {
-    throw new Error("Cant update closed ticket.");
+    throw new Error("Can't update closed ticket.");
   }
 
   // Check Read & update access 
@@ -539,7 +539,7 @@ export const resolveTicket = async (ticketId, statusId, user) => {
   }
 
   if(ticket.status_name == "Closed") {
-    throw new Error("Cant update closed ticket.");
+    throw new Error("Can't update closed ticket.");
   }
 
   // Check Read & update access
@@ -682,7 +682,7 @@ export const updateTicketDueDate = async (ticketId, dueDate, user) => {
   }
 
   if(ticket.status_name == "Closed") {
-    throw new Error("Cant update closed ticket.");
+    throw new Error("Can't update closed ticket.");
   }
 
   if (!canAccessTicket(ticket, user)) {
