@@ -26,6 +26,7 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 
 import RichTextEditor from "../components/RichTextEditor";
 import { createTicket } from "../services/ticketService";
+import { getAssignableUsersForTicket } from "../services/masterService";
 import api from "../services/api";
 
 const menuItemSx = {
@@ -141,10 +142,11 @@ const NewTicketPage = () => {
       )
     : undefined;
 
-  const categoryBtnLabel =
-    selectedCategory && selectedSubCategory
-      ? `${selectedCategory.category_name}  ›  ${selectedSubCategory.subcategory_name}`
-      : "(Select category)";
+  const categoryBtnLabel = selectedCategory
+    ? selectedSubCategory
+      ? `${selectedCategory.category_name} > ${selectedSubCategory.subcategory_name}`
+      : `${selectedCategory.category_name} / General`
+    : "(Select category)";
 
   const openPopover = () => {
     setActivePanel("categories");
@@ -158,33 +160,54 @@ const NewTicketPage = () => {
     setHoveredCat(null);
   };
 
-  const handleCategoryClick = (cat: any) => {
-    const subs = allSubCategories[String(cat.category_id)] || [];
-    if (subs.length > 0) {
-      setHoveredCat(cat);
-      setActivePanel("subcategories");
-    } else {
-      setCategoryId(String(cat.category_id));
-      setSubcategoryId("");
-      setAssignTo("");
-      setAssignableUsers([]);
-      closePopover();
-    }
-  };
-
-  const handleSubcategoryClick = async (sub: any) => {
-    setCategoryId(String(hoveredCat.category_id));
-    setSubcategoryId(String(sub.subcategory_id));
-
+  const loadAssignableUsers = async ({
+    nextCategoryId,
+    nextSubcategoryId,
+  }: {
+    nextCategoryId: string;
+    nextSubcategoryId?: string;
+  }) => {
     try {
-      const usersRes = await api.get(`/master/assignable-users/${sub.subcategory_id}`);
-      setAssignableUsers(usersRes.data.data || []);
+      const users = await getAssignableUsersForTicket({
+        categoryId: nextCategoryId,
+        subcategoryId: nextSubcategoryId || null,
+      });
+      setAssignableUsers(users || []);
       setAssignTo("");
     } catch (error) {
       console.error(error);
       setAssignableUsers([]);
       setAssignTo("");
     }
+  };
+
+  const handleCategoryOnlyClick = async (cat: any) => {
+    const nextCategoryId = String(cat.category_id);
+    setCategoryId(nextCategoryId);
+    setSubcategoryId("");
+    await loadAssignableUsers({ nextCategoryId });
+    closePopover();
+  };
+
+  const handleCategoryClick = (cat: any) => {
+    const subs = allSubCategories[String(cat.category_id)] || [];
+    if (subs.length > 0) {
+      setHoveredCat(cat);
+      setActivePanel("subcategories");
+    } else {
+      handleCategoryOnlyClick(cat);
+    }
+  };
+
+  const handleSubcategoryClick = async (sub: any) => {
+    const nextCategoryId = String(hoveredCat.category_id);
+    const nextSubcategoryId = String(sub.subcategory_id);
+    setCategoryId(nextCategoryId);
+    setSubcategoryId(nextSubcategoryId);
+    await loadAssignableUsers({
+      nextCategoryId,
+      nextSubcategoryId,
+    });
 
     closePopover();
   };
@@ -221,10 +244,6 @@ const NewTicketPage = () => {
       setToast({ open: true, severity: "error", message: "Category is required" });
       return;
     }
-    if (!subcategoryId) {
-      setToast({ open: true, severity: "error", message: "Sub Category is required" });
-      return;
-    }
     if (!priorityId) {
       setToast({ open: true, severity: "error", message: "Priority is required" });
       return;
@@ -250,7 +269,7 @@ const NewTicketPage = () => {
         subject,
         description,
         category_id: Number(categoryId),
-        subcategory_id: Number(subcategoryId),
+        subcategory_id: subcategoryId ? Number(subcategoryId) : null,
         priority_id: Number(priorityId),
         assigned_to_user_code: assignTo || null,
         due_date: dueDate || null,
@@ -513,6 +532,19 @@ const NewTicketPage = () => {
         my: "4px",
       }}
     />
+
+    {hoveredCat && (
+      <Box
+        sx={
+          categoryId === String(hoveredCat.category_id) && !subcategoryId
+            ? selectedItemSx
+            : menuItemSx
+        }
+        onClick={() => handleCategoryOnlyClick(hoveredCat)}
+      >
+        General ticket
+      </Box>
+    )}
 
     {subPanel.length === 0 ? (
       <Box

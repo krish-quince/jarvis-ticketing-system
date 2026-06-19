@@ -326,6 +326,86 @@ export const getSubCategories = async (
   return result.rows;
 };
 
+export const createSubCategory = async ({
+  category_id,
+  subcategory_name,
+  subcategory_description,
+  assigned_user_code,
+}) => {
+  const result = await pool.query(
+    `
+    INSERT INTO ticket_subcategories (
+      category_id,
+      subcategory_name,
+      subcategory_description,
+      assigned_user_code
+    )
+    VALUES ($1, $2, $3, $4)
+    RETURNING *
+    `,
+    [
+      category_id,
+      subcategory_name,
+      subcategory_description || null,
+      assigned_user_code || null,
+    ],
+  );
+
+  return result.rows[0];
+};
+
+export const updateSubCategory = async (
+  subcategoryId,
+  {
+    category_id,
+    subcategory_name,
+    subcategory_description,
+    assigned_user_code,
+    is_active = true,
+  },
+) => {
+  const result = await pool.query(
+    `
+    UPDATE ticket_subcategories
+    SET
+      category_id = $1,
+      subcategory_name = $2,
+      subcategory_description = $3,
+      assigned_user_code = $4,
+      is_active = $5,
+      update_timestamp = CURRENT_TIMESTAMP
+    WHERE subcategory_id = $6
+    RETURNING *
+    `,
+    [
+      category_id,
+      subcategory_name,
+      subcategory_description || null,
+      assigned_user_code || null,
+      is_active,
+      subcategoryId,
+    ],
+  );
+
+  return result.rows[0];
+};
+
+export const deleteSubCategory = async (subcategoryId) => {
+  const result = await pool.query(
+    `
+    UPDATE ticket_subcategories
+    SET
+      is_active = false,
+      update_timestamp = CURRENT_TIMESTAMP
+    WHERE subcategory_id = $1
+    RETURNING *
+    `,
+    [subcategoryId],
+  );
+
+  return result.rows[0];
+};
+
 export const getSubCategoryById = async (
   subcategoryId
 ) => {
@@ -348,53 +428,85 @@ export const getSubCategoryById = async (
 };
 
 export const getAssignableUsers = async (
-  subcategoryId, 
-  companyCode
+  {
+    subcategoryId,
+    departmentId,
+    categoryId,
+  },
+  companyCode,
 ) => {
+  const departmentIds = new Set();
 
-  const subCategoryResult =
-    await pool.query(
-      `
-      SELECT assigned_user_code
-      FROM ticket_subcategories
-      WHERE subcategory_id = $1
-      `,
-      [subcategoryId]
-    );
-
-  if (
-    subCategoryResult.rows.length === 0
-  ) {
-    return [];
+  if (departmentId) {
+    departmentIds.add(Number(departmentId));
   }
 
-  const routingUser =
-    subCategoryResult.rows[0]
-      .assigned_user_code;
+  const addRoutingDepartment = async (assignedUserCode) => {
+    if (!assignedUserCode) return;
 
-  if (!routingUser) {
-    return [];
-  }
-
-  const departmentResult =
-    await pool.query(
+    const departmentResult = await pool.query(
       `
       SELECT department_id
       FROM users
       WHERE user_code = $1
       AND company_code = $2
+      AND is_active = true
       `,
-      [routingUser, companyCode]
+      [assignedUserCode, companyCode],
     );
 
-  const departmentId =
-    departmentResult.rows[0]
-      ?.department_id;
+    const routingDepartmentId = departmentResult.rows[0]?.department_id;
 
-  if (!departmentId) {
+    if (routingDepartmentId) {
+      departmentIds.add(Number(routingDepartmentId));
+    }
+  };
+
+  if (subcategoryId) {
+    const subCategoryResult = await pool.query(
+      `
+      SELECT assigned_user_code
+      FROM ticket_subcategories
+      WHERE subcategory_id = $1
+      AND is_active = true
+      `,
+      [subcategoryId],
+    );
+
+    if (subCategoryResult.rows.length === 0) {
+      return [];
+    }
+
+    const routingUser = subCategoryResult.rows[0].assigned_user_code;
+    await addRoutingDepartment(routingUser);
+  }
+
+  if (!subcategoryId && categoryId) {
+    const categoryRoutingResult = await pool.query(
+      `
+      SELECT DISTINCT u.department_id
+      FROM ticket_subcategories sc
+      INNER JOIN users u ON u.user_code = sc.assigned_user_code
+      WHERE sc.category_id = $1
+      AND sc.is_active = true
+      AND u.company_code = $2
+      AND u.is_active = true
+      `,
+      [categoryId, companyCode],
+    );
+
+    categoryRoutingResult.rows.forEach((row) => {
+      if (row.department_id) {
+        departmentIds.add(Number(row.department_id));
+      }
+    });
+  }
+
+  if (departmentIds.size === 0) {
     return [];
   }
 
+  const departmentIdList = [...departmentIds];
   const usersResult =
     await pool.query(
       `
@@ -403,12 +515,12 @@ export const getAssignableUsers = async (
         first_name,
         last_name
       FROM users
-      WHERE department_id = $1
+      WHERE department_id = ANY($1::int[])
       AND company_code = $2
       AND is_active = true
       ORDER BY first_name
       `,
-      [departmentId, companyCode]
+      [departmentIdList, companyCode],
     );
 
   return usersResult.rows;

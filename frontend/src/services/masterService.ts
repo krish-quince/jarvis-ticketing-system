@@ -26,6 +26,27 @@ export const getSubCategories = async (categoryId: number) => {
   return unwrapData(response.data);
 };
 
+export const createSubCategory = async (payload: any) => {
+  const response = await API.post("/master/subcategories", payload);
+
+  return unwrapData(response.data);
+};
+
+export const updateSubCategory = async (subcategoryId: number, payload: any) => {
+  const response = await API.patch(
+    `/master/subcategories/${subcategoryId}`,
+    payload,
+  );
+
+  return unwrapData(response.data);
+};
+
+export const deleteSubCategory = async (subcategoryId: number) => {
+  const response = await API.delete(`/master/subcategories/${subcategoryId}`);
+
+  return unwrapData(response.data);
+};
+
 export const createCategory = async (payload: any) => {
   const response = await API.post("/master/categories", payload);
 
@@ -97,6 +118,26 @@ export const getCompanies = async () => {
 
 export const getAssignableUsers = async (subCategoryId: number) => {
   const response = await API.get(`/master/assignable-users/${subCategoryId}`);
+
+  return unwrapData(response.data);
+};
+
+export const getAssignableUsersForTicket = async ({
+  categoryId,
+  subcategoryId,
+  departmentId,
+}: {
+  categoryId?: number | string | null;
+  subcategoryId?: number | string | null;
+  departmentId?: number | string | null;
+}) => {
+  const response = await API.get("/master/assignable-users", {
+    params: {
+      categoryId,
+      subcategoryId,
+      departmentId,
+    },
+  });
 
   return unwrapData(response.data);
 };

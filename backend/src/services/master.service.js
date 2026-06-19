@@ -64,6 +64,18 @@ export const getSubCategories = async (categoryId) => {
   return repository.getSubCategories(categoryId);
 };
 
-export const getAssignableUsers = async (subcategoryId, companyCode) => {
-  return repository.getAssignableUsers(subcategoryId, companyCode);
+export const createSubCategory = async (payload) => {
+  return repository.createSubCategory(payload);
+};
+
+export const updateSubCategory = async (subcategoryId, payload) => {
+  return repository.updateSubCategory(subcategoryId, payload);
+};
+
+export const deleteSubCategory = async (subcategoryId) => {
+  return repository.deleteSubCategory(subcategoryId);
+};
+
+export const getAssignableUsers = async (filters, companyCode) => {
+  return repository.getAssignableUsers(filters, companyCode);
 };

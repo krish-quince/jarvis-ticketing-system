@@ -4,9 +4,11 @@ import {
   createCategory,
   createPriority,
   createStatus,
+  createSubCategory,
   deleteCategory,
   deletePriority,
   deleteStatus,
+  deleteSubCategory,
   getCategories,
   getPriorities,
   getSubCategories,
@@ -18,6 +20,7 @@ import {
   updateCategory,
   updatePriority,
   updateStatus,
+  updateSubCategory,
 } from "../controllers/master.controller.js";
 
 import { verifyToken } from "../middleware/auth.middleware.js";
@@ -30,6 +33,7 @@ router.get("/categories", verifyToken, getCategories);
 router.get("/priorities", verifyToken, getPriorities);
 router.get("/statuses", verifyToken, getStatuses);
 router.get("/subcategories/:categoryId", verifyToken, getSubCategories);
+router.get("/assignable-users", verifyToken, getAssignableUsers);
 router.get(
   "/assignable-users/:subcategoryId",
   verifyToken,
@@ -39,6 +43,10 @@ router.get(
 router.post("/categories", ...adminOnly, createCategory);
 router.patch("/categories/:categoryId", ...adminOnly, updateCategory);
 router.delete("/categories/:categoryId", ...adminOnly, deleteCategory);
+
+router.post("/subcategories", ...adminOnly, createSubCategory);
+router.patch("/subcategories/:subcategoryId", ...adminOnly, updateSubCategory);
+router.delete("/subcategories/:subcategoryId", ...adminOnly, deleteSubCategory);
 
 router.post("/statuses", ...adminOnly, createStatus);
 router.patch("/statuses/:statusId", ...adminOnly, updateStatus);

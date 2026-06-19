@@ -15,6 +15,7 @@ import NewTicketPage from "./pages/NewTicketPage";
 import AdminCategoriesPage from "./pages/AdminCategoriesPage";
 import AdminStatusesPage from "./pages/AdminStatusesPage";
 import AdminPrioritiesPage from "./pages/AdminPrioritiesPage";
+import AdminSubCategoriesPage from "./pages/AdminSubCategoriesPage";
 
 import MainLayout from "./layouts/MainLayout";
 import UsersPage from "./pages/UserPage";
@@ -58,6 +59,7 @@ function App() {
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/users" element={<UsersPage />} />
               <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+              <Route path="/admin/subcategories" element={<AdminSubCategoriesPage />} />
               <Route path="/admin/statuses" element={<AdminStatusesPage />} />
               <Route path="/admin/priorities" element={<AdminPrioritiesPage />} />
             </Route>

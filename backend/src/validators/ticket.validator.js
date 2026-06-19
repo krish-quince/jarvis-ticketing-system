@@ -18,10 +18,10 @@ export const createTicketSchema = z.object({
       .int()
       .positive(),
 
-    subcategory_id: z.coerce
-      .number()
-      .int()
-      .positive(),
+    subcategory_id: z.preprocess(
+      (value) => (value === "" || value === null ? undefined : value),
+      z.coerce.number().int().positive().optional(),
+    ),
 
     priority_id: z.coerce
       .number()
@@ -51,7 +51,10 @@ export const updatePrioritySchema = z.object({
 export const updateCategorySchema = z.object({
   body: z.object({
     category_id: z.coerce.number().int().positive(),
-    subcategory_id: z.coerce.number().int().positive(),
+    subcategory_id: z.preprocess(
+      (value) => (value === "" || value === null ? undefined : value),
+      z.coerce.number().int().positive().optional(),
+    ),
   }),
 });
 

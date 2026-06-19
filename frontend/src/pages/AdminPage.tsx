@@ -6,6 +6,7 @@ import {
   ErrorOutlineOutlined,
   FolderOutlined,
   GridViewOutlined,
+  SegmentOutlined,
   PeopleOutlineOutlined,
   SettingsOutlined,
 } from "@mui/icons-material";
@@ -60,6 +61,13 @@ const sections: Section[] = [
         description:
           "Add or remove ticket and KB categories, and edit permissions for handling tickets in each category.",
         path: "/admin/categories",
+      },
+      {
+        icon: <SegmentOutlined sx={ICON_SX} />,
+        title: "Ticket subcategories",
+        description:
+          "Manage subcategories and their routing assignees for each ticket category.",
+        path: "/admin/subcategories",
       },
       {
         icon: <GridViewOutlined sx={ICON_SX} />,

@@ -13,7 +13,7 @@ export const createTicket = async (ticketData, user) => {
   let category_id = ticketData.category_id;
   let priority_id = ticketData.priority_id;
   let status_id = ticketData.status_id;
-  let subcategory_id = ticketData.subcategory_id;
+  let subcategory_id = ticketData.subcategory_id || null;
   let assigned_to_user_code = ticketData.assigned_to_user_code || null;
 
   // Resolve IDs by name if provided
@@ -78,6 +78,12 @@ export const createTicket = async (ticketData, user) => {
     }
   }
 
+  const category = await ticketRepository.getCategoryByIdAndCompany(category_id);
+
+  if (!category) {
+    throw new Error("Category not found.");
+  }
+
   if (subcategory_id) {
     const subCategory =
       await masterRepository.getSubCategoryById(subcategory_id);
@@ -128,6 +134,27 @@ export const createTicket = async (ticketData, user) => {
           }
         }
       }
+    }
+  }
+
+  if (assigned_to_user_code) {
+    const assignableUsers = await masterRepository.getAssignableUsers(
+      {
+        subcategoryId: subcategory_id,
+        categoryId: category_id,
+        departmentId: user.departmentId,
+      },
+      user.companyCode,
+    );
+    const canAssignToUser = assignableUsers.some(
+      (assignableUser) =>
+        assignableUser.user_code === assigned_to_user_code,
+    );
+
+    if (!canAssignToUser) {
+      throw new Error(
+        "Assigned user must belong to the ticket category or department.",
+      );
     }
   }
 
@@ -318,6 +345,24 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
     throw new Error("Assigned user not found.");
   }
 
+  const assignableUsers = await masterRepository.getAssignableUsers(
+    {
+      subcategoryId: ticket.subcategory_id,
+      categoryId: ticket.category_id,
+      departmentId: ticket.department_id,
+    },
+    user.companyCode,
+  );
+  const canAssignToUser = assignableUsers.some(
+    (assignableUser) => assignableUser.user_code === assignedToUserCode,
+  );
+
+  if (!canAssignToUser) {
+    throw new Error(
+      "Assigned user must belong to the ticket category or department.",
+    );
+  }
+
   const oldValue = ticket.assigned_to_user_code ?? "";
 
   if (String(oldValue) === String(assignedToUserCode)) {
@@ -469,19 +514,23 @@ export const updateTicketCategory = async (
     throw new Error("Category not found.");
   }
 
-  const subCategory = await ticketRepository.getSubCategoryById(subCategoryId);
+  let subCategory = null;
 
-  if (!subCategory) {
-    throw new Error("Subcategory not found.");
-  }
+  if (subCategoryId) {
+    subCategory = await ticketRepository.getSubCategoryById(subCategoryId);
 
-  if (String(subCategory.category_id) !== String(categoryId)) {
-    throw new Error("Subcategory does not belong to selected category.");
+    if (!subCategory) {
+      throw new Error("Subcategory not found.");
+    }
+
+    if (String(subCategory.category_id) !== String(categoryId)) {
+      throw new Error("Subcategory does not belong to selected category.");
+    }
   }
 
   if (
     String(ticket.category_id) === String(categoryId) &&
-    String(ticket.subcategory_id) === String(subCategoryId)
+    String(ticket.subcategory_id || "") === String(subCategoryId || "")
   ) {
     return ticket;
   }

@@ -220,6 +220,67 @@ export const deleteCategory = async (req, res) => {
   }
 };
 
+export const createSubCategory = async (req, res) => {
+  try {
+    const data = await service.createSubCategory(req.body);
+
+    return res.status(201).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updateSubCategory = async (req, res) => {
+  try {
+    const data = await service.updateSubCategory(
+      req.params.subcategoryId,
+      req.body,
+    );
+
+    return sendAdminMasterResponse(
+      res,
+      data,
+      "Subcategory not found",
+    );
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const deleteSubCategory = async (req, res) => {
+  try {
+    const data = await service.deleteSubCategory(
+      req.params.subcategoryId,
+    );
+
+    return sendAdminMasterResponse(
+      res,
+      data,
+      "Subcategory not found",
+    );
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const createStatus = async (req, res) => {
   try {
     const data =
@@ -382,12 +443,16 @@ export const getSubCategories = async (
 
 export const getAssignableUsers = async (req, res) => {
   try {
-    const { subcategoryId } = req.params;
+    const filters = {
+      subcategoryId: req.params.subcategoryId || req.query.subcategoryId,
+      categoryId: req.query.categoryId,
+      departmentId: req.query.departmentId,
+    };
 
     const users =
       await service.getAssignableUsers(
-        subcategoryId,
-        req.user.companyCode
+        filters,
+        req.user.companyCode,
       );
 
     res.json({

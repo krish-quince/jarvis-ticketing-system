@@ -9,7 +9,8 @@ const sendTicketError = (res, error) => {
         error.message === "Priority not found." ||
         error.message === "Category not found." ||
         error.message === "Subcategory not found." ||
-        error.message === "Subcategory does not belong to selected category."
+        error.message === "Subcategory does not belong to selected category." ||
+        error.message === "Assigned user must belong to the ticket category or department."
     ) {
         return res.status(404).json({
             success: false,

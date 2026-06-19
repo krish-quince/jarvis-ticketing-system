@@ -282,7 +282,7 @@ const AdminMasterManager = ({
               startIcon={editingId === null ? <Add /> : <Check />}
               onClick={handleSave}
               disabled={saving}
-              sx={{ textTransform: "none", backgroundColor: "var(--accent)" }}
+              sx={{ textTransform: "none", backgroundColor: "var(--accent)", color: "#fff" }}
             >
               {editingId === null ? "Add" : "Save"}
             </Button>
