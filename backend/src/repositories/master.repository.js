@@ -34,6 +34,22 @@ export const getPriorities = async () => {
   return result.rows;
 };
 
+export const getStatuses = async () => {
+  const result = await pool.query(
+    `
+    SELECT
+      status_id,
+      status_name,
+      status_color
+    FROM ticket_statuses
+    WHERE is_active = true
+    ORDER BY status_id
+    `
+  );
+
+  return result.rows;
+};
+
 export const getSubCategories = async (
   categoryId
 ) => {

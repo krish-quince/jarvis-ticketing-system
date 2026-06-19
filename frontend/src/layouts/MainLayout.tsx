@@ -124,8 +124,8 @@ const MainLayout = () => {
   const darkText = "rgba(255,255,255,0.88)";
   const darkSubtext = "rgba(255,255,255,0.45)";
 
-  const lightBg = "#f5f6fa";
-  const lightCard = "#ffffff";
+  const lightBg = "#eff6ff";
+  const lightCard = "#eff6ff";
   const lightBorder = "rgba(0,0,0,0.08)";
   const lightText = "#111827";
 
