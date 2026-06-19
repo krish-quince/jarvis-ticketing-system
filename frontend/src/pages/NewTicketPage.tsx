@@ -363,18 +363,20 @@ const NewTicketPage = () => {
     vertical: "top",
     horizontal: "left",
   }}
-  PaperProps={{
-  sx: {
-    mt: 0.5,
-    background: "var(--bg-card)",
-    border: "1px solid var(--border)",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.28)",
-    borderRadius: "10px",
-    overflow: "hidden",
-    width: 240,
-    maxHeight: 360,
-  },
-}}
+  slotProps={{
+    paper: {
+      sx: {
+        mt: 0.5,
+        background: "var(--bg-card)",
+        border: "1px solid var(--border)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.28)",
+        borderRadius: "10px",
+        overflow: "hidden",
+        width: 240,
+        maxHeight: 360,
+      },
+    },
+  }}
 >
   <Box
     sx={{

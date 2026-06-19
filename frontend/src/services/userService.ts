@@ -1,55 +1,43 @@
 import API from "./api";
 
 export const getUsers = async () => {
-  const response =
-    await API.get("/users");
+  const response = await API.get("/users");
 
   return response.data.data ?? response.data;
 };
 
-export const getUserByCode = async (
-  userCode: string
-) => {
-  const response =
-    await API.get(
-      `/users/${userCode}`
-    );
+export const getUsersWithAllData = async () => {
+  const response = await API.get("/users/getAllUsersWithData");
+
+  return response.data.data ?? response.data;
+};
+
+export const getUserByCode = async (userCode: string) => {
+  const response = await API.get(`/users/${userCode}`);
 
   return response.data;
 };
 
-export const createUser = async (
-  userData: any
-) => {
-  const response =
-    await API.post(
-      "/users",
-      userData
-    );
+export const createUser = async (userData: any) => {
+  const response = await API.post("/users", userData);
 
   return response.data;
 };
 
 export const updateUser = async (
   userCode: string,
-  userData: any
+  payload: any,
 ) => {
-  const response =
-    await API.put(
-      `/users/${userCode}`,
-      userData
-    );
+  const response = await API.patch(
+    `/users/${userCode}`,
+    payload,
+  );
 
-  return response.data;
+  return response.data.data;
 };
 
-export const deleteUser = async (
-  userCode: string
-) => {
-  const response =
-    await API.delete(
-      `/users/${userCode}`
-    );
+export const deleteUser = async (userCode: string) => {
+  const response = await API.delete(`/users/${userCode}`);
 
   return response.data;
 };

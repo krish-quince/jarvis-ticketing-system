@@ -22,7 +22,7 @@ import {
   SettingsOutlined,
 } from "@mui/icons-material";
 import { useState } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Topbar = () => {
   const navigate = useNavigate();
@@ -59,8 +59,6 @@ const Topbar = () => {
   };
 
   const [searchText, setSearchText] = useState("");
-  const [searchParams] = useSearchParams();
-
   const [toast, setToast] = useState({
     open: false,
     message: "",
@@ -397,7 +395,7 @@ const Topbar = () => {
               ? [
                   {
                     label: "Administration",
-                    path: "/users",
+                    path: "/admin",
                     icon: SettingsOutlined,
                   },
                 ]

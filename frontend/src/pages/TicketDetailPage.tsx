@@ -82,7 +82,7 @@ const TicketDetailPage = () => {
   const [statusOptions, setStatusOptions] = useState<TicketStatusOption[]>([]);
 
   const [loading, setLoading] = useState(true);
-  const [submittingComment, setSubmittingComment] = useState(false);
+  const [, setSubmittingComment] = useState(false);
   const [updatingMetadata, setUpdatingMetadata] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingStatuses, setLoadingStatuses] = useState(false);

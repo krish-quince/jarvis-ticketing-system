@@ -11,9 +11,6 @@ import { login, register } from "../services/authService";
 const LoginPage = () => {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
   const [toast, setToast] = useState<{
     open: boolean;
     message: string;

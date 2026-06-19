@@ -52,7 +52,7 @@ export const getStatuses = async (
 ) => {
   try {
     const data =
-      await service.getStatuses();
+  await service.getStatuses();
 
     return res.status(200).json({
       success: true,
@@ -65,6 +65,285 @@ export const getStatuses = async (
       success: false,
       message:
         "Failed to fetch statuses",
+    });
+  }
+};
+
+export const getRoles = async (
+  req,
+  res
+) => {
+  try {
+    const data =
+  await service.getRoles();
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch roles",
+    });
+  }
+};
+
+export const getDepartments = async (
+  req,
+  res
+) => {
+  try {
+    const data =
+  await service.getDepartments();
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch departments",
+    });
+  }
+};
+
+export const getCompanies = async (
+  req,
+  res
+) => {
+  try {
+    const data =
+  await service.getCompanies();
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch companies",
+    });
+  }
+};
+
+const sendAdminMasterResponse = (
+  res,
+  data,
+  notFoundMessage
+) => {
+  if (!data) {
+    return res.status(404).json({
+      success: false,
+      message: notFoundMessage,
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    data,
+  });
+};
+
+export const createCategory = async (req, res) => {
+  try {
+    const data =
+      await service.createCategory(req.body);
+
+    return res.status(201).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updateCategory = async (req, res) => {
+  try {
+    const data =
+      await service.updateCategory(
+        req.params.categoryId,
+        req.body
+      );
+
+    return sendAdminMasterResponse(
+      res,
+      data,
+      "Category not found"
+    );
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const deleteCategory = async (req, res) => {
+  try {
+    const data =
+      await service.deleteCategory(
+        req.params.categoryId
+      );
+
+    return sendAdminMasterResponse(
+      res,
+      data,
+      "Category not found"
+    );
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const createStatus = async (req, res) => {
+  try {
+    const data =
+      await service.createStatus(req.body);
+
+    return res.status(201).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updateStatus = async (req, res) => {
+  try {
+    const data =
+      await service.updateStatus(
+        req.params.statusId,
+        req.body
+      );
+
+    return sendAdminMasterResponse(
+      res,
+      data,
+      "Status not found"
+    );
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const deleteStatus = async (req, res) => {
+  try {
+    const data =
+      await service.deleteStatus(
+        req.params.statusId
+      );
+
+    return sendAdminMasterResponse(
+      res,
+      data,
+      "Status not found"
+    );
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const createPriority = async (req, res) => {
+  try {
+    const data =
+      await service.createPriority(req.body);
+
+    return res.status(201).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updatePriority = async (req, res) => {
+  try {
+    const data =
+      await service.updatePriority(
+        req.params.priorityId,
+        req.body
+      );
+
+    return sendAdminMasterResponse(
+      res,
+      data,
+      "Priority not found"
+    );
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const deletePriority = async (req, res) => {
+  try {
+    const data =
+      await service.deletePriority(
+        req.params.priorityId
+      );
+
+    return sendAdminMasterResponse(
+      res,
+      data,
+      "Priority not found"
+    );
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };
