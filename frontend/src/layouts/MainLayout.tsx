@@ -16,6 +16,7 @@ import {
 } from "@mui/icons-material";
 import Topbar from "../components/Topbar";
 import { getTickets } from "../services/ticketService";
+import { useThemeMode } from "../hooks/useThemeMode";
 
 const MainLayout = () => {
   const navigate = useNavigate();
@@ -23,59 +24,7 @@ const MainLayout = () => {
   const [searchParams] = useSearchParams();
   const [tickets, setTickets] = useState<any[]>([]);
 
-  const [themeMode, setThemeModeState] = useState<"light" | "dark" | "auto">(
-    () => {
-      return (
-        (localStorage.getItem("theme-mode") as "light" | "dark" | "auto") ||
-        "auto"
-      );
-    },
-  );
-
-  // Resolve the actual applied theme (light or dark) for conditional styling
-  const resolvedTheme = (() => {
-    if (themeMode === "dark") return "dark";
-    if (themeMode === "light") return "light";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-  })();
-  const isDark = resolvedTheme === "dark";
-
-  const setThemeMode = (mode: "light" | "dark" | "auto") => {
-    localStorage.setItem("theme-mode", mode);
-    setThemeModeState(mode);
-  };
-
-  useEffect(() => {
-    const applyTheme = (mode: string) => {
-      const root = document.documentElement;
-      root.classList.remove("dark-theme", "light-theme");
-      if (mode === "dark") {
-        root.classList.add("dark-theme");
-      } else if (mode === "light") {
-        root.classList.add("light-theme");
-      } else {
-        const isDarkSystem = window.matchMedia(
-          "(prefers-color-scheme: dark)",
-        ).matches;
-        root.classList.add(isDarkSystem ? "dark-theme" : "light-theme");
-      }
-    };
-
-    applyTheme(themeMode);
-
-    if (themeMode === "auto") {
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-      const handleChange = (e: MediaQueryListEvent) => {
-        const root = document.documentElement;
-        root.classList.remove("dark-theme", "light-theme");
-        root.classList.add(e.matches ? "dark-theme" : "light-theme");
-      };
-      mediaQuery.addEventListener("change", handleChange);
-      return () => mediaQuery.removeEventListener("change", handleChange);
-    }
-  }, [themeMode]);
+  const { themeMode, setThemeMode, isDark } = useThemeMode();
 
   const currentUser = (() => {
     try {

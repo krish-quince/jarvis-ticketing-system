@@ -428,6 +428,7 @@ const TicketsPage = () => {
           : "",
       );
     }
+
   };
 
   const handleAssignTickets = async () => {
@@ -1341,7 +1342,9 @@ const TicketsPage = () => {
                                         maxWidth: 280,
                                         ...darkTextFieldSx,
                                       }}
-                                      InputLabelProps={{ shrink: true }}
+                                      slotProps={{
+                                        inputLabel: { shrink: true },
+                                      }}
                                     />
 
                                     <Button
@@ -1361,6 +1364,7 @@ const TicketsPage = () => {
                                     </Button>
                                   </Box>
                                 )}
+
                               </Box>
                             </TableCell>
                           </TableRow>
@@ -1443,8 +1447,10 @@ const darkSelectSx = {
 };
 
 const darkMenuProps = {
-  PaperProps: {
-    sx: { backgroundColor: "#1c1b27", color: "#fff", mt: 0.5 },
+  slotProps: {
+    paper: {
+      sx: { backgroundColor: "#1c1b27", color: "#fff", mt: 0.5 },
+    },
   },
 };
 

@@ -8,12 +8,16 @@ import {
 
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
-import UsersPage from "./pages/UserPage";
+import AdminPage from "./pages/AdminPage";
 import TicketsPage from "./pages/TicketsPage";
 import TicketDetailPage from "./pages/TicketDetailPage";
 import NewTicketPage from "./pages/NewTicketPage";
+import AdminCategoriesPage from "./pages/AdminCategoriesPage";
+import AdminStatusesPage from "./pages/AdminStatusesPage";
+import AdminPrioritiesPage from "./pages/AdminPrioritiesPage";
 
 import MainLayout from "./layouts/MainLayout";
+import UsersPage from "./pages/UserPage";
 
 // Route guard for authenticated users
 const ProtectedRoute = () => {
@@ -44,23 +48,21 @@ function App() {
 
         {/* Main Application (Protected) */}
         <Route element={<ProtectedRoute />}>
-          <Route element={<MainLayout />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<MainLayout />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/tickets" element={<TicketsPage />} />
+              <Route path="/tickets/new" element={<NewTicketPage />} />
+              <Route path="/tickets/:id" element={<TicketDetailPage />} />
 
-            <Route path="/users" element={<UsersPage />} />
-
-            <Route path="/tickets" element={<TicketsPage />} />
-
-            <Route path="/tickets/new" element={<NewTicketPage />} />
-
-            <Route path="/tickets/:id" element={<TicketDetailPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+              <Route path="/admin/users" element={<UsersPage />} />
+              <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+              <Route path="/admin/statuses" element={<AdminStatusesPage />} />
+              <Route path="/admin/priorities" element={<AdminPrioritiesPage />} />
+            </Route>
           </Route>
         </Route>
-
-        {/* Unknown Routes */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-
-        
       </Routes>
     </BrowserRouter>
   );

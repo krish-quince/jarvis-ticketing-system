@@ -45,7 +45,7 @@ const TicketDetailPage = () => {
   const [users, setUsers] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(true);
-  const [submittingComment, setSubmittingComment] = useState(false);
+  const [, setSubmittingComment] = useState(false);
   const [updatingMetadata, setUpdatingMetadata] = useState(false);
   const [showReplyEditor, setShowReplyEditor] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
