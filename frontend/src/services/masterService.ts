@@ -19,6 +19,14 @@ export const getPriorities = async () => {
   return unwrapData(response.data);
 };
 
+export const getStatuses = async () => {
+  const response = await API.get(
+    "/master/statuses"
+  );
+
+  return unwrapData(response.data);
+};
+
 export const getSubCategories = async (
   categoryId: number
 ) => {

@@ -30,6 +30,12 @@ const users = [
   },
 ];
 
+const statuses = [
+  { status_id: 1, status_name: "New", status_color: "#2196F3" },
+  { status_id: 2, status_name: "In Progress", status_color: "#FD7E14" },
+  { status_id: 3, status_name: "Closed", status_color: "#28A745" },
+];
+
 let tickets = [
   {
     ticket_id: 1,
@@ -40,7 +46,8 @@ let tickets = [
     assignee: "Priya Menon",
     priority: "High",
     category: "Access",
-    status_name: "Open",
+    status_id: 1,
+    status_name: "New",
     created_at: "2026-06-10T09:30:00.000Z",
     updated_at: "2026-06-10T09:30:00.000Z",
   },
@@ -53,6 +60,7 @@ let tickets = [
     assignee: "Priya Menon",
     priority: "Medium",
     category: "Account",
+    status_id: 2,
     status_name: "In Progress",
     created_at: "2026-06-11T05:00:00.000Z",
     updated_at: "2026-06-11T07:15:00.000Z",
@@ -66,6 +74,7 @@ let tickets = [
     assignee: "Nandu Gatla",
     priority: "Low",
     category: "Email",
+    status_id: 3,
     status_name: "Closed",
     created_at: "2026-06-08T13:45:00.000Z",
     updated_at: "2026-06-09T10:20:00.000Z",
@@ -79,7 +88,8 @@ let tickets = [
     assignee: "Priya Menon",
     priority: "Urgent",
     category: "Integrations",
-    status_name: "Open",
+    status_id: 1,
+    status_name: "New",
     created_at: "2026-06-12T04:25:00.000Z",
     updated_at: "2026-06-12T04:25:00.000Z",
   },
@@ -125,7 +135,7 @@ function getNextTicketId() {
 function getDashboardSummary() {
   return {
     totalTickets: tickets.length,
-    openTickets: tickets.filter((ticket) => ticket.status_name === "Open").length,
+    openTickets: tickets.filter((ticket) => ticket.status_name === "New").length,
     inProgressTickets: tickets.filter((ticket) => ticket.status_name === "In Progress").length,
     closedTickets: tickets.filter((ticket) => ticket.status_name === "Closed").length,
     urgentTickets: tickets.filter((ticket) => ticket.priority === "Urgent").length,
@@ -135,6 +145,12 @@ function getDashboardSummary() {
 function normalizeTicketPayload(payload, existingTicket = {}) {
   const now = new Date().toISOString();
   const ticketId = existingTicket.ticket_id || getNextTicketId();
+  const status =
+    statuses.find((item) => item.status_id === Number(payload.status_id)) ||
+    statuses.find((item) => item.status_name === payload.status_name || item.status_name === payload.status) ||
+    statuses.find((item) => item.status_id === Number(existingTicket.status_id)) ||
+    statuses.find((item) => item.status_name === existingTicket.status_name) ||
+    statuses[0];
 
   return {
     ticket_id: ticketId,
@@ -145,7 +161,8 @@ function normalizeTicketPayload(payload, existingTicket = {}) {
     assignee: payload.assignee || existingTicket.assignee || "Unassigned",
     priority: payload.priority || existingTicket.priority || "Medium",
     category: payload.category || existingTicket.category || "General",
-    status_name: payload.status_name || payload.status || existingTicket.status_name || "Open",
+    status_id: status.status_id,
+    status_name: status.status_name,
     created_at: existingTicket.created_at || now,
     updated_at: now,
   };
@@ -190,6 +207,11 @@ async function handleRequest(req, res) {
       return;
     }
 
+    if (method === "GET" && pathname === "/api/master/statuses") {
+      sendJson(res, 200, { success: true, data: statuses });
+      return;
+    }
+
     if (method === "POST" && pathname === "/api/tickets") {
       const body = await parseBody(req);
       const ticket = normalizeTicketPayload(body);
@@ -226,6 +248,35 @@ async function handleRequest(req, res) {
         sendJson(res, 200, { message: "Ticket deleted" });
         return;
       }
+    }
+
+    const ticketStatusMatch = pathname.match(/^\/api\/tickets\/(\d+)\/status$/);
+    if (ticketStatusMatch && method === "PATCH") {
+      const ticketId = Number(ticketStatusMatch[1]);
+      const ticket = tickets.find((item) => item.ticket_id === ticketId);
+
+      if (!ticket) {
+        sendJson(res, 404, { message: "Ticket not found" });
+        return;
+      }
+
+      const body = await parseBody(req);
+      const status = statuses.find((item) => item.status_id === Number(body.status_id));
+
+      if (!status) {
+        sendJson(res, 404, { message: "Status not found" });
+        return;
+      }
+
+      const updatedTicket = {
+        ...ticket,
+        status_id: status.status_id,
+        status_name: status.status_name,
+        updated_at: new Date().toISOString(),
+      };
+      tickets = tickets.map((item) => (item.ticket_id === ticketId ? updatedTicket : item));
+      sendJson(res, 200, { success: true, data: updatedTicket });
+      return;
     }
 
     if (method === "GET" && pathname === "/api/users") {

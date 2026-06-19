@@ -8,6 +8,10 @@ export const getPriorities = async () => {
   return repository.getPriorities();
 };
 
+export const getStatuses = async () => {
+  return repository.getStatuses();
+};
+
 export const getSubCategories = async (categoryId) => {
   return repository.getSubCategories(categoryId);
 };

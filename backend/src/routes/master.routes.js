@@ -3,6 +3,7 @@ import express from "express";
 import {
   getCategories,
   getPriorities,
+  getStatuses,
   getSubCategories,
   getAssignableUsers
 } from "../controllers/master.controller.js";
@@ -21,6 +22,12 @@ router.get(
   "/priorities",
   verifyToken,
   getPriorities
+);
+
+router.get(
+  "/statuses",
+  verifyToken,
+  getStatuses
 );
 
 router.get(

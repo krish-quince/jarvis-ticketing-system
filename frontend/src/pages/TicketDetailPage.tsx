@@ -14,7 +14,10 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Select,
+  ListSubheader,
 } from "@mui/material";
+import type { SelectChangeEvent } from "@mui/material/Select";
 import {
   Reply as ReplyIcon,
   Input as TakeoverIcon,
@@ -22,16 +25,45 @@ import {
   MoreHoriz as MoreIcon,
   Info as InfoIcon,
   AccessTime as AccessTimeIcon,
+  Check as CheckIcon,
+  Close as CancelIcon,
 } from "@mui/icons-material";
 import {
   getTicketById,
   updateTicketStatus,
   updateTicketPriority,
+  updateTicketCategory,
   assignTicket,
   getComments,
   createComment,
 } from "../services/ticketService";
 import { getUsers } from "../services/userService";
+import {
+  getCategories,
+  getStatuses,
+  getSubCategories,
+} from "../services/masterService";
+
+type CategoryGroup = {
+  category_id: number;
+  category_name: string;
+  subcategories: Array<{
+    subcategory_id: number;
+    subcategory_name: string;
+  }>;
+};
+
+type TicketStatusOption = {
+  status_id: number;
+  status_name: string;
+  status_color?: string;
+};
+
+const fallbackStatusOptions: TicketStatusOption[] = [
+  { status_id: 1, status_name: "New", status_color: "#2196F3" },
+  { status_id: 2, status_name: "In Progress", status_color: "#FD7E14" },
+  { status_id: 3, status_name: "Closed", status_color: "#28A745" },
+];
 
 const TicketDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,20 +75,25 @@ const TicketDetailPage = () => {
   const [ticket, setTicket] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
+  const [statusOptions, setStatusOptions] = useState<TicketStatusOption[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [updatingMetadata, setUpdatingMetadata] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingStatuses, setLoadingStatuses] = useState(false);
+  const [editingStatus, setEditingStatus] = useState(false);
+  const [selectedStatusValue, setSelectedStatusValue] = useState("");
+  const [editingPriority, setEditingPriority] = useState(false);
+  const [selectedPriorityValue, setSelectedPriorityValue] = useState("");
+  const [editingCategory, setEditingCategory] = useState(false);
+  const [selectedCategoryValue, setSelectedCategoryValue] = useState("");
+  const [editingAssignee, setEditingAssignee] = useState(false);
+  const [selectedAssigneeValue, setSelectedAssigneeValue] = useState("");
   const [showReplyEditor, setShowReplyEditor] = useState(false);
   const [replyHtml, setReplyHtml] = useState("");
-  // Dropdown Menu Anchors
-  const [statusAnchor, setStatusAnchor] = useState<null | HTMLElement>(null);
-  const [priorityAnchor, setPriorityAnchor] = useState<null | HTMLElement>(
-    null,
-  );
-  const [assigneeAnchor, setAssigneeAnchor] = useState<null | HTMLElement>(
-    null,
-  );
+  // More actions menu anchor
   const [moreAnchor, setMoreAnchor] = useState<null | HTMLElement>(null);
 
   // Toast feedback state
@@ -75,7 +112,13 @@ const TicketDetailPage = () => {
     }
   })();
 
-  const isAdminOrDev = loggedInUser.role_id === 1 || loggedInUser.role_id === 3;
+  const loggedInRoleId = Number(loggedInUser.role_id ?? loggedInUser.roleId);
+  const loggedInUserCode = loggedInUser.user_code ?? loggedInUser.userCode;
+  const isAdminOrDev = loggedInRoleId === 1 || loggedInRoleId === 3;
+  const canManageTicketMetadata = (ticketToCheck = ticket) =>
+    isAdminOrDev ||
+    ticketToCheck?.assigned_to_user_code === loggedInUserCode ||
+    ticketToCheck?.raised_by_user_code === loggedInUserCode;
 
   useEffect(() => {
     fetchData();
@@ -95,9 +138,11 @@ const TicketDetailPage = () => {
         setComments([]);
       }
 
-      if (isAdminOrDev) {
+      if (canManageTicketMetadata(ticketData)) {
         const usersData = await getUsers();
         setUsers(usersData);
+        await loadCategoryGroups();
+        await loadStatuses();
       }
     } catch (error: any) {
       console.error(error);
@@ -113,6 +158,65 @@ const TicketDetailPage = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCategoryGroups = async () => {
+    if (categoryGroups.length > 0 || loadingCategories) return;
+
+    try {
+      setLoadingCategories(true);
+      const categories = await getCategories();
+      const groups = await Promise.all(
+        categories.map(async (category: any) => {
+          try {
+            const subcategories = await getSubCategories(category.category_id);
+            return {
+              category_id: category.category_id,
+              category_name: category.category_name,
+              subcategories: subcategories || [],
+            };
+          } catch {
+            return {
+              category_id: category.category_id,
+              category_name: category.category_name,
+              subcategories: [],
+            };
+          }
+        }),
+      );
+
+      setCategoryGroups(groups);
+    } catch (error) {
+      console.error("Failed to load categories:", error);
+      setToast({
+        open: true,
+        message: "Failed to load categories",
+        severity: "error",
+      });
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const loadStatuses = async () => {
+    if (statusOptions.length > 0) return statusOptions;
+
+    try {
+      setLoadingStatuses(true);
+      const statuses = await getStatuses();
+      const nextStatuses =
+        Array.isArray(statuses) && statuses.length > 0
+          ? statuses
+          : fallbackStatusOptions;
+      setStatusOptions(nextStatuses);
+      return nextStatuses;
+    } catch (error) {
+      console.warn("Using fallback statuses because status options failed to load:", error);
+      setStatusOptions(fallbackStatusOptions);
+      return fallbackStatusOptions;
+    } finally {
+      setLoadingStatuses(false);
     }
   };
 
@@ -249,6 +353,8 @@ const TicketDetailPage = () => {
       });
       const updated = await getTicketById(ticketId);
       setTicket(updated);
+      setEditingPriority(false);
+      setSelectedPriorityValue("");
     } catch (error: any) {
       console.error(error);
       setToast({
@@ -258,7 +364,78 @@ const TicketDetailPage = () => {
       });
     } finally {
       setUpdatingMetadata(false);
-      setPriorityAnchor(null);
+    }
+  };
+
+  const handlePriorityEditStart = () => {
+    if (!canManageTicketMetadata()) return;
+    setSelectedPriorityValue(String(ticket.priority_id || ""));
+    setEditingPriority(true);
+  };
+
+  const handlePriorityEditCancel = () => {
+    setEditingPriority(false);
+    setSelectedPriorityValue("");
+  };
+
+  const handlePrioritySelectChange = (event: SelectChangeEvent<string>) => {
+    setSelectedPriorityValue(event.target.value);
+  };
+
+  const handlePrioritySave = async () => {
+    if (!selectedPriorityValue) return;
+    await handlePriorityChange(Number(selectedPriorityValue));
+  };
+
+  const handleCategoryEditStart = async () => {
+    if (!canManageTicketMetadata()) return;
+
+    setSelectedCategoryValue(
+      ticket.category_id && ticket.subcategory_id
+        ? `${ticket.category_id}:${ticket.subcategory_id}`
+        : "",
+    );
+    setEditingCategory(true);
+    await loadCategoryGroups();
+  };
+
+  const handleCategoryEditCancel = () => {
+    setEditingCategory(false);
+    setSelectedCategoryValue("");
+  };
+
+  const handleCategoryChange = (event: SelectChangeEvent<string>) => {
+    setSelectedCategoryValue(event.target.value);
+  };
+
+  const handleCategorySave = async () => {
+    if (!selectedCategoryValue) return;
+
+    const [categoryId, subCategoryId] = selectedCategoryValue
+      .split(":")
+      .map(Number);
+
+    try {
+      setUpdatingMetadata(true);
+      await updateTicketCategory(ticketId, categoryId, subCategoryId);
+      setToast({
+        open: true,
+        message: "Category updated successfully",
+        severity: "success",
+      });
+      const updated = await getTicketById(ticketId);
+      setTicket(updated);
+      setEditingCategory(false);
+      setSelectedCategoryValue("");
+    } catch (error: any) {
+      console.error(error);
+      setToast({
+        open: true,
+        message: error.response?.data?.message || "Failed to update category",
+        severity: "error",
+      });
+    } finally {
+      setUpdatingMetadata(false);
     }
   };
 
@@ -273,6 +450,8 @@ const TicketDetailPage = () => {
       });
       const updated = await getTicketById(ticketId);
       setTicket(updated);
+      setEditingStatus(false);
+      setSelectedStatusValue("");
     } catch (error: any) {
       console.error(error);
       setToast({
@@ -282,8 +461,44 @@ const TicketDetailPage = () => {
       });
     } finally {
       setUpdatingMetadata(false);
-      setStatusAnchor(null);
     }
+  };
+
+  const getStatusValue = (options = statusOptions) => {
+    if (ticket.status_id) return String(ticket.status_id);
+
+    const matchingStatus = options.find(
+      (status) =>
+        status.status_name?.toLowerCase() === ticket.status_name?.toLowerCase(),
+    );
+
+    return matchingStatus ? String(matchingStatus.status_id) : "";
+  };
+
+  const handleStatusEditStart = async () => {
+    if (!canManageTicketMetadata()) return;
+    const currentStatusValue = getStatusValue();
+    setSelectedStatusValue(currentStatusValue);
+    setEditingStatus(true);
+
+    const statuses = await loadStatuses();
+    if (!currentStatusValue) {
+      setSelectedStatusValue(getStatusValue(statuses));
+    }
+  };
+
+  const handleStatusEditCancel = () => {
+    setEditingStatus(false);
+    setSelectedStatusValue("");
+  };
+
+  const handleStatusSelectChange = (event: SelectChangeEvent<string>) => {
+    setSelectedStatusValue(event.target.value);
+  };
+
+  const handleStatusSave = async () => {
+    if (!selectedStatusValue) return;
+    await handleStatusChange(Number(selectedStatusValue));
   };
 
   const handleAssigneeChange = async (userCode: string) => {
@@ -297,6 +512,8 @@ const TicketDetailPage = () => {
       });
       const updated = await getTicketById(ticketId);
       setTicket(updated);
+      setEditingAssignee(false);
+      setSelectedAssigneeValue("");
     } catch (error: any) {
       console.error(error);
       setToast({
@@ -306,8 +523,40 @@ const TicketDetailPage = () => {
       });
     } finally {
       setUpdatingMetadata(false);
-      setAssigneeAnchor(null);
     }
+  };
+
+  const handleAssigneeEditStart = async () => {
+    if (!canManageTicketMetadata()) return;
+    setSelectedAssigneeValue(ticket.assigned_to_user_code || "");
+    setEditingAssignee(true);
+    if (users.length === 0) {
+      try {
+        const usersData = await getUsers();
+        setUsers(usersData);
+      } catch (error) {
+        console.error("Failed to load users:", error);
+        setToast({
+          open: true,
+          message: "Failed to load users",
+          severity: "error",
+        });
+      }
+    }
+  };
+
+  const handleAssigneeEditCancel = () => {
+    setEditingAssignee(false);
+    setSelectedAssigneeValue("");
+  };
+
+  const handleAssigneeSelectChange = (event: SelectChangeEvent<string>) => {
+    setSelectedAssigneeValue(event.target.value);
+  };
+
+  const handleAssigneeSave = async () => {
+    if (!selectedAssigneeValue) return;
+    await handleAssigneeChange(selectedAssigneeValue);
   };
 
   if (loading) {
@@ -329,6 +578,7 @@ const TicketDetailPage = () => {
 
   // Status mapping
   const statusColors: Record<string, string> = {
+    New: "#2196F3",
     Open: "#DC3545", // red dot like "New" in screenshot
     "In Progress": "#FFC107", // yellow dot
     Testing: "#6F42C1", // purple
@@ -344,6 +594,58 @@ const TicketDetailPage = () => {
   };
 
   const isClosed = ticket.status_name === "Closed";
+  const canEditRightCard = canManageTicketMetadata(ticket);
+  const availableStatusOptions =
+    statusOptions.length > 0 ? statusOptions : fallbackStatusOptions;
+  const categoryDisplay = ticket.subcategory_name
+    ? `${ticket.category_name} / ${ticket.subcategory_name}`
+    : ticket.category_name || "Uncategorized";
+  const priorityOptions = [
+    { id: 1, label: "Low" },
+    { id: 2, label: "Medium" },
+    { id: 3, label: "High" },
+    { id: 4, label: "Critical" },
+  ];
+  const inlineEditControlSx = {
+    flex: 1,
+    minWidth: 0,
+    height: 34,
+    fontSize: 14,
+    backgroundColor: "#fff",
+    "& .MuiSelect-select": {
+      py: 0.75,
+      pr: "28px !important",
+    },
+  };
+  const inlineSaveButtonSx = {
+    width: 34,
+    height: 34,
+    borderRadius: "6px",
+    color: "#fff",
+    backgroundColor: "#4f46d8",
+    "&:hover": { backgroundColor: "#4338ca" },
+    "&.Mui-disabled": {
+      color: "rgba(255,255,255,0.65)",
+      backgroundColor: "rgba(79,70,216,0.45)",
+    },
+  };
+  const inlineCancelButtonSx = {
+    width: 34,
+    height: 34,
+    borderRadius: "6px",
+    border: "1px solid var(--border)",
+    color: "var(--text-secondary)",
+  };
+  const inlineMenuProps = {
+    slotProps: {
+      paper: {
+        sx: {
+          maxHeight: 360,
+          minWidth: 230,
+        },
+      },
+    },
+  };
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3, p: 1 }}>
@@ -578,15 +880,24 @@ const TicketDetailPage = () => {
                       mt: 2,
                     }}
                   >
-                    <Button variant="contained" onClick={handlePostComment}>
+                    <Button
+                      variant="contained"
+                      onClick={handlePostComment}
+                      disabled={submittingComment}
+                    >
                       Reply
                     </Button>
 
-                    <Button variant="outlined" onClick={handleReplyAndResolve}>
+                    <Button
+                      variant="outlined"
+                      onClick={handleReplyAndResolve}
+                      disabled={submittingComment}
+                    >
                       Reply & Resolve
                     </Button>
 
                     <Button
+                      disabled={submittingComment}
                       onClick={() => {
                         setShowReplyEditor(false);
                         setReplyHtml("");
@@ -782,41 +1093,108 @@ const TicketDetailPage = () => {
               >
                 #{ticket.ticket_no}
               </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  cursor: isAdminOrDev ? "pointer" : "default",
-                }}
-                onClick={(e) =>
-                  isAdminOrDev && setStatusAnchor(e.currentTarget)
-                }
-              >
+              {editingStatus ? (
                 <Box
                   sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    backgroundColor: statusColors[ticket.status_name] || "#ccc",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.75,
+                    flex: 1,
+                    maxWidth: 330,
+                    ml: 2,
+                    minWidth: 0,
                   }}
-                />
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 700, color: "var(--text-h)" }}
                 >
-                  {ticket.status_name}
-                </Typography>
-                {isAdminOrDev && (
-                  <MoreIcon
+                  <Select
+                    size="small"
+                    value={selectedStatusValue}
+                    onChange={handleStatusSelectChange}
+                    displayEmpty
+                    renderValue={(value) => {
+                      if (!value) return ticket.status_name || "Select status";
+
+                      return (
+                        availableStatusOptions.find(
+                          (status) => String(status.status_id) === value,
+                        )?.status_name ||
+                        ticket.status_name ||
+                        "Select status"
+                      );
+                    }}
+                    disabled={updatingMetadata}
+                    sx={inlineEditControlSx}
+                    MenuProps={inlineMenuProps}
+                  >
+                    <MenuItem value="" disabled>
+                      Select status
+                    </MenuItem>
+                    {loadingStatuses && statusOptions.length === 0 && (
+                      <MenuItem value="" disabled>
+                        Loading statuses...
+                      </MenuItem>
+                    )}
+                    {availableStatusOptions.map((status) => (
+                      <MenuItem
+                        key={status.status_id}
+                        value={String(status.status_id)}
+                      >
+                        {status.status_name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <IconButton
+                    size="small"
+                    onClick={handleStatusSave}
+                    disabled={!selectedStatusValue || updatingMetadata}
+                    sx={inlineSaveButtonSx}
+                  >
+                    <CheckIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={handleStatusEditCancel}
+                    disabled={updatingMetadata}
+                    sx={inlineCancelButtonSx}
+                  >
+                    <CancelIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    cursor: canEditRightCard ? "pointer" : "default",
+                  }}
+                  onClick={handleStatusEditStart}
+                >
+                  <Box
                     sx={{
-                      fontSize: 14,
-                      color: "var(--text-secondary)",
-                      ml: 0.5,
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      backgroundColor:
+                        statusColors[ticket.status_name] || "#ccc",
                     }}
                   />
-                )}
-              </Box>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 700, color: "var(--text-h)" }}
+                  >
+                    {ticket.status_name}
+                  </Typography>
+                  {canEditRightCard && (
+                    <MoreIcon
+                      sx={{
+                        fontSize: 14,
+                        color: "var(--text-secondary)",
+                        ml: 0.5,
+                      }}
+                    />
+                  )}
+                </Box>
+              )}
             </Box>
 
             <Divider sx={{ borderColor: "var(--border)" }} />
@@ -843,42 +1221,89 @@ const TicketDetailPage = () => {
                 >
                   Priority:
                 </Typography>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    flex: 1,
-                    cursor: isAdminOrDev ? "pointer" : "default",
-                  }}
-                  onClick={(e) =>
-                    isAdminOrDev && setPriorityAnchor(e.currentTarget)
-                  }
-                >
+                {editingPriority ? (
                   <Box
                     sx={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      backgroundColor:
-                        priorityColors[ticket.priority_name] || "#ccc",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.75,
+                      flex: 1,
+                      minWidth: 0,
                     }}
-                  />
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 600, color: "var(--text-h)" }}
                   >
-                    {ticket.priority_name}
-                  </Typography>
-                </Box>
-                {isAdminOrDev && (
-                  <IconButton
-                    size="small"
-                    onClick={(e) => setPriorityAnchor(e.currentTarget)}
-                    sx={{ color: "var(--text-secondary)", p: 0.5 }}
-                  >
-                    <MoreIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
+                    <Select
+                      size="small"
+                      value={selectedPriorityValue}
+                      onChange={handlePrioritySelectChange}
+                      displayEmpty
+                      disabled={updatingMetadata}
+                      sx={inlineEditControlSx}
+                      MenuProps={inlineMenuProps}
+                    >
+                      <MenuItem value="" disabled>
+                        Select priority
+                      </MenuItem>
+                      {priorityOptions.map((priority) => (
+                        <MenuItem key={priority.id} value={String(priority.id)}>
+                          {priority.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    <IconButton
+                      size="small"
+                      onClick={handlePrioritySave}
+                      disabled={!selectedPriorityValue || updatingMetadata}
+                      sx={inlineSaveButtonSx}
+                    >
+                      <CheckIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={handlePriorityEditCancel}
+                      disabled={updatingMetadata}
+                      sx={inlineCancelButtonSx}
+                    >
+                      <CancelIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        flex: 1,
+                        cursor: canEditRightCard ? "pointer" : "default",
+                      }}
+                      onClick={handlePriorityEditStart}
+                    >
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          backgroundColor:
+                            priorityColors[ticket.priority_name] || "#ccc",
+                        }}
+                      />
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 600, color: "var(--text-h)" }}
+                      >
+                        {ticket.priority_name}
+                      </Typography>
+                    </Box>
+                    {canEditRightCard && (
+                      <IconButton
+                        size="small"
+                        onClick={handlePriorityEditStart}
+                        sx={{ color: "var(--text-secondary)", p: 0.5 }}
+                      >
+                        <MoreIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    )}
+                  </>
                 )}
               </Box>
 
@@ -902,24 +1327,86 @@ const TicketDetailPage = () => {
                 >
                   Category:
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 600, color: "var(--text-h)", flex: 1 }}
-                >
-                  {ticket.category_name}
-                </Typography>
-                {isAdminOrDev && (
-                  <IconButton
-                    size="small"
-                    disabled
+                {editingCategory ? (
+                  <Box
                     sx={{
-                      color: "var(--text-secondary)",
-                      p: 0.5,
-                      opacity: 0.3,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.75,
+                      flex: 1,
+                      minWidth: 0,
                     }}
                   >
-                    <MoreIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
+                    <Select
+                      size="small"
+                      value={selectedCategoryValue}
+                      onChange={handleCategoryChange}
+                      displayEmpty
+                      disabled={loadingCategories || updatingMetadata}
+                      sx={inlineEditControlSx}
+                      MenuProps={inlineMenuProps}
+                    >
+                      <MenuItem value="" disabled>
+                        {loadingCategories
+                          ? "Loading categories..."
+                          : "Select category"}
+                      </MenuItem>
+                      {categoryGroups.flatMap((category) => [
+                        <ListSubheader key={`category-${category.category_id}`}>
+                          {category.category_name}
+                        </ListSubheader>,
+                        ...category.subcategories.map((subcategory) => (
+                          <MenuItem
+                            key={`${category.category_id}:${subcategory.subcategory_id}`}
+                            value={`${category.category_id}:${subcategory.subcategory_id}`}
+                            sx={{ pl: 3 }}
+                          >
+                            {subcategory.subcategory_name}
+                          </MenuItem>
+                        )),
+                      ])}
+                    </Select>
+                    <IconButton
+                      size="small"
+                      onClick={handleCategorySave}
+                      disabled={!selectedCategoryValue || updatingMetadata}
+                      sx={inlineSaveButtonSx}
+                    >
+                      <CheckIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={handleCategoryEditCancel}
+                      disabled={updatingMetadata}
+                      sx={inlineCancelButtonSx}
+                    >
+                      <CancelIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <>
+                    <Typography
+                      variant="body2"
+                      onClick={handleCategoryEditStart}
+                      sx={{
+                        fontWeight: 600,
+                        color: "var(--text-h)",
+                        flex: 1,
+                        cursor: canEditRightCard ? "pointer" : "default",
+                      }}
+                    >
+                      {categoryDisplay}
+                    </Typography>
+                    {canEditRightCard && (
+                      <IconButton
+                        size="small"
+                        onClick={handleCategoryEditStart}
+                        sx={{ color: "var(--text-secondary)", p: 0.5 }}
+                      >
+                        <MoreIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    )}
+                  </>
                 )}
               </Box>
 
@@ -949,19 +1436,6 @@ const TicketDetailPage = () => {
                 >
                   {ticket.raised_by_name ?? ticket.raised_by_user_code}
                 </Typography>
-                {isAdminOrDev && (
-                  <IconButton
-                    size="small"
-                    disabled
-                    sx={{
-                      color: "var(--text-secondary)",
-                      p: 0.5,
-                      opacity: 0.3,
-                    }}
-                  >
-                    <MoreIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                )}
               </Box>
 
               {/* Via */}
@@ -1012,28 +1486,75 @@ const TicketDetailPage = () => {
                 >
                   Assigned to:
                 </Typography>
-                <Typography
-                  variant="body2"
-                  onClick={(e) =>
-                    isAdminOrDev && setAssigneeAnchor(e.currentTarget)
-                  }
-                  sx={{
-                    fontWeight: 600,
-                    color: "var(--text-h)",
-                    flex: 1,
-                    cursor: isAdminOrDev ? "pointer" : "default",
-                  }}
-                >
-                  {ticket.assigned_to_user_code || "Unassigned"}
-                </Typography>
-                {isAdminOrDev && (
-                  <IconButton
-                    size="small"
-                    onClick={(e) => setAssigneeAnchor(e.currentTarget)}
-                    sx={{ color: "var(--text-secondary)", p: 0.5 }}
+                {editingAssignee ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.75,
+                      flex: 1,
+                      minWidth: 0,
+                    }}
                   >
-                    <MoreIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
+                    <Select
+                      size="small"
+                      value={selectedAssigneeValue}
+                      onChange={handleAssigneeSelectChange}
+                      displayEmpty
+                      disabled={updatingMetadata}
+                      sx={inlineEditControlSx}
+                      MenuProps={inlineMenuProps}
+                    >
+                      <MenuItem value="" disabled>
+                        Select assignee
+                      </MenuItem>
+                      {users.map((u) => (
+                        <MenuItem key={u.user_code} value={u.user_code}>
+                          {u.first_name} {u.last_name} ({u.user_code})
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    <IconButton
+                      size="small"
+                      onClick={handleAssigneeSave}
+                      disabled={!selectedAssigneeValue || updatingMetadata}
+                      sx={inlineSaveButtonSx}
+                    >
+                      <CheckIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={handleAssigneeEditCancel}
+                      disabled={updatingMetadata}
+                      sx={inlineCancelButtonSx}
+                    >
+                      <CancelIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <>
+                    <Typography
+                      variant="body2"
+                      onClick={handleAssigneeEditStart}
+                      sx={{
+                        fontWeight: 600,
+                        color: "var(--text-h)",
+                        flex: 1,
+                        cursor: canEditRightCard ? "pointer" : "default",
+                      }}
+                    >
+                      {ticket.assigned_to_user_code || "Unassigned"}
+                    </Typography>
+                    {canEditRightCard && (
+                      <IconButton
+                        size="small"
+                        onClick={handleAssigneeEditStart}
+                        sx={{ color: "var(--text-secondary)", p: 0.5 }}
+                      >
+                        <MoreIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    )}
+                  </>
                 )}
               </Box>
 
@@ -1063,19 +1584,6 @@ const TicketDetailPage = () => {
                 >
                   {new Date(ticket.update_timestamp).toLocaleDateString()}
                 </Typography>
-                {isAdminOrDev && (
-                  <IconButton
-                    size="small"
-                    disabled
-                    sx={{
-                      color: "var(--text-secondary)",
-                      p: 0.5,
-                      opacity: 0.3,
-                    }}
-                  >
-                    <MoreIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                )}
               </Box>
 
               {/* Due Date */}
@@ -1106,19 +1614,6 @@ const TicketDetailPage = () => {
                     ? new Date(ticket.due_date).toLocaleDateString()
                     : ""}
                 </Typography>
-                {isAdminOrDev && (
-                  <IconButton
-                    size="small"
-                    disabled
-                    sx={{
-                      color: "var(--text-secondary)",
-                      p: 0.5,
-                      opacity: 0.3,
-                    }}
-                  >
-                    <MoreIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                )}
               </Box>
 
               {/* Time spent */}
@@ -1162,19 +1657,6 @@ const TicketDetailPage = () => {
                     <AccessTimeIcon sx={{ fontSize: 15 }} />
                   </IconButton>
                 </Box>
-                {isAdminOrDev && (
-                  <IconButton
-                    size="small"
-                    disabled
-                    sx={{
-                      color: "var(--text-secondary)",
-                      p: 0.5,
-                      opacity: 0.3,
-                    }}
-                  >
-                    <MoreIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                )}
               </Box>
 
               {/* Start Date */}
@@ -1227,19 +1709,6 @@ const TicketDetailPage = () => {
                   variant="body2"
                   sx={{ fontWeight: 600, color: "var(--text-h)", flex: 1 }}
                 />
-                {isAdminOrDev && (
-                  <IconButton
-                    size="small"
-                    disabled
-                    sx={{
-                      color: "var(--text-secondary)",
-                      p: 0.5,
-                      opacity: 0.3,
-                    }}
-                  >
-                    <MoreIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                )}
               </Box>
 
               {/* Recurring */}
@@ -1268,19 +1737,6 @@ const TicketDetailPage = () => {
                 >
                   This ticket is not recurring
                 </Typography>
-                {isAdminOrDev && (
-                  <IconButton
-                    size="small"
-                    disabled
-                    sx={{
-                      color: "var(--text-secondary)",
-                      p: 0.5,
-                      opacity: 0.3,
-                    }}
-                  >
-                    <MoreIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                )}
               </Box>
 
               {/* Tags */}
@@ -1345,69 +1801,11 @@ const TicketDetailPage = () => {
                 >
                   type an asset...
                 </Typography>
-                {isAdminOrDev && (
-                  <IconButton
-                    size="small"
-                    disabled
-                    sx={{
-                      color: "var(--text-secondary)",
-                      p: 0.5,
-                      opacity: 0.3,
-                    }}
-                  >
-                    <MoreIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                )}
               </Box>
             </Box>
           </Card>
         </Grid>
       </Grid>
-
-      {/* Interactive Dropdown Menus */}
-      {/* Status Menu */}
-      <Menu
-        anchorEl={statusAnchor}
-        open={Boolean(statusAnchor)}
-        onClose={() => setStatusAnchor(null)}
-      >
-        <MenuItem onClick={() => handleStatusChange(1)}>Open</MenuItem>
-        <MenuItem onClick={() => handleStatusChange(2)}>In Progress</MenuItem>
-        <MenuItem onClick={() => handleStatusChange(3)}>Testing</MenuItem>
-        <MenuItem onClick={() => handleStatusChange(4)}>Resolved</MenuItem>
-        <MenuItem onClick={() => handleStatusChange(5)}>Closed</MenuItem>
-      </Menu>
-
-      {/* Priority Menu */}
-      <Menu
-        anchorEl={priorityAnchor}
-        open={Boolean(priorityAnchor)}
-        onClose={() => setPriorityAnchor(null)}
-      >
-        <MenuItem onClick={() => handlePriorityChange(1)}>Low</MenuItem>
-        <MenuItem onClick={() => handlePriorityChange(2)}>Medium</MenuItem>
-        <MenuItem onClick={() => handlePriorityChange(3)}>High</MenuItem>
-        <MenuItem onClick={() => handlePriorityChange(4)}>Critical</MenuItem>
-      </Menu>
-
-      {/* Assignee Menu */}
-      <Menu
-        anchorEl={assigneeAnchor}
-        open={Boolean(assigneeAnchor)}
-        onClose={() => setAssigneeAnchor(null)}
-      >
-        <MenuItem onClick={() => handleAssigneeChange("null as any")}>
-          <em>Unassigned</em>
-        </MenuItem>
-        {users.map((u) => (
-          <MenuItem
-            key={u.user_code}
-            onClick={() => handleAssigneeChange(u.user_code)}
-          >
-            {u.first_name} {u.last_name} ({u.user_code})
-          </MenuItem>
-        ))}
-      </Menu>
 
       {/* Toast Feedback */}
       <Snackbar
