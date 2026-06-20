@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -16,7 +16,8 @@ import {
   Select,
   ListSubheader,
   Avatar,
-  InputBase,
+  Chip,
+  Switch,
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material/Select";
 import {
@@ -27,8 +28,9 @@ import {
   AccessTime as AccessTimeIcon,
   Check as CheckIcon,
   Close as CancelIcon,
-  SendOutlined as SendIcon,
+  LockOutlined as LockIcon,
 } from "@mui/icons-material";
+import RichTextEditor from "../components/RichTextEditor";
 import {
   getTicketById,
   updateTicketStatus,
@@ -42,6 +44,7 @@ import {
 import { getUsers } from "../services/userService";
 import {
   getCategories,
+  getPriorities,
   getStatuses,
   getSubCategories,
 } from "../services/masterService";
@@ -59,6 +62,12 @@ type TicketStatusOption = {
   status_id: number;
   status_name: string;
   status_color?: string;
+};
+
+type TicketPriorityOption = {
+  priority_id: number;
+  priority_name: string;
+  priority_color?: string;
 };
 
 const fallbackStatusOptions: TicketStatusOption[] = [
@@ -80,6 +89,9 @@ const TicketDetailPage = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [statusOptions, setStatusOptions] = useState<TicketStatusOption[]>([]);
+  const [priorityMasterOptions, setPriorityMasterOptions] = useState<
+    TicketPriorityOption[]
+  >([]);
 
   const [loading, setLoading] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -95,9 +107,9 @@ const TicketDetailPage = () => {
   const [editingAssignee, setEditingAssignee] = useState(false);
   const [selectedAssigneeValue, setSelectedAssigneeValue] = useState("");
   const [replyHtml, setReplyHtml] = useState("");
-  const replyInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(
-    null,
-  );
+  const [replyComposerOpen, setReplyComposerOpen] = useState(false);
+  const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
+  const [techniciansOnly, setTechniciansOnly] = useState(false);
   // More actions menu anchor
   const [moreAnchor, setMoreAnchor] = useState<null | HTMLElement>(null);
 
@@ -151,12 +163,17 @@ const TicketDetailPage = () => {
         setHistory([]);
       }
 
-      if (canManageTicketMetadata(ticketData)) {
-        const usersData = await getUsers();
-        setUsers(usersData);
-        await loadCategoryGroups();
-        await loadStatuses();
-      }
+      await Promise.all([
+        getUsers()
+          .then((usersData) => setUsers(usersData || []))
+          .catch((usersError) => {
+            console.warn("Unable to load users for history labels:", usersError);
+            setUsers([]);
+          }),
+        loadCategoryGroups(),
+        loadStatuses(),
+        loadPriorities(),
+      ]);
     } catch (error: any) {
       console.error(error);
       setToast({
@@ -233,11 +250,42 @@ const TicketDetailPage = () => {
     }
   };
 
-  const handlePostComment = async () => {
-    const plainText = replyHtml
+  const loadPriorities = async () => {
+    if (priorityMasterOptions.length > 0) return priorityMasterOptions;
+
+    try {
+      const priorities = await getPriorities();
+      const nextPriorities = Array.isArray(priorities) ? priorities : [];
+      setPriorityMasterOptions(nextPriorities);
+      return nextPriorities;
+    } catch (error) {
+      console.warn("Unable to load priorities for history labels:", error);
+      setPriorityMasterOptions([]);
+      return [];
+    }
+  };
+
+  const getReplyPlainText = () =>
+    replyHtml
       .replace(/<[^>]*>/g, "")
       .replace(/&nbsp;/g, "")
       .trim();
+
+  const resetReplyComposer = () => {
+    setReplyHtml("");
+    setReplyAttachments([]);
+    setTechniciansOnly(false);
+    setReplyComposerOpen(false);
+  };
+
+  const handleOpenReplyComposer = () => {
+    setReplyComposerOpen(true);
+  };
+
+  const handlePostComment = async ({
+    resolveTicket = false,
+  }: { resolveTicket?: boolean } = {}) => {
+    const plainText = getReplyPlainText();
 
     if (!plainText) return;
 
@@ -245,14 +293,19 @@ const TicketDetailPage = () => {
       setSubmittingComment(true);
 
       await createComment(ticketId, replyHtml);
+      if (resolveTicket) {
+        await updateTicketStatus(ticketId, 5);
+      }
 
       await fetchData();
 
-      setReplyHtml("");
+      resetReplyComposer();
 
       setToast({
         open: true,
-        message: "Reply added successfully",
+        message: resolveTicket
+          ? "Reply added and ticket resolved"
+          : "Reply added successfully",
         severity: "success",
       });
     } catch (error: any) {
@@ -628,16 +681,124 @@ const TicketDetailPage = () => {
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase())
       .join("");
+  const normalizeHistoryField = (field?: string) =>
+    String(field || "")
+      .replace(/[_\s-]/g, "")
+      .toLowerCase();
+  const getUserDisplayName = (userCode?: string) => {
+    if (!userCode) return "";
+
+    const matchingUser = users.find(
+      (user) => String(user.user_code) === String(userCode),
+    );
+
+    if (!matchingUser) return String(userCode);
+
+    const fullName = [matchingUser.first_name, matchingUser.last_name]
+      .filter(Boolean)
+      .join(" ");
+
+    return fullName ? `${fullName} (${matchingUser.user_code})` : matchingUser.user_code;
+  };
+  const getCategoryName = (categoryId?: string) => {
+    if (!categoryId) return "";
+
+    const category = categoryGroups.find(
+      (group) => String(group.category_id) === String(categoryId),
+    );
+
+    return category?.category_name || String(categoryId);
+  };
+  const getSubCategoryName = (subCategoryId?: string) => {
+    if (!subCategoryId) return "";
+
+    const subcategory = categoryGroups
+      .flatMap((group) => group.subcategories)
+      .find(
+        (subCategory: any) =>
+          String(subCategory.subcategory_id) === String(subCategoryId),
+      );
+
+    return subcategory?.subcategory_name || String(subCategoryId);
+  };
+  const getStatusName = (statusId?: string) => {
+    if (!statusId) return "";
+
+    const status = availableStatusOptions.find(
+      (option) => String(option.status_id) === String(statusId),
+    );
+
+    return status?.status_name || String(statusId);
+  };
+  const getPriorityName = (priorityId?: string) => {
+    if (!priorityId) return "";
+
+    const priority = priorityMasterOptions.find(
+      (option) => String(option.priority_id) === String(priorityId),
+    );
+
+    if (priority?.priority_name) return priority.priority_name;
+
+    const fallbackPriority = [
+      { id: 1, label: "Low" },
+      { id: 2, label: "Medium" },
+      { id: 3, label: "High" },
+      { id: 4, label: "Critical" },
+    ].find((option) => String(option.id) === String(priorityId));
+
+    return fallbackPriority?.label || String(priorityId);
+  };
+  const getHistoryValueLabel = (field: string, value?: string) => {
+    if (!value) return "";
+
+    switch (normalizeHistoryField(field)) {
+      case "status":
+      case "statusid":
+        return getStatusName(value);
+      case "priority":
+      case "priorityid":
+        return getPriorityName(value);
+      case "category":
+      case "categoryid":
+        return getCategoryName(value);
+      case "subcategory":
+      case "subcategoryid":
+        return getSubCategoryName(value);
+      case "assignedto":
+      case "assignedtousercode":
+      case "assignee":
+        return getUserDisplayName(value);
+      default:
+        return String(value);
+    }
+  };
   const getHistoryMessage = (item: any) => {
     const field = item.field_changed || "Ticket";
-    const fieldName = String(field).replace(/_/g, " ").toLowerCase();
+    const fieldKey = normalizeHistoryField(field);
+    const fieldNameMap: Record<string, string> = {
+      status: "status",
+      statusid: "status",
+      priority: "priority",
+      priorityid: "priority",
+      category: "category",
+      categoryid: "category",
+      subcategory: "subcategory",
+      subcategoryid: "subcategory",
+      assignedto: "assignee",
+      assignedtousercode: "assignee",
+      assignee: "assignee",
+    };
+    const fieldName =
+      fieldNameMap[fieldKey] || String(field).replace(/_/g, " ").toLowerCase();
+    const oldValue = getHistoryValueLabel(field, item.old_value);
+    const newValue = getHistoryValueLabel(field, item.new_value);
 
-    if (item.old_value && item.new_value) {
-      return `The ${fieldName} has been changed: ${item.old_value} -> ${item.new_value}`;
+    if (oldValue && newValue) {
+      return `The ${fieldName} has been changed: ${oldValue} -> ${newValue}`;
     }
 
-    if (item.new_value) {
-      return `The ${fieldName} has been changed: ${item.new_value}`;
+    if (newValue) {
+      return `The ${fieldName} has been changed: ${newValue}`;
     }
 
     return `The ${fieldName} has been updated`;
@@ -657,17 +818,23 @@ const TicketDetailPage = () => {
     })),
   ].sort(
     (a, b) =>
-      new Date(b.feedDate || 0).getTime() - new Date(a.feedDate || 0).getTime(),
+      new Date(a.feedDate || 0).getTime() - new Date(b.feedDate || 0).getTime(),
   );
   const categoryDisplay = ticket.subcategory_name
     ? `${ticket.category_name} / ${ticket.subcategory_name}`
     : ticket.category_name || "Uncategorized";
-  const priorityOptions = [
-    { id: 1, label: "Low" },
-    { id: 2, label: "Medium" },
-    { id: 3, label: "High" },
-    { id: 4, label: "Critical" },
-  ];
+  const priorityOptions =
+    priorityMasterOptions.length > 0
+      ? priorityMasterOptions.map((priority) => ({
+          id: priority.priority_id,
+          label: priority.priority_name,
+        }))
+      : [
+          { id: 1, label: "Low" },
+          { id: 2, label: "Medium" },
+          { id: 3, label: "High" },
+          { id: 4, label: "Critical" },
+        ];
   const inlineEditControlSx = {
     flex: 1,
     minWidth: 0,
@@ -708,6 +875,7 @@ const TicketDetailPage = () => {
       },
     },
   };
+  const canSubmitReply = getReplyPlainText().length > 0 && !submittingComment;
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3, p: 1 }}>
@@ -747,9 +915,7 @@ const TicketDetailPage = () => {
                 <Button
                   variant="outlined"
                   startIcon={<ReplyIcon />}
-                  onClick={() => {
-                    replyInputRef.current?.focus();
-                  }}
+                  onClick={handleOpenReplyComposer}
                   sx={{
                     borderRadius: "6px",
                     textTransform: "none",
@@ -917,162 +1083,416 @@ const TicketDetailPage = () => {
                 __html: ticket.description || "No description provided.",
               }}
             />
-            <Divider sx={{ my: 1, borderColor: "var(--border)" }} />
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                mt: 2.5,
-              }}
-            >
-              <Avatar
-                sx={{
-                  width: 42,
-                  height: 42,
-                  flexShrink: 0,
-                  bgcolor: "#e5e7eb",
-                  color: "#211b5a",
-                  fontSize: 15,
-                  fontWeight: 700,
-                }}
-              >
-                {replyInitials || "U"}
-              </Avatar>
+            
+            {!replyComposerOpen ? (
               <Box
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  flex: 1,
-                  minHeight: 56,
-                  border: "1px solid var(--border)",
-                  borderRadius: "7px",
-                  backgroundColor: "#fff",
-                  px: 1.5,
-                  transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-                  "&:focus-within": {
-                    borderColor: "#8da2d6",
-                    boxShadow: "0 0 0 3px rgba(33, 27, 90, 0.08)",
-                  },
+                  gap: 2,
+                  mt: 2.5,
                 }}
               >
-                <InputBase
-                  inputRef={replyInputRef}
-                  value={replyHtml}
-                  onChange={(event) => setReplyHtml(event.target.value)}
-                  placeholder="Reply..."
-                  multiline
-                  maxRows={5}
-                  disabled={submittingComment}
+                <Avatar
+                  sx={{
+                    width: 42,
+                    height: 42,
+                    flexShrink: 0,
+                    bgcolor: "#e5e7eb",
+                    color: "#211b5a",
+                    fontSize: 15,
+                    fontWeight: 700,
+                  }}
+                >
+                  {replyInitials || "U"}
+                </Avatar>
+                <Box
+                  role="button"
+                  tabIndex={0}
+                  onClick={handleOpenReplyComposer}
                   onKeyDown={(event) => {
-                    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+                    if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
-                      handlePostComment();
+                      handleOpenReplyComposer();
                     }
                   }}
                   sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
                     flex: 1,
-                    minWidth: 0,
-                    color: "var(--text)",
-                    fontSize: 15,
-                    "& textarea::placeholder": {
-                      color: "#9aa0ad",
-                      opacity: 1,
-                    },
-                  }}
-                />
-                {subscriberNames.length > 0 && (
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: "#9aa0ad",
-                      whiteSpace: "nowrap",
-                      ml: 1.5,
-                      display: { xs: "none", lg: "block" },
-                    }}
-                  >
-                    (subscribers: {subscriberNames.join(", ")})
-                  </Typography>
-                )}
-                <IconButton
-                  size="small"
-                  onClick={handlePostComment}
-                  disabled={submittingComment || !replyHtml.trim()}
-                  sx={{
-                    ml: 1,
-                    color: "#8f93a1",
-                    "&:hover": {
-                      color: "#211b5a",
-                      backgroundColor: "rgba(33, 27, 90, 0.06)",
+                    minHeight: 56,
+                    border: "1px solid var(--border)",
+                    borderRadius: "7px",
+                    backgroundColor: "#fff",
+                    px: 1.5,
+                    cursor: "text",
+                    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                    "&:hover, &:focus": {
+                      borderColor: "#8da2d6",
+                      boxShadow: "0 0 0 3px rgba(33, 27, 90, 0.08)",
                     },
                   }}
                 >
-                  <SendIcon sx={{ fontSize: 29 }} />
-                </IconButton>
+                  <Typography sx={{ color: "#9aa0ad", fontSize: 15 }}>
+                    Reply...
+                  </Typography>
+                  {subscriberNames.length > 0 && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "#9aa0ad",
+                        whiteSpace: "nowrap",
+                        ml: 1.5,
+                        display: { xs: "none", lg: "block" },
+                      }}
+                    >
+                      subscribers: {subscriberNames.join(", ")}
+                    </Typography>
+                  )}
+                </Box>
               </Box>
-            </Box>
+            ) : (
+              <Box
+                sx={{
+                  mt: 2.5,
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  backgroundColor: "#fff",
+                  boxShadow: "0 1px 5px rgba(15, 23, 42, 0.08)",
+                  overflow: "hidden",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: "1px solid var(--border)",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <Typography sx={{ color: "var(--text-secondary)", fontSize: 14 }}>
+                    To:
+                  </Typography>
+                  {subscriberNames.length > 0 ? (
+                    subscriberNames.map((name) => (
+                      <Chip
+                        key={name}
+                        size="small"
+                        icon={<CheckIcon sx={{ fontSize: "15px !important" }} />}
+                        label={name}
+                        sx={{
+                          borderRadius: "6px",
+                          backgroundColor: "#eef2ff",
+                          color: "#5f6475",
+                          "& .MuiChip-icon": {
+                            color: "#15803d",
+                          },
+                        }}
+                      />
+                    ))
+                  ) : (
+                    <Chip
+                      size="small"
+                      icon={<CheckIcon sx={{ fontSize: "15px !important" }} />}
+                      label={ticket.raised_by_name ?? ticket.raised_by_user_code ?? "Requester"}
+                      sx={{
+                        borderRadius: "6px",
+                        backgroundColor: "#eef2ff",
+                        color: "#5f6475",
+                        "& .MuiChip-icon": {
+                          color: "#15803d",
+                        },
+                      }}
+                    />
+                  )}
+                  <Button
+                    variant="text"
+                    size="small"
+                    sx={{
+                      textTransform: "none",
+                      minWidth: "auto",
+                      px: 0.5,
+                      color: "#3524c7",
+                    }}
+                  >
+                    add...
+                  </Button>
+                  <IconButton
+                    size="small"
+                    onClick={resetReplyComposer}
+                    sx={{
+                      ml: "auto",
+                      color: "#a3a7b2",
+                      "&:hover": {
+                        color: "#5f6475",
+                        backgroundColor: "transparent",
+                      },
+                    }}
+                  >
+                    <CancelIcon sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Box>
+
+                <RichTextEditor
+                  value={replyHtml}
+                  onChange={setReplyHtml}
+                  attachments={replyAttachments}
+                  onAttachmentsChange={setReplyAttachments}
+                  autoFocus
+                  minHeight={145}
+                  sx={{
+                    mb: 0,
+                    "& > .MuiBox-root:first-of-type": {
+                      borderRadius: 0,
+                      borderLeft: "none",
+                      borderRight: "none",
+                      backgroundColor: "#f7f8fb",
+                    },
+                    "& > .MuiBox-root:nth-of-type(2)": {
+                      borderLeft: "none",
+                      borderRight: "none",
+                      borderBottom: "1px solid var(--border)",
+                      borderRadius: 0,
+                    },
+                  }}
+                />
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 1.5,
+                    px: 2,
+                    py: 1.5,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Button
+                      variant="contained"
+                      onClick={() => handlePostComment()}
+                      disabled={!canSubmitReply}
+                      sx={{
+                        minWidth: 110,
+                        borderRadius: "6px",
+                        textTransform: "none",
+                        fontWeight: 700,
+                        color: "#fff",
+                        backgroundColor: "#211b5a",
+                        "&:hover": { backgroundColor: "#211b5a", color: "#fff" },
+                      }}
+                    >
+                      {submittingComment ? (
+                        <CircularProgress size={18} sx={{ color: "#fff" }} />
+                      ) : (
+                        "Reply"
+                      )}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      onClick={() => handlePostComment({ resolveTicket: true })}
+                      disabled={!canSubmitReply || updatingMetadata}
+                      sx={{
+                        borderRadius: "6px",
+                        textTransform: "none",
+                        fontWeight: 700,
+                        color: "#5f6475",
+                        borderColor: "var(--border)",
+                      }}
+                    >
+                      Reply & resolve
+                    </Button>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Switch
+                      checked={techniciansOnly}
+                      onChange={(event) => setTechniciansOnly(event.target.checked)}
+                    />
+                    <Typography sx={{ color: "#3f4453", fontSize: 15 }}>
+                      For technicians only
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            )}
           </Card>
 
           {/* Comment and update feed */}
           {feedItems.length > 0 && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.25 }}>
-              {feedItems.map((item: any) => {
-                const author = getFeedAuthor(item);
+            <Card
+              sx={{
+                borderRadius: 3,
+                boxShadow: "var(--shadow)",
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--bg-card)",
+                color: "var(--text)",
+                overflow: "hidden",
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 2,
+                  px: 2.25,
+                  py: 1.6,
+                  borderBottom: "1px solid var(--border)",
+                  backgroundColor: "var(--bg-header)",
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  sx={{ color: "var(--text-h)", fontWeight: 700 }}
+                >
+                  Conversation
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "var(--text-secondary)", fontSize: 12.5 }}
+                >
+                  {feedItems.length} updates
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1.5,
+                  height: { xs: 420, md: 520 },
+                  overflowY: "auto",
+                  px: { xs: 1.5, sm: 2 },
+                  py: 2,
+                  backgroundColor: "rgba(239, 246, 255, 0.72)",
+                  scrollBehavior: "smooth",
+                  "&::-webkit-scrollbar": {
+                    width: 8,
+                  },
+                  "&::-webkit-scrollbar-track": {
+                    backgroundColor: "rgba(226, 232, 240, 0.7)",
+                    borderRadius: 999,
+                  },
+                  "&::-webkit-scrollbar-thumb": {
+                    backgroundColor: "rgba(33, 27, 90, 0.28)",
+                    borderRadius: 999,
+                  },
+                }}
+                ref={(node: HTMLDivElement | null) => {
+                  if (node) node.scrollTop = node.scrollHeight;
+                }}
+              >
+                <Box
+                  sx={{
+                    alignSelf: "center",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.8,
+                    maxWidth: 680,
+                    px: 2,
+                    py: 1.2,
+                    borderRadius: "7px",
+                    border: "1px solid rgba(245, 158, 11, 0.22)",
+                    backgroundColor: "#fff2cf",
+                    color: "#6b5a3c",
+                    boxShadow: "0 1px 3px rgba(15, 23, 42, 0.08)",
+                    textAlign: "center",
+                  }}
+                >
+                  <LockIcon sx={{ fontSize: 17, color: "#6b5a3c", flexShrink: 0 }} />
+                  <Typography sx={{ fontSize: 14, lineHeight: 1.45 }}>
+                    Messages and ticket updates are visible only to people in this
+                    ticket.
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    alignSelf: "center",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.8,
+                    maxWidth: 560,
+                    px: 1.8,
+                    py: 0.9,
+                    borderRadius: "7px",
+                    backgroundColor: "rgba(33, 27, 90, 0.08)",
+                    color: "var(--text-secondary)",
+                    textAlign: "center",
+                  }}
+                >
+                  <AccessTimeIcon
+                    sx={{
+                      fontSize: 16,
+                      color: "var(--text-secondary)",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Typography sx={{ fontSize: 13.5, lineHeight: 1.4 }}>
+                    Older updates may be archived according to ticket retention
+                    settings.
+                  </Typography>
+                </Box>
+                {feedItems.map((item: any) => {
+                  const author = getFeedAuthor(item);
+                  const isOwnComment =
+                    item.feedType === "comment" &&
+                    item.commented_by_user_code &&
+                    item.commented_by_user_code === loggedInUser.user_code;
 
-                if (item.feedType === "history") {
-                  return (
-                    <Box
-                      key={item.feedKey}
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns: "24px 1fr",
-                        columnGap: 2,
-                        alignItems: "start",
-                        px: 3,
-                      }}
-                    >
+                  if (item.feedType === "history") {
+                    return (
                       <Box
+                        key={item.feedKey}
                         sx={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: "50%",
-                          border: "1px solid #7c86a2",
-                          backgroundColor: "#fff",
-                          mt: 0.8,
-                          justifySelf: "center",
+                          alignSelf: "center",
+                          maxWidth: 640,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 0.65,
+                          px: 2,
+                          py: 1.15,
+                          borderRadius: "7px",
+                          backgroundColor: "rgba(255, 255, 255, 0.76)",
+                          border: "1px solid var(--border)",
+                          boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
+                          textAlign: "center",
                         }}
-                      />
-                      <Box>
+                      >
                         <Box
                           sx={{
                             display: "flex",
                             alignItems: "center",
+                            justifyContent: "center",
                             flexWrap: "wrap",
-                            gap: 1.25,
-                            mb: 0.7,
+                            gap: 0.85,
                           }}
                         >
                           <Typography
                             variant="caption"
-                            sx={{ color: "#8b90a2", fontSize: 14 }}
+                            sx={{ color: "#8b90a2", fontSize: 13 }}
                           >
                             {formatFeedTime(item.feedDate)}
                           </Typography>
                           <Typography
                             variant="body2"
-                            sx={{ color: "#3524c7", fontWeight: 700 }}
+                            sx={{ color: "#3524c7", fontWeight: 700, fontSize: 13.5 }}
                           >
                             {author}
                           </Typography>
                           <Box
                             component="span"
                             sx={{
-                              px: 1.25,
-                              py: 0.25,
+                              px: 1,
+                              py: 0.2,
                               borderRadius: 999,
                               backgroundColor: "#e8edff",
                               color: "#0b45d9",
-                              fontSize: 14,
+                              fontSize: 12.5,
                               fontWeight: 700,
                               lineHeight: 1.3,
                             }}
@@ -1082,48 +1502,66 @@ const TicketDetailPage = () => {
                         </Box>
                         <Typography
                           variant="body2"
-                          sx={{ color: "#5f6475", fontSize: 15 }}
+                          sx={{ color: "#5f6475", fontSize: 14.5, lineHeight: 1.45 }}
                         >
                           {getHistoryMessage(item)}
                         </Typography>
                       </Box>
-                    </Box>
-                  );
-                }
+                    );
+                  }
 
-                return (
-                  <Card
-                    key={item.feedKey}
-                    sx={{
-                      p: 2.5,
-                      borderRadius: "7px",
-                      border: "1px solid #cfe8d8",
-                      boxShadow: "0 1px 4px rgba(15, 23, 42, 0.08)",
-                      backgroundColor: "#fff",
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
-                      <Avatar
+                  return (
+                    <Box
+                      key={item.feedKey}
+                      sx={{
+                        display: "flex",
+                        justifyContent: isOwnComment ? "flex-end" : "flex-start",
+                        alignItems: "flex-end",
+                        gap: 1,
+                        width: "100%",
+                      }}
+                    >
+                      {!isOwnComment && (
+                        <Avatar
+                          sx={{
+                            width: 34,
+                            height: 34,
+                            bgcolor: "#d7efe2",
+                            color: "#184236",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            flexShrink: 0,
+                            mb: 0.4,
+                          }}
+                        >
+                          {getInitials(author)}
+                        </Avatar>
+                      )}
+                      <Box
                         sx={{
-                          width: 42,
-                          height: 42,
-                          bgcolor: "#d7efe2",
-                          color: "#184236",
-                          fontSize: 15,
-                          fontWeight: 700,
-                          flexShrink: 0,
+                          position: "relative",
+                          maxWidth: { xs: "82%", sm: "72%" },
+                          minWidth: 190,
+                          p: 1.45,
+                          borderRadius: isOwnComment
+                            ? "7px 7px 2px 7px"
+                            : "7px 7px 7px 2px",
+                          border: isOwnComment
+                            ? "1px solid rgba(33, 27, 90, 0.16)"
+                            : "1px solid #cfe8d8",
+                          boxShadow: "0 1px 4px rgba(15, 23, 42, 0.08)",
+                          backgroundColor: isOwnComment ? "#e8edff" : "#fff",
+                          color: "var(--text)",
                         }}
                       >
-                        {getInitials(author)}
-                      </Avatar>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Box
                           sx={{
                             display: "flex",
                             justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            gap: 2,
-                            mb: 1.6,
+                            alignItems: "center",
+                            gap: 1.2,
+                            mb: 0.7,
                           }}
                         >
                           <Box
@@ -1136,13 +1574,17 @@ const TicketDetailPage = () => {
                           >
                             <Typography
                               variant="body1"
-                              sx={{ color: "#00843d", fontWeight: 600 }}
+                              sx={{
+                                color: isOwnComment ? "#211b5a" : "#00843d",
+                                fontSize: 14,
+                                fontWeight: 700,
+                              }}
                             >
-                              {author}
+                              {isOwnComment ? "You" : author}
                             </Typography>
                             <Typography
                               variant="caption"
-                              sx={{ color: "#686f80", fontSize: 14 }}
+                              sx={{ color: "#686f80", fontSize: 12.5 }}
                             >
                               {formatFeedTime(item.feedDate)}
                             </Typography>
@@ -1150,26 +1592,31 @@ const TicketDetailPage = () => {
                           <IconButton
                             size="small"
                             sx={{
-                              borderRadius: "7px",
+                              width: 26,
+                              height: 26,
+                              borderRadius: "6px",
                               color: "#1f2540",
-                              backgroundColor: "#f5f5f6",
+                              backgroundColor: isOwnComment
+                                ? "rgba(255,255,255,0.45)"
+                                : "#f5f5f6",
                               "&:hover": { backgroundColor: "#eceef2" },
                             }}
                           >
-                            <MoreIcon sx={{ fontSize: 18 }} />
+                            <MoreIcon sx={{ fontSize: 16 }} />
                           </IconButton>
                         </Box>
                         <Box
                           sx={{
                             color: "var(--text)",
-                            fontSize: 18,
-                            lineHeight: 1.65,
+                            fontSize: 15.5,
+                            lineHeight: 1.55,
+                            overflowWrap: "anywhere",
                             "& img": {
                               maxWidth: "100%",
                               borderRadius: "8px",
                             },
                             "& p": {
-                              margin: "6px 0",
+                              margin: "4px 0",
                             },
                           }}
                           dangerouslySetInnerHTML={{
@@ -1177,11 +1624,28 @@ const TicketDetailPage = () => {
                           }}
                         />
                       </Box>
+                      </Box>
+                      {isOwnComment && (
+                        <Avatar
+                          sx={{
+                            width: 34,
+                            height: 34,
+                            bgcolor: "#dce5ff",
+                            color: "#211b5a",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            flexShrink: 0,
+                            mb: 0.4,
+                          }}
+                        >
+                          {getInitials(author)}
+                        </Avatar>
+                      )}
                     </Box>
-                  </Card>
-                );
-              })}
-            </Box>
+                  );
+                })}
+              </Box>
+            </Card>
           )}
         </Grid>
 
