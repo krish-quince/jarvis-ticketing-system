@@ -77,7 +77,7 @@ export const getDepartments = async () => {
     WHERE is_active = true;
     `
   );
-  console.log(result);
+
   return result.rows;
 };
 
@@ -90,7 +90,7 @@ export const getCompanies = async () => {
     WHERE is_active = true;
     `
   );
-  console.log(result);
+
   return result.rows;
 };
 
@@ -332,6 +332,16 @@ export const createSubCategory = async ({
   subcategory_description,
   assigned_user_code,
 }) => {
+  await pool.query(
+    `
+    SELECT setval(
+      'public.ticket_subcategories_subcategory_id_seq',
+      COALESCE((SELECT MAX(subcategory_id) FROM ticket_subcategories), 0) + 1,
+      false
+    )
+    `,
+  );
+
   const result = await pool.query(
     `
     INSERT INTO ticket_subcategories (

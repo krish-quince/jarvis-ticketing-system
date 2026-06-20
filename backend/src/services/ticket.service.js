@@ -345,24 +345,6 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
     throw new Error("Assigned user not found.");
   }
 
-  const assignableUsers = await masterRepository.getAssignableUsers(
-    {
-      subcategoryId: ticket.subcategory_id,
-      categoryId: ticket.category_id,
-      departmentId: ticket.department_id,
-    },
-    user.companyCode,
-  );
-  const canAssignToUser = assignableUsers.some(
-    (assignableUser) => assignableUser.user_code === assignedToUserCode,
-  );
-
-  if (!canAssignToUser) {
-    throw new Error(
-      "Assigned user must belong to the ticket category or department.",
-    );
-  }
-
   const oldValue = ticket.assigned_to_user_code ?? "";
 
   if (String(oldValue) === String(assignedToUserCode)) {

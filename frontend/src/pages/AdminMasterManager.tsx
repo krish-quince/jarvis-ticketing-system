@@ -104,13 +104,13 @@ const AdminMasterManager = ({
       }
     })();
 
-    if (Number(user.role_id) !== 1) {
+    if (Number(user.role_id ?? user.roleId) !== 1) {
       navigate("/tickets");
       return;
     }
 
     loadItems();
-  }, []);
+  }, [navigate]);
 
   const resetDraft = () => {
     setEditingId(null);
@@ -191,6 +191,18 @@ const AdminMasterManager = ({
     }
   };
 
+  const getDisplayValue = (field: FieldConfig, value: any) => {
+    if (field.type === "checkbox") {
+      return value ? "Yes" : "No";
+    }
+
+    if (field.type === "select") {
+      return field.options?.find((option) => String(option.value) === String(value))?.label || "";
+    }
+
+    return String(value ?? "");
+  };
+
   const renderField = (field: FieldConfig) => {
     if (field.type === "checkbox") {
       return (
@@ -235,6 +247,11 @@ const AdminMasterManager = ({
         }
         sx={field.type === "color" ? { width: 96 } : undefined}
       >
+        {field.type === "select" && !field.required && (
+          <MenuItem value="">
+            None
+          </MenuItem>
+        )}
         {(field.options || []).map((option) => (
           <MenuItem key={String(option.value)} value={option.value}>
             {option.label}
@@ -315,11 +332,7 @@ const AdminMasterManager = ({
                 <TableRow key={item[idKey]} hover>
                   {fields.map((field) => (
                     <TableCell key={field.key} sx={bodyCellSx}>
-                      {field.type === "checkbox"
-                        ? item[field.key]
-                          ? "Yes"
-                          : "No"
-                        : String(item[field.key] ?? "")}
+                      {getDisplayValue(field, item[field.key])}
                     </TableCell>
                   ))}
                   {renderPreview && (

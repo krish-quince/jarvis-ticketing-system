@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+    createUser,
     getAllUsers,
     getAllUsersWithData,
     updateUser
@@ -27,6 +28,13 @@ router.get(
     verifyToken,
     requireAdmin,
     getAllUsersWithData
+);
+
+router.post(
+  "/",
+  verifyToken,
+  requireAdmin,
+  createUser
 );
 
 router.patch(
