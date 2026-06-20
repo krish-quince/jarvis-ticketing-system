@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import CloseIcon from "@mui/icons-material/Close";
 import {
   Alert,
   Box,
@@ -9,7 +8,6 @@ import {
   CircularProgress,
   Collapse,
   FormControl,
-  IconButton,
   MenuItem,
   Select,
   Snackbar,
@@ -19,7 +17,6 @@ import {
   Popover,
 } from "@mui/material";
 
-import AttachFileIcon from "@mui/icons-material/AttachFile";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
@@ -62,25 +59,54 @@ const panelSx = {
   
 };
 
+interface Category {
+  category_id: number | string;
+  category_name: string;
+}
+
+interface SubCategory {
+  subcategory_id: number | string;
+  subcategory_name: string;
+}
+
+interface Priority {
+  priority_id: number | string;
+  priority_name: string;
+}
+
+interface AssignableUser {
+  user_code: string;
+  first_name: string;
+  last_name: string;
+}
+
+const getTicketErrorMessage = (error: unknown) => {
+  const responseError = error as {
+    response?: { data?: { message?: string } };
+  };
+
+  return responseError.response?.data?.message || "Failed to create ticket";
+};
+
 const NewTicketPage = () => {
   const navigate = useNavigate();
 
-  const [categories, setCategories] = useState<any[]>([]);
-  const [allSubCategories, setAllSubCategories] = useState<Record<string, any[]>>({});
-  const [priorities, setPriorities] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [allSubCategories, setAllSubCategories] = useState<Record<string, SubCategory[]>>({});
+  const [priorities, setPriorities] = useState<Priority[]>([]);
 
   const [categoryId, setCategoryId] = useState("");
   const [subcategoryId, setSubcategoryId] = useState("");
   const [priorityId, setPriorityId] = useState("");
 
   const [assignTo, setAssignTo] = useState("");
-  const [assignableUsers, setAssignableUsers] = useState<any[]>([]);
+  const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
 
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<"categories" | "subcategories">("categories");
-  const [hoveredCat, setHoveredCat] = useState<any>(null);
-
-  const categoryBtnRef = useRef<HTMLButtonElement | null>(null);
+  const [hoveredCat, setHoveredCat] = useState<Category | null>(null);
+  const [categoryAnchorEl, setCategoryAnchorEl] =
+    useState<HTMLButtonElement | null>(null);
 
   const [submitForAnotherUser, setSubmitForAnotherUser] = useState(false);
   const [subject, setSubject] = useState("");
@@ -148,7 +174,8 @@ const NewTicketPage = () => {
       : `${selectedCategory.category_name} / General`
     : "(Select category)";
 
-  const openPopover = () => {
+  const openPopover = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setCategoryAnchorEl(event.currentTarget);
     setActivePanel("categories");
     setHoveredCat(null);
     setPopoverOpen(true);
@@ -156,6 +183,7 @@ const NewTicketPage = () => {
 
   const closePopover = () => {
     setPopoverOpen(false);
+    setCategoryAnchorEl(null);
     setActivePanel("categories");
     setHoveredCat(null);
   };
@@ -181,7 +209,7 @@ const NewTicketPage = () => {
     }
   };
 
-  const handleCategoryOnlyClick = async (cat: any) => {
+  const handleCategoryOnlyClick = async (cat: Category) => {
     const nextCategoryId = String(cat.category_id);
     setCategoryId(nextCategoryId);
     setSubcategoryId("");
@@ -189,7 +217,7 @@ const NewTicketPage = () => {
     closePopover();
   };
 
-  const handleCategoryClick = (cat: any) => {
+  const handleCategoryClick = (cat: Category) => {
     const subs = allSubCategories[String(cat.category_id)] || [];
     if (subs.length > 0) {
       setHoveredCat(cat);
@@ -199,7 +227,9 @@ const NewTicketPage = () => {
     }
   };
 
-  const handleSubcategoryClick = async (sub: any) => {
+  const handleSubcategoryClick = async (sub: SubCategory) => {
+    if (!hoveredCat) return;
+
     const nextCategoryId = String(hoveredCat.category_id);
     const nextSubcategoryId = String(sub.subcategory_id);
     setCategoryId(nextCategoryId);
@@ -216,17 +246,6 @@ const NewTicketPage = () => {
     setActivePanel("categories");
     setHoveredCat(null);
   };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-    setAttachments((prev) => [...prev, ...Array.from(files)]);
-  };
-  const removeAttachment = (indexToRemove: number) => {
-  setAttachments((prev) =>
-    prev.filter((_, index) => index !== indexToRemove)
-  );
-};
 
   const resetForm = () => {
     setSubject("");
@@ -281,12 +300,12 @@ const NewTicketPage = () => {
       setToast({ open: true, severity: "success", message: "Ticket created successfully" });
       resetForm();
       setTimeout(() => navigate("/tickets"), 1000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
       setToast({
         open: true,
         severity: "error",
-        message: error?.response?.data?.message || "Failed to create ticket",
+        message: getTicketErrorMessage(error),
       });
     } finally {
       setLoading(false);
@@ -346,7 +365,6 @@ const NewTicketPage = () => {
             <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3, alignItems: "center" }}>
 
               <Button
-                ref={categoryBtnRef}
                 variant="outlined"
                 size="small"
                 endIcon={<KeyboardArrowDownIcon />}
@@ -372,7 +390,7 @@ const NewTicketPage = () => {
 
               <Popover
   open={popoverOpen}
-  anchorEl={categoryBtnRef.current}
+  anchorEl={categoryAnchorEl}
   onClose={closePopover}
   anchorOrigin={{
     vertical: "bottom",
@@ -625,126 +643,13 @@ const NewTicketPage = () => {
               }}
             />
 
-            {/* Editor */}
-<Box
-  sx={{
-    mb: 3,
-    position: "relative",
+            <RichTextEditor
+              value={description}
+              onChange={setDescription}
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+            />
 
-    "& .ProseMirror": {
-      minHeight: "300px",
-      padding: "16px",
-      paddingBottom: "48px", // space for attachment button
-      outline: "none",
-      backgroundColor: "#fff",
-    },
-
-    "& .ProseMirror p": {
-      margin: "0 0 12px 0",
-    },
-
-    "& .ProseMirror h1": {
-      fontSize: "2rem",
-      marginBottom: "12px",
-    },
-
-    "& .ProseMirror h2": {
-      fontSize: "1.5rem",
-      marginBottom: "10px",
-    },
-
-    "& .ProseMirror h3": {
-      fontSize: "1.25rem",
-      marginBottom: "8px",
-    },
-  }}
->
-  <RichTextEditor
-    value={description}
-    onChange={setDescription}
-  />
-
-  {/* Attachment button */}
-  <IconButton
-    component="label"
-    sx={{
-      position: "absolute",
-      bottom: 12,
-      right: 12,
-      zIndex: 10,
-
-      backgroundColor: "#fff",
-      border: "1px solid var(--border)",
-
-      "&:hover": {
-        backgroundColor: "#f5f5f5",
-      },
-    }}
-  >
-    <AttachFileIcon />
-    <input
-      hidden
-      type="file"
-      multiple
-      onChange={handleFileUpload}
-    />
-  </IconButton>
-</Box> {/* editor box ends here */}
-
-{attachments.length > 0 && (
-  <Box
-    sx={{
-      mt: 1,
-      mb: 3,
-      p: 1.5,
-      border: "1px solid var(--border)",
-      borderRadius: "8px",
-      background: "var(--bg-app)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 1,
-    }}
-  >
-    {attachments.map((file, index) => (
-      <Box
-        key={index}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          px: 1,
-          py: 0.5,
-          borderRadius: "6px",
-          backgroundColor: "var(--bg-card)",
-        }}
-      >
-        <Typography
-          sx={{
-            fontSize: 13,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          📎 {file.name}
-        </Typography>
-
-        <IconButton
-          size="small"
-          onClick={() => removeAttachment(index)}
-          sx={{
-            color: "var(--text-secondary)",
-            "&:hover": {
-              color: "#ff4d4f",
-            },
-          }}
-        >
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </Box>
-    ))}
-  </Box>
-)}
 
             {/* Advanced Section */}
             <Collapse in={showAdvanced}>

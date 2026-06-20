@@ -1,5 +1,3 @@
-
-
 import {
   Box,
   IconButton,
@@ -9,6 +7,7 @@ import {
   Divider,
 } from "@mui/material";
 import { useState, useRef } from "react";
+import type { Editor } from "@tiptap/react";
 import {
   FormatListBulleted,
   FormatListNumbered,
@@ -31,7 +30,11 @@ import {
 
 import EmojiPicker from "emoji-picker-react";
 
-const RichTextToolbar = ({ editor }: any) => {
+interface RichTextToolbarProps {
+  editor: Editor | null;
+}
+
+const RichTextToolbar = ({ editor }: RichTextToolbarProps) => {
   const [headingAnchor, setHeadingAnchor] =
     useState<null | HTMLElement>(null);
 
@@ -40,8 +43,7 @@ const RichTextToolbar = ({ editor }: any) => {
 
   const [emojiAnchor, setEmojiAnchor] =
     useState<null | HTMLElement>(null);
-    const fileInputRef =
-  useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!editor) return null;
 
@@ -50,48 +52,36 @@ const RichTextToolbar = ({ editor }: any) => {
 
     if (!url) return;
 
-    editor
-      .chain()
-      .focus()
-      .setLink({ href: url })
-      .run();
-  };
-  
-  
-  const handleImageUpload = (
-  event: React.ChangeEvent<HTMLInputElement>
-) => {
-  const file =
-    event.target.files?.[0];
-
-  if (!file) return;
-
-  // Optional size limit
-  if (file.size > 2 * 1024 * 1024) {
-    alert(
-      "Image size must be less than 2 MB"
-    );
-    return;
-  }
-
-  const reader =
-    new FileReader();
-
-  reader.onload = () => {
-    editor
-      .chain()
-      .focus()
-      .setImage({
-  src: reader.result as string,
-  alt: file.name,
-})
-      .run();
+    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   };
 
-  reader.readAsDataURL(file);
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
 
-  event.target.value = "";
-};
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image size must be less than 2 MB");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      editor
+        .chain()
+        .focus()
+        .setImage({
+          src: reader.result as string,
+          alt: file.name,
+        })
+        .run();
+    };
+
+    reader.readAsDataURL(file);
+
+    event.target.value = "";
+  };
   return (
     <Box
       sx={{
