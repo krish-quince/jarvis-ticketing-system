@@ -26,13 +26,20 @@ export const getTicketById = async (
 };
 
 export const createTicket = async (
-  ticketData: any
+  ticketData: any,
+  attachments: File[] = [],
 ) => {
-  const response =
-    await API.post(
-      "/tickets",
-      ticketData
+  const formData = new FormData();
+  Object.entries(ticketData).forEach(([key, value]) => {
+    if (value === null || value === undefined) return;
+    formData.append(
+      key,
+      Array.isArray(value) ? JSON.stringify(value) : String(value),
     );
+  });
+  attachments.forEach((file) => formData.append("attachments", file));
+
+  const response = await API.post("/tickets", formData);
 
   return unwrapData(response.data);
 };
@@ -86,8 +93,16 @@ export const getTicketHistory = async (ticketId: number) => {
   return unwrapData(response.data);
 };
 
-export const createComment = async (ticketId: number, commentText: string) => {
-  const response = await API.post(`/tickets/${ticketId}/comments`, { comment_text: commentText });
+export const createComment = async (
+  ticketId: number,
+  commentText: string,
+  attachments: File[] = [],
+) => {
+  const formData = new FormData();
+  formData.append("comment_text", commentText);
+  attachments.forEach((file) => formData.append("attachments", file));
+
+  const response = await API.post(`/tickets/${ticketId}/comments`, formData);
   return unwrapData(response.data);
 };
 

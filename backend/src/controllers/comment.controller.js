@@ -5,7 +5,12 @@ export const createComment = async(req, res) => {
         const { ticketId } = req.params;
         const { comment_text } = req.body;
 
-        const comment = await commentService.createComment(ticketId, comment_text, req.user);
+        const comment = await commentService.createComment(
+            ticketId,
+            comment_text,
+            req.user,
+            req.files || [],
+        );
 
         return res.status(201).json({
             success: true,

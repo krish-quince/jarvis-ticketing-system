@@ -18,6 +18,8 @@ import {
   Avatar,
   Chip,
   Switch,
+  Dialog,
+  Tooltip,
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material/Select";
 import {
@@ -29,6 +31,10 @@ import {
   Check as CheckIcon,
   Close as CancelIcon,
   LockOutlined as LockIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  DownloadOutlined as DownloadIcon,
+  InsertDriveFileOutlined as FileIcon,
 } from "@mui/icons-material";
 import RichTextEditor from "../components/RichTextEditor";
 import {
@@ -110,6 +116,8 @@ const TicketDetailPage = () => {
   const [replyComposerOpen, setReplyComposerOpen] = useState(false);
   const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
   const [techniciansOnly, setTechniciansOnly] = useState(false);
+  const [previewAttachments, setPreviewAttachments] = useState<any[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
   // More actions menu anchor
   const [moreAnchor, setMoreAnchor] = useState<null | HTMLElement>(null);
 
@@ -287,12 +295,16 @@ const TicketDetailPage = () => {
   }: { resolveTicket?: boolean } = {}) => {
     const plainText = getReplyPlainText();
 
-    if (!plainText) return;
+    if (!plainText && replyAttachments.length === 0) return;
 
     try {
       setSubmittingComment(true);
 
-      await createComment(ticketId, replyHtml);
+      await createComment(
+        ticketId,
+        replyHtml,
+        replyAttachments,
+      );
       if (resolveTicket) {
         await updateTicketStatus(ticketId, 5);
       }
@@ -311,9 +323,14 @@ const TicketDetailPage = () => {
     } catch (error: any) {
       console.error(error);
 
+      const validationMessage = error.response?.data?.errors?.[0]?.message;
+
       setToast({
         open: true,
-        message: error.response?.data?.message || "Failed to add reply",
+        message:
+          validationMessage ||
+          error.response?.data?.message ||
+          "Failed to add reply",
         severity: "error",
       });
     } finally {
@@ -820,6 +837,43 @@ const TicketDetailPage = () => {
     (a, b) =>
       new Date(a.feedDate || 0).getTime() - new Date(b.feedDate || 0).getTime(),
   );
+  const apiOrigin = (
+    import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+  ).replace(/\/api\/?$/, "");
+  const getAttachmentUrl = (attachment: any) =>
+    attachment.url?.startsWith("http")
+      ? attachment.url
+      : `${apiOrigin}${attachment.url}`;
+  const isImageAttachment = (attachment: any) => {
+    if (String(attachment.mime_type || "").startsWith("image/")) return true;
+    return /\.(avif|bmp|gif|jpe?g|png|webp)$/i.test(attachment.file_name || "");
+  };
+  const ticketImageAttachments = [
+    ...(Array.isArray(ticket.attachments)
+      ? ticket.attachments.filter(isImageAttachment).map((attachment: any) => ({
+          ...attachment,
+          gallery_key: `ticket-${attachment.attachment_id}`,
+        }))
+      : []),
+    ...comments.flatMap((comment) =>
+      Array.isArray(comment.attachments)
+        ? comment.attachments.filter(isImageAttachment).map((attachment: any) => ({
+            ...attachment,
+            gallery_key: `comment-${attachment.attachment_id}`,
+          }))
+        : [],
+    ),
+  ];
+  const openAttachmentPreview = (galleryKey: string) => {
+    const images = ticketImageAttachments;
+    setPreviewAttachments(images);
+    setPreviewIndex(
+      Math.max(
+        0,
+        images.findIndex((image) => image.gallery_key === galleryKey),
+      ),
+    );
+  };
   const categoryDisplay = ticket.subcategory_name
     ? `${ticket.category_name} / ${ticket.subcategory_name}`
     : ticket.category_name || "Uncategorized";
@@ -875,7 +929,9 @@ const TicketDetailPage = () => {
       },
     },
   };
-  const canSubmitReply = getReplyPlainText().length > 0 && !submittingComment;
+  const canSubmitReply =
+    (getReplyPlainText().length > 0 || replyAttachments.length > 0) &&
+    !submittingComment;
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3, p: 1 }}>
@@ -1083,6 +1139,83 @@ const TicketDetailPage = () => {
                 __html: ticket.description || "No description provided.",
               }}
             />
+
+            {Array.isArray(ticket.attachments) && ticket.attachments.length > 0 && (
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.25, mb: 2 }}>
+                {ticket.attachments.map((attachment: any) =>
+                  isImageAttachment(attachment) ? (
+                    <Box
+                      component="button"
+                      type="button"
+                      key={attachment.attachment_id}
+                      onClick={() =>
+                        openAttachmentPreview(`ticket-${attachment.attachment_id}`)
+                      }
+                      sx={{
+                        width: 132,
+                        p: 0,
+                        border: 0,
+                        background: "transparent",
+                        textAlign: "left",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src={getAttachmentUrl(attachment)}
+                        alt={attachment.file_name}
+                        sx={{
+                          display: "block",
+                          width: 132,
+                          height: 92,
+                          objectFit: "cover",
+                          borderRadius: "6px",
+                          border: "1px solid #d9dde5",
+                          backgroundColor: "#f5f6f8",
+                        }}
+                      />
+                      <Typography
+                        title={attachment.file_name}
+                        sx={{
+                          mt: 0.5,
+                          fontSize: 12.5,
+                          color: "#646b7b",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {attachment.file_name}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Box
+                      component="a"
+                      key={attachment.attachment_id}
+                      href={getAttachmentUrl(attachment)}
+                      download={attachment.file_name}
+                      sx={{
+                        width: 220,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        p: 1,
+                        color: "inherit",
+                        textDecoration: "none",
+                        border: "1px solid #d9dde5",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      <FileIcon sx={{ color: "#596174" }} />
+                      <Typography noWrap sx={{ minWidth: 0, flex: 1, fontSize: 12.5 }}>
+                        {attachment.file_name}
+                      </Typography>
+                      <DownloadIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                  ),
+                )}
+              </Box>
+            )}
             
             {!replyComposerOpen ? (
               <Box
@@ -1623,6 +1756,103 @@ const TicketDetailPage = () => {
                             __html: item.comment_text,
                           }}
                         />
+                        {Array.isArray(item.attachments) &&
+                          item.attachments.length > 0 && (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 1.25,
+                                mt: 1.25,
+                              }}
+                            >
+                              {item.attachments.map((attachment: any) =>
+                                isImageAttachment(attachment) ? (
+                                  <Box
+                                    component="button"
+                                    type="button"
+                                    key={attachment.attachment_id}
+                                    onClick={() =>
+                                      openAttachmentPreview(
+                                        `comment-${attachment.attachment_id}`,
+                                      )
+                                    }
+                                    sx={{
+                                      width: 132,
+                                      p: 0,
+                                      border: 0,
+                                      background: "transparent",
+                                      textAlign: "left",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    <Box
+                                      component="img"
+                                      src={getAttachmentUrl(attachment)}
+                                      alt={attachment.file_name}
+                                      sx={{
+                                        display: "block",
+                                        width: 132,
+                                        height: 92,
+                                        objectFit: "cover",
+                                        borderRadius: "6px",
+                                        border: "1px solid #d9dde5",
+                                        backgroundColor: "#f5f6f8",
+                                      }}
+                                    />
+                                    <Typography
+                                      title={attachment.file_name}
+                                      sx={{
+                                        mt: 0.5,
+                                        fontSize: 12.5,
+                                        color: "#646b7b",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      {attachment.file_name}
+                                    </Typography>
+                                  </Box>
+                                ) : (
+                                  <Box
+                                    component="a"
+                                    key={attachment.attachment_id}
+                                    href={getAttachmentUrl(attachment)}
+                                    download={attachment.file_name}
+                                    sx={{
+                                      width: 220,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 1,
+                                      p: 1,
+                                      color: "inherit",
+                                      textDecoration: "none",
+                                      border: "1px solid #d9dde5",
+                                      borderRadius: "6px",
+                                      backgroundColor: "#fff",
+                                    }}
+                                  >
+                                    <FileIcon sx={{ color: "#596174" }} />
+                                    <Typography
+                                      title={attachment.file_name}
+                                      sx={{
+                                        minWidth: 0,
+                                        flex: 1,
+                                        fontSize: 12.5,
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      {attachment.file_name}
+                                    </Typography>
+                                    <DownloadIcon sx={{ fontSize: 18 }} />
+                                  </Box>
+                                ),
+                              )}
+                            </Box>
+                          )}
                       </Box>
                       </Box>
                       {isOwnComment && (
@@ -2396,6 +2626,142 @@ const TicketDetailPage = () => {
           </Card>
         </Grid>
       </Grid>
+
+      <Dialog
+        fullScreen
+        open={previewAttachments.length > 0}
+        onClose={() => setPreviewAttachments([])}
+        onKeyDown={(event) => {
+          if (previewAttachments.length < 2) return;
+          if (event.key === "ArrowLeft") {
+            setPreviewIndex(
+              (previewIndex - 1 + previewAttachments.length) %
+                previewAttachments.length,
+            );
+          }
+          if (event.key === "ArrowRight") {
+            setPreviewIndex((previewIndex + 1) % previewAttachments.length);
+          }
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              backgroundColor: "rgba(20, 23, 30, 0.9)",
+              backgroundImage: "none",
+            },
+          },
+        }}
+      >
+        {previewAttachments[previewIndex] && (
+          <Box
+            sx={{
+              position: "relative",
+              width: "100%",
+              height: "100%",
+              boxSizing: "border-box",
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              p: { xs: 2, sm: 6 },
+            }}
+          >
+            <Tooltip title="Close preview">
+              <IconButton
+                onClick={() => setPreviewAttachments([])}
+                sx={{
+                  position: "absolute",
+                  top: 14,
+                  right: 14,
+                  zIndex: 3,
+                  color: "#fff",
+                  backgroundColor: "rgba(0,0,0,0.28)",
+                  "&:hover": { backgroundColor: "rgba(0,0,0,0.5)" },
+                }}
+              >
+                <CancelIcon />
+              </IconButton>
+            </Tooltip>
+            <>
+                <IconButton
+                  aria-label="Previous attachment"
+                  disabled={previewAttachments.length < 2}
+                  onClick={() =>
+                    setPreviewIndex((currentIndex) =>
+                      (currentIndex - 1 + previewAttachments.length) %
+                        previewAttachments.length,
+                    )
+                  }
+                  sx={{
+                    position: "fixed",
+                    top: "50%",
+                    left: { xs: 8, sm: 24 },
+                    transform: "translateY(-50%)",
+                    zIndex: 3,
+                    color: "#fff",
+                    backgroundColor: "rgba(0,0,0,0.28)",
+                    "&:hover": { backgroundColor: "rgba(0,0,0,0.5)" },
+                    "&.Mui-disabled": {
+                      color: "rgba(255,255,255,0.3)",
+                      backgroundColor: "rgba(0,0,0,0.18)",
+                    },
+                  }}
+                >
+                  <ChevronLeftIcon sx={{ fontSize: 38 }} />
+                </IconButton>
+                <IconButton
+                  aria-label="Next attachment"
+                  disabled={previewAttachments.length < 2}
+                  onClick={() =>
+                    setPreviewIndex((currentIndex) =>
+                      (currentIndex + 1) % previewAttachments.length,
+                    )
+                  }
+                  sx={{
+                    position: "fixed",
+                    top: "50%",
+                    right: { xs: 8, sm: 24 },
+                    transform: "translateY(-50%)",
+                    zIndex: 3,
+                    color: "#fff",
+                    backgroundColor: "rgba(0,0,0,0.28)",
+                    "&:hover": { backgroundColor: "rgba(0,0,0,0.5)" },
+                    "&.Mui-disabled": {
+                      color: "rgba(255,255,255,0.3)",
+                      backgroundColor: "rgba(0,0,0,0.18)",
+                    },
+                  }}
+                >
+                  <ChevronRightIcon sx={{ fontSize: 38 }} />
+                </IconButton>
+              </>
+            <Box
+              component="img"
+              src={getAttachmentUrl(previewAttachments[previewIndex])}
+              alt={previewAttachments[previewIndex].file_name}
+              sx={{
+                maxWidth: "calc(100vw - 110px)",
+                maxHeight: "calc(100vh - 110px)",
+                objectFit: "contain",
+                boxShadow: "0 12px 42px rgba(0,0,0,0.4)",
+              }}
+            />
+            <Typography
+              sx={{
+                position: "absolute",
+                bottom: 18,
+                left: 20,
+                right: 20,
+                color: "#fff",
+                textAlign: "center",
+                fontSize: 14,
+              }}
+            >
+              {previewAttachments[previewIndex].file_name}
+            </Typography>
+          </Box>
+        )}
+      </Dialog>
 
       {/* Toast Feedback */}
       <Snackbar

@@ -1,6 +1,6 @@
 import * as commmentRepository from "../repositories/comment.repository.js";
 
-export const createComment = async(ticketId, commentText, user) => {
+export const createComment = async(ticketId, commentText, user, files = []) => {
 
     const ticket = await commmentRepository.getTicketById(ticketId, user.companyCode);
 
@@ -15,8 +15,8 @@ export const createComment = async(ticketId, commentText, user) => {
         throw new Error("Access denied to this ticket.");
     }
 
-    return await commmentRepository.createComment(
-        ticketId, user.userCode, commentText
+    return await commmentRepository.createCommentWithAttachments(
+        ticketId, user.userCode, commentText, files
     );
 };
 

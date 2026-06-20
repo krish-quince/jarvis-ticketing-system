@@ -33,7 +33,7 @@ const sendTicketError = (res, error) => {
 
 export const createTicket = async (req, res) => {
     try {
-        const ticket = await ticketService.createTicket(req.body, req.user);
+        const ticket = await ticketService.createTicket(req.body, req.user, req.files || []);
 
         return res.status(201).json({
             success: true,
