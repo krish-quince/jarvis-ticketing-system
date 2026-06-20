@@ -222,6 +222,7 @@ const UsersPage = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
+          onClick={() => navigate("/admin/users/new")}
           sx={{
             backgroundColor: "var(--accent)",
             borderRadius: "10px",
@@ -592,7 +593,7 @@ const UsersPage = () => {
 
                         <TableCell sx={{ py: 1.25 }}>
                           <Typography sx={{ fontSize: 12, color: "var(--text)" }}>
-                            {user.department_name || user.department || <span style={{ color: "var(--text-sub)" }}>—</span>}
+                            {user.department_name || <span style={{ color: "var(--text-sub)" }}>—</span>}
                           </Typography>
                         </TableCell>
                       </TableRow>
