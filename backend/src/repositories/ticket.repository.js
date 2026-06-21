@@ -60,6 +60,36 @@ export const createTicket = async (ticket, client = null) => {
   return result.rows[0];
 };
 
+export const createTicketAttachments = async (
+  ticketId,
+  uploadedByUserCode,
+  files,
+  client = null,
+) => {
+  const db = client || pool;
+  const attachments = [];
+
+  for (const file of files) {
+    const result = await db.query(
+      `
+      INSERT INTO ticket_attachments
+        (ticket_id, file_name, file_path, uploaded_by_user_code)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+      `,
+      [
+        ticketId,
+        file.originalname,
+        `/uploads/tickets/${file.filename}`,
+        uploadedByUserCode,
+      ],
+    );
+    attachments.push({ ...result.rows[0], mime_type: file.mimetype });
+  }
+
+  return attachments;
+};
+
 export const getAllTickets = async (
   companyCode,
   user,
@@ -142,7 +172,23 @@ export const getTicketById = async (ticketId, companyCode) => {
         p.priority_name,
         p.priority_color,
         s.status_name,
-        s.status_color
+        s.status_color,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'attachment_id', ta.attachment_id,
+                'file_name', ta.file_name,
+                'url', ta.file_path,
+                'uploaded_at', ta.uploaded_at
+              )
+              ORDER BY ta.attachment_id
+            )
+            FROM ticket_attachments ta
+            WHERE ta.ticket_id = t.ticket_id
+          ),
+          '[]'::json
+        ) AS attachments
 
         FROM tickets t
 

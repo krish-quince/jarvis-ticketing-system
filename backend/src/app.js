@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import pool from "./config/db.js"
+import path from "path";
+import { fileURLToPath } from "url";
 
 
 import authRoutes from "./routes/auth.routes.js";
@@ -19,10 +21,20 @@ import masterRoutes from "./routes/master.routes.js";
 dotenv.config();
 
 const app = express();
+const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
+const uploadsDirectory = path.resolve(currentDirectory, "../uploads");
 
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(
+    "/uploads",
+    express.static(uploadsDirectory, {
+        setHeaders: (res) => {
+            res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+        },
+    }),
+);
 
 app.use("/api/auth", authRoutes);
 

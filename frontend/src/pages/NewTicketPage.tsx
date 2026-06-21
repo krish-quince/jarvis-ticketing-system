@@ -295,7 +295,7 @@ const NewTicketPage = () => {
         tags,
         is_recurring: recurring,
         submit_for_another_user: submitForAnotherUser,
-      });
+      }, attachments);
 
       setToast({ open: true, severity: "success", message: "Ticket created successfully" });
       resetForm();

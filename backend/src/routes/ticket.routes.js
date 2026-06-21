@@ -25,6 +25,8 @@ import {
 }
 from "../validators/ticket.validator.js";
 
+import { uploadTicketAttachments } from "../middleware/ticketUpload.middleware.js";
+
 
 
 const router = Router();
@@ -34,6 +36,7 @@ router.get("/:ticketId", verifyToken, getTicketById);
 router.post(
     "/",
     verifyToken,
+    uploadTicketAttachments.array("attachments", 10),
     validate(createTicketSchema),
     createTicket
 );

@@ -7,7 +7,7 @@ import {
 } from "../utils/ticketPermissions.js";
 import * as masterRepository from "../repositories/master.repository.js";
 
-export const createTicket = async (ticketData, user) => {
+export const createTicket = async (ticketData, user, files = []) => {
   const ticketNo = `TKT-${Date.now()}`;
 
   let category_id = ticketData.category_id;
@@ -187,6 +187,13 @@ export const createTicket = async (ticketData, user) => {
 
     const ticket = await ticketRepository.createTicket(payload, client);
 
+    const attachments = await ticketRepository.createTicketAttachments(
+      ticket.ticket_id,
+      user.userCode,
+      files,
+      client,
+    );
+
     await historyService.createHistory(
       ticket.ticket_id,
       "Created",
@@ -198,7 +205,7 @@ export const createTicket = async (ticketData, user) => {
 
     await client.query("COMMIT");
 
-    return ticket;
+    return { ...ticket, attachments };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
