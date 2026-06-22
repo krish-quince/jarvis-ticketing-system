@@ -156,15 +156,15 @@ const UsersPage = () => {
         u.last_name?.toLowerCase().includes(t),
       );
     }
-    if (activeTab === "admins")      list = list.filter((u) => Number(u.role_id) === 1);
+    if (activeTab === "admins")      list = list.filter((u) => [1, 4].includes(Number(u.role_id)));
     if (activeTab === "technicians") list = list.filter((u) => Number(u.role_id) === 2);
-    if (activeTab === "regular")     list = list.filter((u) => Number(u.role_id) > 2);
+    if (activeTab === "regular")     list = list.filter((u) => Number(u.role_id) === 3);
     return list;
   }, [users, searchText, activeTab]);
 
   const countByRole = useMemo(() => ({
     all:         users.length,
-    regular:     users.filter((u) => Number(u.role_id) > 2).length,
+    regular:     users.filter((u) => Number(u.role_id) === 3).length,
     technicians: users.filter((u) => Number(u.role_id) === 2).length,
     admins:      users.filter((u) => [1, 4].includes(Number(u.role_id))).length,
   }), [users]);

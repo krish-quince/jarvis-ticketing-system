@@ -147,11 +147,12 @@ const AddUserPage = () => {
   };
 
   const handleSubmit = async () => {
-    if (!form.email || !form.user_code || !form.password || !form.company_code || !form.role_id) {
+    const isSuperAdminRole = roles.find(r => r.value === form.role_id)?.label === "Super Admin";
+    if (!form.email || !form.user_code || !form.password || (!form.company_code && !isSuperAdminRole) || !form.role_id) {
       setToast({
         open: true,
         severity: "error",
-        message: "Fill email, username, company, role, and password before creating the user.",
+        message: "Fill email, username, role, and password before creating the user.",
       });
       return;
     }
@@ -163,8 +164,8 @@ const AddUserPage = () => {
         user_code: form.user_code.trim(),
         first_name: form.first_name.trim(),
         last_name: form.last_name.trim(),
-        company_code: form.company_code,
-        department_id: form.department_id || null,
+        company_code: isSuperAdminRole ? null : form.company_code,
+        department_id: isSuperAdminRole ? null : (form.department_id || null),
         role_id: Number(form.role_id),
         password: form.password,
       });
@@ -289,8 +290,8 @@ const AddUserPage = () => {
                 <TextField
                   select
                   fullWidth
-                  value={form.company_code}
-                  disabled={loadingOptions}
+                  value={roles.find((r) => r.value === form.role_id)?.label === "Super Admin" ? "" : form.company_code}
+                  disabled={loadingOptions || (roles.find((r) => r.value === form.role_id)?.label === "Super Admin")}
                   onChange={(event) => {
                     setForm((prev) => ({
                       ...prev,
@@ -315,8 +316,8 @@ const AddUserPage = () => {
             <TextField
               select
               fullWidth
-              value={form.department_id}
-              disabled={loadingOptions}
+              value={roles.find((r) => r.value === form.role_id)?.label === "Super Admin" ? "" : form.department_id}
+              disabled={loadingOptions || (roles.find((r) => r.value === form.role_id)?.label === "Super Admin")}
               onChange={(event) => updateField("department_id", event.target.value)}
               slotProps={{
                 select: { IconComponent: KeyboardArrowDown, displayEmpty: true },
