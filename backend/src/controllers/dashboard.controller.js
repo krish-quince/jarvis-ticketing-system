@@ -7,7 +7,7 @@ export const getSummary = async (req, res) => {
         let query = `
             SELECT 
                 COUNT(*)::int as "totalTickets",
-                COUNT(CASE WHEN s.status_name = 'Open' THEN 1 END)::int as "openTickets",
+                COUNT(CASE WHEN s.status_name = 'New' THEN 1 END)::int as "openTickets",
                 COUNT(CASE WHEN s.status_name = 'In Progress' THEN 1 END)::int as "inProgressTickets",
                 COUNT(CASE WHEN s.status_name = 'Closed' THEN 1 END)::int as "closedTickets",
                 COUNT(CASE WHEN p.priority_name = 'Critical' THEN 1 END)::int as "urgentTickets"

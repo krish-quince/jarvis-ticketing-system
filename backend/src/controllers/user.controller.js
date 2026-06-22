@@ -3,18 +3,23 @@ import pool from "../config/db.js";
 
 export const getAllUsers = async (req, res) => {
     try {
-        const companyCode = req.user.companyCode;
+        const isSuperAdmin = Number(req.user.roleId) === 4;
+        const targetCompanyCode = isSuperAdmin ? (req.query.companyCode || null) : req.user.companyCode;
 
-        const result = await pool.query(
-            `
+        let query = `
             SELECT u.user_code, u.first_name, u.last_name, u.email, r.role_name AS role_id
             FROM users u
             INNER JOIN roles r ON r.role_id = u.role_id
-            WHERE u.company_code = $1 AND u.is_active = true
-            ORDER BY u.user_serial_no ASC
-            `,
-            [companyCode]
-        );
+            WHERE u.is_active = true
+        `;
+        const params = [];
+        if (targetCompanyCode) {
+            query += ` AND u.company_code = $1`;
+            params.push(targetCompanyCode);
+        }
+        query += ` ORDER BY u.user_serial_no ASC`;
+
+        const result = await pool.query(query, params);
 
         return res.status(200).json({
             success: true,
@@ -31,20 +36,25 @@ export const getAllUsers = async (req, res) => {
 
 export const getAllUsersWithData = async (req, res) => {
     try {
-        const companyCode = req.user.companyCode;
+        const isSuperAdmin = Number(req.user.roleId) === 4;
+        const targetCompanyCode = isSuperAdmin ? (req.query.companyCode || null) : req.user.companyCode;
 
-        const result = await pool.query(
-            `
+        let query = `
             SELECT u.user_code, u.first_name, u.last_name, u.email, r.role_id, r.role_name, c.company_name, c.company_code, d.department_name
             FROM users u
             INNER JOIN roles r ON r.role_id = u.role_id
             INNER JOIN companies c ON c.company_code = u.company_code
-            INNER JOIN departments d ON d.department_id = u.department_id
-            WHERE u.company_code = $1 AND u.is_active = true
-            ORDER BY u.user_serial_no ASC
-            `,
-            [companyCode]
-        );
+            LEFT JOIN departments d ON d.department_id = u.department_id
+            WHERE u.is_active = true
+        `;
+        const params = [];
+        if (targetCompanyCode) {
+            query += ` AND u.company_code = $1`;
+            params.push(targetCompanyCode);
+        }
+        query += ` ORDER BY u.user_serial_no ASC`;
+
+        const result = await pool.query(query, params);
 
         return res.status(200).json({
             success: true,
@@ -72,8 +82,8 @@ export const updateUser = async (req, res) => {
       is_active,
     } = req.body;
 
-    const result = await pool.query(
-      `
+    const isSuperAdmin = Number(req.user.roleId) === 4;
+    let query = `
       UPDATE users
       SET
         first_name = $1,
@@ -84,18 +94,24 @@ export const updateUser = async (req, res) => {
         is_active = $6,
         update_timestamp = NOW()
       WHERE user_code = $7
-      RETURNING *
-      `,
-      [
-        first_name,
-        last_name,
-        role_id,
-        company_code,
-        department_id,
-        is_active,
-        userCode,
-      ]
-    );
+    `;
+    const params = [
+      first_name,
+      last_name,
+      role_id,
+      company_code,
+      department_id,
+      is_active,
+      userCode,
+    ];
+
+    if (!isSuperAdmin) {
+      query += ` AND company_code = $8`;
+      params.push(req.user.companyCode);
+    }
+
+    query += ` RETURNING *`;
+    const result = await pool.query(query, params);
 
     return res.status(200).json({
       success: true,
@@ -152,6 +168,9 @@ export const createUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const isSuperAdmin = Number(req.user.roleId) === 4;
+    const finalCompanyCode = isSuperAdmin ? company_code : req.user.companyCode;
+
     const result = await pool.query(
       `
       INSERT INTO users (
@@ -169,7 +188,7 @@ export const createUser = async (req, res) => {
       RETURNING user_code, first_name, last_name, email, role_id, company_code, department_id, is_active
       `,
       [
-        company_code,
+        finalCompanyCode,
         role_id,
         user_code,
         first_name || user_code,

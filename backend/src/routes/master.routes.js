@@ -2,10 +2,12 @@ import express from "express";
 
 import {
   createCategory,
+  createCompany,
   createPriority,
   createStatus,
   createSubCategory,
   deleteCategory,
+  deleteCompany,
   deletePriority,
   deleteStatus,
   deleteSubCategory,
@@ -17,14 +19,16 @@ import {
   getDepartments,
   getRoles,
   getStatuses,
+  restoreCompany,
   updateCategory,
+  updateCompany,
   updatePriority,
   updateStatus,
   updateSubCategory,
 } from "../controllers/master.controller.js";
 
 import { verifyToken } from "../middleware/auth.middleware.js";
-import { requireAdmin } from "../middleware/role.middleware.js";
+import { requireAdmin, requireSuperAdmin } from "../middleware/role.middleware.js";
 
 const router = express.Router();
 const adminOnly = [verifyToken, requireAdmin];
@@ -59,5 +63,9 @@ router.delete("/priorities/:priorityId", ...adminOnly, deletePriority);
 router.get("/roles", ...adminOnly, getRoles);
 router.get("/departments", ...adminOnly, getDepartments);
 router.get("/companies", ...adminOnly, getCompanies);
+router.post("/companies", verifyToken, requireSuperAdmin, createCompany);
+router.patch("/companies/:companyCode", verifyToken, requireSuperAdmin, updateCompany);
+router.delete("/companies/:companyCode", verifyToken, requireSuperAdmin, deleteCompany);
+router.post("/companies/:companyCode/restore", verifyToken, requireSuperAdmin, restoreCompany);
 
 export default router;

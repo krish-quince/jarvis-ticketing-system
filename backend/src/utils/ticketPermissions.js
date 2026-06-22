@@ -1,7 +1,7 @@
 export const canAccessTicket = (ticket, user) => {
     if (!user) return false;
 
-    if (Number(user.roleId) === 1) {
+    if ([1, 4].includes(Number(user.roleId))) {
         return true;
     }
 
@@ -15,7 +15,7 @@ export const canAccessTicket = (ticket, user) => {
 export const canManageTicket = (ticket, user) => {
     if (!user) return false;
 
-    if (Number(user.roleId) === 1) {
+    if ([1, 4].includes(Number(user.roleId))) {
         return true;
     }
 

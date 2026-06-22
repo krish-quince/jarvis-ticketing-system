@@ -334,69 +334,69 @@ export const getUserByCodeAndCompany = async (userCode, companyCode) => {
   return result.rows[0];
 };
 
-export const getStatusByIdAndCompany = async (statusId) => {
+export const getStatusByIdAndCompany = async (statusId, companyCode) => {
   const result = await pool.query(
     `
             SELECT status_id
             FROM ticket_statuses
-            WHERE status_id = $1 AND is_active = true
+            WHERE status_id = $1 AND company_code = $2 AND is_active = true
         `,
-    [statusId],
+    [statusId, companyCode],
   );
 
   return result.rows[0];
 };
 
-export const getResolvedStatusByCompany = async () => {
+export const getResolvedStatusByCompany = async (companyCode) => {
   const result = await pool.query(
     `
             SELECT status_id
             FROM ticket_statuses
-            WHERE LOWER(status_name) = LOWER('Resolved') AND is_active = true
+            WHERE LOWER(status_name) = LOWER('Resolved') AND company_code = $1 AND is_active = true
             LIMIT 1
         `,
-    ["Resolved"],
+    [companyCode],
   );
 
   return result.rows[0];
 };
 
-export const getPriorityByIdAndCompany = async (priorityId) => {
+export const getPriorityByIdAndCompany = async (priorityId, companyCode) => {
   const result = await pool.query(
     `
             SELECT priority_id
             FROM ticket_priorities
-            WHERE priority_id = $1
+            WHERE priority_id = $1 AND company_code = $2
         `,
-    [priorityId],
+    [priorityId, companyCode],
   );
 
   return result.rows[0];
 };
 
-export const getCategoryByIdAndCompany = async (categoryId) => {
+export const getCategoryByIdAndCompany = async (categoryId, companyCode) => {
   const result = await pool.query(
     `
             SELECT category_id
             FROM ticket_categories
-            WHERE category_id = $1
+            WHERE category_id = $1 AND company_code = $2
         `,
-    [categoryId],
+    [categoryId, companyCode],
   );
 
   return result.rows[0];
 };
 
-export const getSubCategoryById = async (subCategoryId) => {
+export const getSubCategoryById = async (subCategoryId, companyCode) => {
   const result = await pool.query(
     `
       SELECT
         subcategory_id,
         category_id
       FROM ticket_subcategories
-      WHERE subcategory_id = $1
+      WHERE subcategory_id = $1 AND company_code = $2
     `,
-    [subCategoryId],
+    [subCategoryId, companyCode],
   );
 
   return result.rows[0];

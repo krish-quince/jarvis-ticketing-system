@@ -1,5 +1,15 @@
+export const isSuperAdmin = (user) => (
+    Number(user?.roleId) === 4 ||
+    String(user?.roleName || "").toLowerCase() === "super admin"
+);
+
+export const isAdmin = (user) => (
+    Number(user?.roleId) === 1 ||
+    String(user?.roleName || "").toLowerCase() === "admin"
+);
+
 export const requireAdmin = (req, res, next) => {
-    if (Number(req.user?.roleId) === 1) {
+    if (isAdmin(req.user) || isSuperAdmin(req.user)) {
         return next();
     }
 
@@ -19,5 +29,16 @@ export const requireTechnician = (req, res, next) => {
     return res.status(403).json({
         success: false,
         message: "Access denied.",
+    });
+};
+
+export const requireSuperAdmin = (req, res, next) => {
+    if (isSuperAdmin(req.user)) {
+        return next();
+    }
+
+    return res.status(403).json({
+        success: false,
+        message: "Super admin access required.",
     });
 };

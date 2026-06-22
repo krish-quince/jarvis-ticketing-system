@@ -1,6 +1,6 @@
 import pool from "../config/db.js";
 
-export const getCategories = async () => {
+export const getCategories = async (companyCode) => {
   const result = await pool.query(
     `
     SELECT
@@ -8,16 +8,16 @@ export const getCategories = async () => {
       category_name,
       category_description
     FROM ticket_categories
-    WHERE is_active = true
+    WHERE is_active = true AND company_code = $1
     ORDER BY category_name
     `,
-    []
+    [companyCode]
   );
 
   return result.rows;
 };
 
-export const getPriorities = async () => {
+export const getPriorities = async (companyCode) => {
   const result = await pool.query(
     `
     SELECT
@@ -26,15 +26,16 @@ export const getPriorities = async () => {
       priority_value,
       priority_color
     FROM ticket_priorities
-    WHERE is_active = true
+    WHERE is_active = true AND company_code = $1
     ORDER BY priority_value
-    `
+    `,
+    [companyCode]
   );
 
   return result.rows;
 };
 
-export const getStatuses = async () => {
+export const getStatuses = async (companyCode) => {
   const result = await pool.query(
     `
     SELECT
@@ -46,9 +47,10 @@ export const getStatuses = async () => {
       is_active,
       update_timestamp
     FROM ticket_statuses
-    WHERE is_active = true
+    WHERE is_active = true AND company_code = $1
     ORDER BY status_id
-    `
+    `,
+    [companyCode]
   );
 
   return result.rows;
@@ -67,47 +69,87 @@ export const getRoles = async () => {
   return result.rows;
 };
 
-export const getDepartments = async () => {
-  
-  const result = await pool.query(
-    `
+export const getDepartments = async (companyCode) => {
+  let query = `
     SELECT
       * 
     FROM departments
-    WHERE is_active = true;
-    `
-  );
+    WHERE is_active = true
+  `;
+  const params = [];
+  if (companyCode) {
+    query += ` AND company_code = $1`;
+    params.push(companyCode);
+  }
+  const result = await pool.query(query, params);
 
   return result.rows;
 };
 
-export const getCompanies = async () => {
-  const result = await pool.query(
-    `
+export const getCompanies = async (includeDeleted = false) => {
+  let query = `
     SELECT
       * 
     FROM companies
-    WHERE is_active = true;
-    `
-  );
+    WHERE is_active = true
+  `;
+  if (!includeDeleted) {
+    query += ` AND is_deleted = false`;
+  }
+  query += ` ORDER BY company_name`;
+  const result = await pool.query(query);
 
   return result.rows;
+};
+
+export const deleteCompany = async (companyCode) => {
+  const result = await pool.query(
+    `
+    UPDATE companies
+    SET
+      is_deleted = true,
+      update_timestamp = CURRENT_TIMESTAMP
+    WHERE company_code = $1
+    RETURNING *
+    `,
+    [companyCode]
+  );
+
+  return result.rows[0];
+};
+
+export const restoreCompany = async (companyCode) => {
+  const result = await pool.query(
+    `
+    UPDATE companies
+    SET
+      is_deleted = false,
+      update_timestamp = CURRENT_TIMESTAMP
+    WHERE company_code = $1
+    RETURNING *
+    `,
+    [companyCode]
+  );
+
+  return result.rows[0];
 };
 
 export const createCategory = async ({
   category_name,
   category_description,
+  company_code,
 }) => {
   const result = await pool.query(
     `
     INSERT INTO ticket_categories (
       category_name,
-      category_description
+      category_description,
+      company_code
     )
-    VALUES ($1, $2)
+    VALUES ($1, $2, $3)
     RETURNING *
     `,
-    [category_name, category_description || null]
+    [category_name, category_description || null, company_code]
   );
 
   return result.rows[0];
@@ -119,7 +161,8 @@ export const updateCategory = async (
     category_name,
     category_description,
     is_active = true,
-  }
+  },
+  companyCode
 ) => {
   const result = await pool.query(
     `
@@ -129,7 +172,7 @@ export const updateCategory = async (
       category_description = $2,
       is_active = $3,
       update_timestamp = CURRENT_TIMESTAMP
-    WHERE category_id = $4
+    WHERE category_id = $4 AND company_code = $5
     RETURNING *
     `,
     [
@@ -137,23 +180,24 @@ export const updateCategory = async (
       category_description || null,
       is_active,
       categoryId,
+      companyCode,
     ]
   );
 
   return result.rows[0];
 };
 
-export const deleteCategory = async (categoryId) => {
+export const deleteCategory = async (categoryId, companyCode) => {
   const result = await pool.query(
     `
     UPDATE ticket_categories
     SET
       is_active = false,
       update_timestamp = CURRENT_TIMESTAMP
-    WHERE category_id = $1
+    WHERE category_id = $1 AND company_code = $2
     RETURNING *
     `,
-    [categoryId]
+    [categoryId, companyCode]
   );
 
   return result.rows[0];
@@ -164,6 +208,7 @@ export const createStatus = async ({
   status_color,
   is_default = false,
   is_closed_status = false,
+  company_code,
 }) => {
   const result = await pool.query(
     `
@@ -171,12 +216,13 @@ export const createStatus = async ({
       status_name,
       status_color,
       is_default,
-      is_closed_status
+      is_closed_status,
+      company_code
     )
-    VALUES ($1, $2, $3, $4)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *
     `,
-    [status_name, status_color || null, is_default, is_closed_status]
+    [status_name, status_color || null, is_default, is_closed_status, company_code]
   );
 
   return result.rows[0];
@@ -190,7 +236,8 @@ export const updateStatus = async (
     is_default = false,
     is_closed_status = false,
     is_active = true,
-  }
+  },
+  companyCode
 ) => {
   const result = await pool.query(
     `
@@ -202,7 +249,7 @@ export const updateStatus = async (
       is_closed_status = $4,
       is_active = $5,
       update_timestamp = CURRENT_TIMESTAMP
-    WHERE status_id = $6
+    WHERE status_id = $6 AND company_code = $7
     RETURNING *
     `,
     [
@@ -212,23 +259,24 @@ export const updateStatus = async (
       is_closed_status,
       is_active,
       statusId,
+      companyCode,
     ]
   );
 
   return result.rows[0];
 };
 
-export const deleteStatus = async (statusId) => {
+export const deleteStatus = async (statusId, companyCode) => {
   const result = await pool.query(
     `
     UPDATE ticket_statuses
     SET
       is_active = false,
       update_timestamp = CURRENT_TIMESTAMP
-    WHERE status_id = $1
+    WHERE status_id = $1 AND company_code = $2
     RETURNING *
     `,
-    [statusId]
+    [statusId, companyCode]
   );
 
   return result.rows[0];
@@ -238,18 +286,20 @@ export const createPriority = async ({
   priority_name,
   priority_value,
   priority_color,
+  company_code,
 }) => {
   const result = await pool.query(
     `
     INSERT INTO ticket_priorities (
       priority_name,
       priority_value,
-      priority_color
+      priority_color,
+      company_code
     )
-    VALUES ($1, $2, $3)
+    VALUES ($1, $2, $3, $4)
     RETURNING *
     `,
-    [priority_name, priority_value, priority_color || null]
+    [priority_name, priority_value, priority_color || null, company_code]
   );
 
   return result.rows[0];
@@ -262,7 +312,8 @@ export const updatePriority = async (
     priority_value,
     priority_color,
     is_active = true,
-  }
+  },
+  companyCode
 ) => {
   const result = await pool.query(
     `
@@ -273,7 +324,7 @@ export const updatePriority = async (
       priority_color = $3,
       is_active = $4,
       update_timestamp = CURRENT_TIMESTAMP
-    WHERE priority_id = $5
+    WHERE priority_id = $5 AND company_code = $6
     RETURNING *
     `,
     [
@@ -282,45 +333,43 @@ export const updatePriority = async (
       priority_color || null,
       is_active,
       priorityId,
+      companyCode,
     ]
   );
 
   return result.rows[0];
 };
 
-export const deletePriority = async (priorityId) => {
+export const deletePriority = async (priorityId, companyCode) => {
   const result = await pool.query(
     `
     UPDATE ticket_priorities
     SET
       is_active = false,
       update_timestamp = CURRENT_TIMESTAMP
-    WHERE priority_id = $1
+    WHERE priority_id = $1 AND company_code = $2
     RETURNING *
     `,
-    [priorityId]
+    [priorityId, companyCode]
   );
 
   return result.rows[0];
 };
 
-export const getSubCategories = async (
-  categoryId
-) => {
-
+export const getSubCategories = async (categoryId, companyCode) => {
   const result = await pool.query(
     `
     SELECT
       subcategory_id,
+      category_id,
       subcategory_name,
       subcategory_description,
       assigned_user_code
     FROM ticket_subcategories
-    WHERE category_id = $1
-    AND is_active = true
+    WHERE category_id = $1 AND company_code = $2 AND is_active = true
     ORDER BY subcategory_name
     `,
-    [categoryId]
+    [categoryId, companyCode]
   );
 
   return result.rows;
@@ -331,6 +380,7 @@ export const createSubCategory = async ({
   subcategory_name,
   subcategory_description,
   assigned_user_code,
+  company_code,
 }) => {
   await pool.query(
     `
@@ -348,9 +398,10 @@ export const createSubCategory = async ({
       category_id,
       subcategory_name,
       subcategory_description,
-      assigned_user_code
+      assigned_user_code,
+      company_code
     )
-    VALUES ($1, $2, $3, $4)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *
     `,
     [
@@ -358,6 +409,7 @@ export const createSubCategory = async ({
       subcategory_name,
       subcategory_description || null,
       assigned_user_code || null,
+      company_code,
     ],
   );
 
@@ -373,6 +425,7 @@ export const updateSubCategory = async (
     assigned_user_code,
     is_active = true,
   },
+  companyCode,
 ) => {
   const result = await pool.query(
     `
@@ -384,7 +437,7 @@ export const updateSubCategory = async (
       assigned_user_code = $4,
       is_active = $5,
       update_timestamp = CURRENT_TIMESTAMP
-    WHERE subcategory_id = $6
+    WHERE subcategory_id = $6 AND company_code = $7
     RETURNING *
     `,
     [
@@ -394,32 +447,30 @@ export const updateSubCategory = async (
       assigned_user_code || null,
       is_active,
       subcategoryId,
+      companyCode,
     ],
   );
 
   return result.rows[0];
 };
 
-export const deleteSubCategory = async (subcategoryId) => {
+export const deleteSubCategory = async (subcategoryId, companyCode) => {
   const result = await pool.query(
     `
     UPDATE ticket_subcategories
     SET
       is_active = false,
       update_timestamp = CURRENT_TIMESTAMP
-    WHERE subcategory_id = $1
+    WHERE subcategory_id = $1 AND company_code = $2
     RETURNING *
     `,
-    [subcategoryId],
+    [subcategoryId, companyCode],
   );
 
   return result.rows[0];
 };
 
-export const getSubCategoryById = async (
-  subcategoryId
-) => {
-
+export const getSubCategoryById = async (subcategoryId, companyCode) => {
   const result = await pool.query(
     `
     SELECT
@@ -428,10 +479,10 @@ export const getSubCategoryById = async (
       subcategory_name,
       assigned_user_code
     FROM ticket_subcategories
-    WHERE subcategory_id = $1
+    WHERE subcategory_id = $1 AND company_code = $2
       AND is_active = true
     `,
-    [subcategoryId]
+    [subcategoryId, companyCode]
   );
 
   return result.rows[0];
@@ -478,9 +529,10 @@ export const getAssignableUsers = async (
       SELECT assigned_user_code
       FROM ticket_subcategories
       WHERE subcategory_id = $1
+      AND company_code = $2
       AND is_active = true
       `,
-      [subcategoryId],
+      [subcategoryId, companyCode],
     );
 
     if (subCategoryResult.rows.length === 0) {
@@ -499,6 +551,7 @@ export const getAssignableUsers = async (
       INNER JOIN users u ON u.user_code = sc.assigned_user_code
       WHERE sc.category_id = $1
       AND sc.is_active = true
+      AND sc.company_code = $2
       AND u.company_code = $2
       AND u.is_active = true
       `,
@@ -535,3 +588,142 @@ export const getAssignableUsers = async (
 
   return usersResult.rows;
 };
+
+export const createCompany = async ({
+  company_name,
+  company_code,
+  email,
+  phone,
+  address,
+}) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 1. Insert the company
+    const companyResult = await client.query(
+      `
+      INSERT INTO companies (
+        company_name,
+        company_code,
+        email,
+        phone,
+        address,
+        is_active
+      )
+      VALUES ($1, $2, $3, $4, $5, true)
+      RETURNING *
+      `,
+      [company_name, company_code, email || null, phone || null, address || null]
+    );
+
+    const code = companyResult.rows[0].company_code;
+
+    // 2. Insert default priorities: Low (1), Medium (2), High (3)
+    await client.query(
+      `
+      INSERT INTO ticket_priorities (priority_name, priority_value, priority_color, company_code, is_active)
+      VALUES 
+        ('Low', 1, '#4CAF50', $1, true),
+        ('Medium', 2, '#FF9800', $1, true),
+        ('High', 3, '#F44336', $1, true)
+      `,
+      [code]
+    );
+
+    // 3. Insert default statuses: New (is_default=true), In Progress, Closed (is_closed_status=true)
+    await client.query(
+      `
+      INSERT INTO ticket_statuses (status_name, status_color, display_order, is_default, is_closed_status, company_code, is_active)
+      VALUES 
+        ('New', '#2196F3', 1, true, false, $1, true),
+        ('In Progress', '#FFC107', 2, false, false, $1, true),
+        ('Closed', '#4CAF50', 3, false, true, $1, true)
+      `,
+      [code]
+    );
+
+    // 4. Insert default category: General
+    await client.query(
+      `
+      INSERT INTO ticket_categories (category_name, category_description, company_code, is_active)
+      VALUES ('General', 'General support queries', $1, true)
+      `,
+      [code]
+    );
+
+    await client.query("COMMIT");
+    return companyResult.rows[0];
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+export const updateCompany = async (
+  companyCode,
+  {
+    company_name,
+    email,
+    phone,
+    address,
+    is_active = true,
+  }
+) => {
+  const result = await pool.query(
+    `
+    UPDATE companies
+    SET
+      company_name = $1,
+      email = $2,
+      phone = $3,
+      address = $4,
+      is_active = $5,
+      update_timestamp = CURRENT_TIMESTAMP
+    WHERE company_code = $6
+    RETURNING *
+    `,
+    [
+      company_name,
+      email || null,
+      phone || null,
+      address || null,
+      is_active,
+      companyCode,
+    ]
+  );
+  return result.rows[0];
+};
+
+export const deleteCompany = async (companyCode) => {
+  const result = await pool.query(
+    `
+    UPDATE companies
+    SET
+      is_deleted = true,
+      update_timestamp = CURRENT_TIMESTAMP
+    WHERE company_code = $1
+    RETURNING *
+    `,
+    [companyCode]
+  );
+  return result.rows[0];
+};
+
+export const restoreCompany = async (companyCode) => {
+  const result = await pool.query(
+    `
+    UPDATE companies
+    SET
+      is_deleted = false,
+      update_timestamp = CURRENT_TIMESTAMP
+    WHERE company_code = $1
+    RETURNING *
+    `,
+    [companyCode]
+  );
+  return result.rows[0];
+};
+
