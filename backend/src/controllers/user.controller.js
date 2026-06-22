@@ -13,9 +13,14 @@ export const getAllUsers = async (req, res) => {
             WHERE u.is_active = true
         `;
         const params = [];
+        let paramIndex = 1;
         if (targetCompanyCode) {
-            query += ` AND u.company_code = $1`;
+            query += ` AND u.company_code = $${paramIndex}`;
             params.push(targetCompanyCode);
+            paramIndex++;
+        }
+        if (!isSuperAdmin) {
+            query += ` AND u.role_id != 4`;
         }
         query += ` ORDER BY u.user_serial_no ASC`;
 
@@ -43,14 +48,19 @@ export const getAllUsersWithData = async (req, res) => {
             SELECT u.user_code, u.first_name, u.last_name, u.email, r.role_id, r.role_name, c.company_name, c.company_code, d.department_name
             FROM users u
             INNER JOIN roles r ON r.role_id = u.role_id
-            INNER JOIN companies c ON c.company_code = u.company_code
+            LEFT JOIN companies c ON c.company_code = u.company_code
             LEFT JOIN departments d ON d.department_id = u.department_id
             WHERE u.is_active = true
         `;
         const params = [];
+        let paramIndex = 1;
         if (targetCompanyCode) {
-            query += ` AND u.company_code = $1`;
+            query += ` AND u.company_code = $${paramIndex}`;
             params.push(targetCompanyCode);
+            paramIndex++;
+        }
+        if (!isSuperAdmin) {
+            query += ` AND u.role_id != 4`;
         }
         query += ` ORDER BY u.user_serial_no ASC`;
 
@@ -82,7 +92,53 @@ export const updateUser = async (req, res) => {
       is_active,
     } = req.body;
 
+    const targetUserRes = await pool.query(
+      "SELECT role_id FROM users WHERE user_code = $1",
+      [userCode]
+    );
+    if (targetUserRes.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    const targetUser = targetUserRes.rows[0];
     const isSuperAdmin = Number(req.user.roleId) === 4;
+
+    // Check permissions
+    if (Number(targetUser.role_id) === 4 && !isSuperAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Only Super Admins can edit Super Admin users.",
+      });
+    }
+    if (Number(role_id) === 4 && !isSuperAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Only Super Admins can assign the Super Admin role.",
+      });
+    }
+
+    let finalCompanyCode = isSuperAdmin ? company_code : req.user.companyCode;
+    let finalDepartmentId = department_id;
+
+    if (Number(role_id) === 4) {
+      finalCompanyCode = null;
+      finalDepartmentId = null;
+
+      // Naming format check
+      const companiesRes = await pool.query("SELECT company_code FROM companies");
+      for (const row of companiesRes.rows) {
+        const code = row.company_code.toLowerCase();
+        if (userCode.toLowerCase().startsWith(code + "_") || userCode.toLowerCase() === code) {
+          return res.status(400).json({
+            success: false,
+            message: `Super Admin username cannot contain or be prefixed with the company code '${row.company_code}'.`
+          });
+        }
+      }
+    }
+
     let query = `
       UPDATE users
       SET
@@ -99,8 +155,8 @@ export const updateUser = async (req, res) => {
       first_name,
       last_name,
       role_id,
-      company_code,
-      department_id,
+      finalCompanyCode,
+      finalDepartmentId,
       is_active,
       userCode,
     ];
@@ -141,7 +197,18 @@ export const createUser = async (req, res) => {
       department_id,
     } = req.body;
 
-    if (!user_code || !email || !password || !role_id || !company_code) {
+    const isSuperAdmin = Number(req.user.roleId) === 4;
+    const targetRoleId = Number(role_id);
+
+    if (targetRoleId === 4 && !isSuperAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Only Super Admins can create Super Admin accounts.",
+      });
+    }
+
+    const isCreatingSuperAdmin = targetRoleId === 4;
+    if (!user_code || !email || !password || !role_id || (!company_code && !isCreatingSuperAdmin)) {
       return res.status(400).json({
         success: false,
         message: "Username, email, password, role, and company are required.",
@@ -168,8 +235,25 @@ export const createUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const isSuperAdmin = Number(req.user.roleId) === 4;
-    const finalCompanyCode = isSuperAdmin ? company_code : req.user.companyCode;
+    let finalCompanyCode = isSuperAdmin ? company_code : req.user.companyCode;
+    let finalDepartmentId = department_id || null;
+
+    if (isCreatingSuperAdmin) {
+      finalCompanyCode = null;
+      finalDepartmentId = null;
+
+      // Naming format check
+      const companiesRes = await pool.query("SELECT company_code FROM companies");
+      for (const row of companiesRes.rows) {
+        const code = row.company_code.toLowerCase();
+        if (user_code.toLowerCase().startsWith(code + "_") || user_code.toLowerCase() === code) {
+          return res.status(400).json({
+            success: false,
+            message: `Super Admin username cannot contain or be prefixed with the company code '${row.company_code}'.`
+          });
+        }
+      }
+    }
 
     const result = await pool.query(
       `
@@ -196,7 +280,7 @@ export const createUser = async (req, res) => {
         email,
         hashedPassword,
         phone || null,
-        department_id || null,
+        finalDepartmentId,
       ],
     );
 
