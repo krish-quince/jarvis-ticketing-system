@@ -182,7 +182,7 @@ const AdminCompaniesPage = () => {
           variant="contained"
           startIcon={<Add />}
           onClick={openCreateDialog}
-          sx={{ backgroundColor: "var(--accent)", textTransform: "none", fontWeight: 700 }}
+          sx={{ backgroundColor: "var(--accent)", textTransform: "none", fontWeight: 700, color: "#fff" }}
         >
           Add company
         </Button>
@@ -290,7 +290,7 @@ const AdminCompaniesPage = () => {
                         variant="contained"
                         startIcon={<Add />}
                         onClick={() => navigate(`/admin/users/new?companyCode=${selectedCompany.company_code}&roleId=1`)}
-                        sx={{ height: 38, textTransform: "none", whiteSpace: "nowrap", backgroundColor: "var(--accent)" }}
+                        sx={{ height: 38, textTransform: "none", whiteSpace: "nowrap", backgroundColor: "var(--accent)", color: "#fff" }}
                       >
                         Add Admin User
                       </Button>
@@ -417,7 +417,7 @@ const AdminCompaniesPage = () => {
             startIcon={saving ? <CircularProgress size={16} /> : <Save />}
             disabled={saving}
             onClick={saveCompany}
-            sx={{ backgroundColor: "var(--accent)", textTransform: "none" }}
+            sx={{ backgroundColor: "var(--accent)", textTransform: "none", color: "#fff" }}
           >
             Save company
           </Button>
