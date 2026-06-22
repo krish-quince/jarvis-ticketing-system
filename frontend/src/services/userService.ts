@@ -6,8 +6,10 @@ export const getUsers = async () => {
   return response.data.data ?? response.data;
 };
 
-export const getUsersWithAllData = async () => {
-  const response = await API.get("/users/getAllUsersWithData");
+export const getUsersWithAllData = async (companyCode?: string) => {
+  const response = await API.get("/users/getAllUsersWithData", {
+    params: companyCode ? { companyCode } : undefined,
+  });
 
   return response.data.data ?? response.data;
 };

@@ -116,6 +116,26 @@ export const getCompanies = async () => {
   return unwrapData(response.data);
 };
 
+export const createCompany = async (payload: any) => {
+  const response = await API.post("/master/companies", payload);
+  return unwrapData(response.data);
+};
+
+export const updateCompany = async (companyCode: string, payload: any) => {
+  const response = await API.patch(`/master/companies/${companyCode}`, payload);
+  return unwrapData(response.data);
+};
+
+export const deleteCompany = async (companyCode: string) => {
+  const response = await API.delete(`/master/companies/${companyCode}`);
+  return unwrapData(response.data);
+};
+
+export const restoreCompany = async (companyCode: string) => {
+  const response = await API.post(`/master/companies/${companyCode}/restore`);
+  return unwrapData(response.data);
+};
+
 export const getAssignableUsers = async (subCategoryId: number) => {
   const response = await API.get(`/master/assignable-users/${subCategoryId}`);
 

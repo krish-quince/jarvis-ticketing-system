@@ -35,15 +35,23 @@ type Props = {
 
 const COMPANIES = [
   { code: "QC", label: "Quince Capital" },
-  { code: "ABC", label: "ABC Company" },
+  { code: "ATNG", label: "Alpha TNG" },
 ];
 
-const DEPARTMENTS = [
-  { id: 1, label: "IT" },
-  { id: 2, label: "Support" },
-  { id: 3, label: "Operations" },
-  { id: 4, label: "Billing" },
-];
+const DEPARTMENTS: Record<string, { id: number; label: string }[]> = {
+  QC: [
+    { id: 1, label: "Sales" },
+    { id: 2, label: "HR" },
+    { id: 3, label: "IT" },
+    { id: 4, label: "Finance" },
+  ],
+  ATNG: [
+    { id: 5, label: "Sales" },
+    { id: 6, label: "HR" },
+    { id: 7, label: "IT" },
+    { id: 8, label: "Finance" },
+  ],
+};
 
 const LoginCard = ({ handleLogin, handleRegister }: Props) => {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -289,7 +297,10 @@ const LoginCard = ({ handleLogin, handleRegister }: Props) => {
               labelId="reg-company-label"
               value={regCompanyCode}
               label="Company"
-              onChange={(e) => setRegCompanyCode(e.target.value)}
+              onChange={(e) => {
+                setRegCompanyCode(e.target.value);
+                setRegDepartmentId("");
+              }}
               sx={selectSx}
             >
               {COMPANIES.map((c) => (
@@ -307,8 +318,9 @@ const LoginCard = ({ handleLogin, handleRegister }: Props) => {
               label="Department"
               onChange={(e) => setRegDepartmentId(Number(e.target.value))}
               sx={selectSx}
+              disabled={!regCompanyCode}
             >
-              {DEPARTMENTS.map((d) => (
+              {(DEPARTMENTS[regCompanyCode] || []).map((d) => (
                 <MenuItem key={d.id} value={d.id}>{d.label}</MenuItem>
               ))}
             </Select>

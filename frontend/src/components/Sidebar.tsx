@@ -130,7 +130,7 @@ const Sidebar = ({
           <Tooltip title={(() => {
             try {
               const u = JSON.parse(localStorage.getItem("user") || "{}");
-              return `${u.first_name || "Guest"} (${u.role_id === 1 ? "Admin" : u.role_id === 2 ? "Manager" : u.role_id === 3 ? "Developer" : u.role_id === 4 ? "Customer" : "Viewer"})`;
+              return `${u.first_name || "Guest"} (${u.role_id === 4 ? "Super Admin" : u.role_id === 1 ? "Admin" : u.role_id === 2 ? "Manager" : u.role_id === 3 ? "Employee" : "Viewer"})`;
             } catch {
               return "User";
             }
@@ -150,7 +150,7 @@ const Sidebar = ({
                   1: "Admin",
                   2: "Manager",
                   3: "Developer",
-                  4: "Customer",
+                  4: "Super Admin",
                   5: "Viewer",
                 };
                 displayRole = roleMap[user.role_id] || "User";

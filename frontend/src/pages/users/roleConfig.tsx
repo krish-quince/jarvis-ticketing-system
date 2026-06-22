@@ -27,4 +27,10 @@ export const ROLE_CONFIG: Record<
     bg: "#dcfce7",
     icon: <Person sx={{ fontSize: 12 }} />,
   },
+  4: {
+    label: "Super Admin",
+    color: "#be123c",
+    bg: "#ffe4e6",
+    icon: <AdminPanelSettings sx={{ fontSize: 12 }} />,
+  },
 };
