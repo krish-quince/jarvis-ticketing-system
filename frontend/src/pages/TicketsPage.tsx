@@ -807,7 +807,7 @@ const TicketsPage = () => {
                 <TableCell sx={{ ...headCellSx, width: 100 }}>
                   Priority
                 </TableCell>
-                <TableCell sx={{ ...headCellSx, width: 160 }}>Date</TableCell>
+                <TableCell sx={{ ...headCellSx, width: 180 }}> Date</TableCell>
                 <TableCell sx={{ ...headCellSx, width: 90 }}>Due</TableCell>
                 <TableCell sx={{ ...headCellSx, width: 110 }}>Tech</TableCell>
                 <TableCell sx={{ ...headCellSx, width: 130 }}>
@@ -843,13 +843,7 @@ const TicketsPage = () => {
                   const statusInfo = getStatusInfo(ticket.status_name);
                   const priorityInfo = getPriorityInfo(ticket.priority_name);
                   const updByTech = wasUpdatedByTech(ticket);
-                  const creationDate = new Date(
-                    ticket.due_date
-                      ? new Date(ticket.due_date).getTime() -
-                          5 * 24 * 60 * 60 * 1000
-                      : 0,
-                  );
-
+                  
                   return (
                     <Fragment key={ticket.ticket_id}>
                       <TableRow
@@ -1023,19 +1017,20 @@ const TicketsPage = () => {
                         </TableCell>
 
                         <TableCell
-                          sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
-                        >
-                          {formatDateTime(creationDate)}
-                        </TableCell>
-                        <TableCell
-                          sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
-                        >
-                          {ticket.due_date
-                            ? new Date(ticket.due_date).toLocaleDateString(
-                                "en-US",
-                              )
-                            : ""}
-                        </TableCell>
+  sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
+>
+  {ticket.created_at
+    ? formatDateTime(ticket.created_at)
+    : "-"}
+    </TableCell>
+{/* Due Date */}
+<TableCell
+  sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
+>
+  {ticket.due_date
+    ? new Date(ticket.due_date).toLocaleDateString("en-US")
+    : ""}
+</TableCell>
                         <TableCell
                           sx={{
                             ...bodyCellSx,
