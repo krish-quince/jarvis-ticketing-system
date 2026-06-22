@@ -61,11 +61,17 @@ const LoginPage = () => {
     password?: string;
   }) => {
     try {
-      // Generate a unique user code (e.g. QC_KRIS_4321)
-      const namePrefix =
-        `${userData.first_name.slice(0, 3)}${userData.last_name.slice(0, 3)}`.toUpperCase();
-      const uniqueSuffix = Math.floor(1000 + Math.random() * 9000);
-      const userCode = `${userData.company_code}_${namePrefix}_${uniqueSuffix}`;
+      const clean = (value: string) =>
+        value
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "");
+      const userCode = [
+        userData.company_code.toUpperCase(),
+        "employee",
+        clean(`${userData.first_name} ${userData.last_name}`),
+      ].filter(Boolean).join("_");
 
       // Call backend auth/register mapping standard required DB fields
       const result = await register({
@@ -81,7 +87,7 @@ const LoginPage = () => {
 
         email: userData.email,
 
-        password: userData.password || "password123",
+        password: userData.password || "abcd1234",
 
         phone: "",
 

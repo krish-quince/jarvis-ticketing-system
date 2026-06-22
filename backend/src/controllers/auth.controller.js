@@ -99,9 +99,46 @@ export const loginUser = async (req, res) => {
   try {
     const { user_code, password } = req.body;
 
+    const columnResult = await pool.query(
+      `
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'users'
+        AND column_name IN ('company_code', 'company_id', 'department_id', 'department')
+      `,
+    );
+    const userColumns = new Set(columnResult.rows.map((row) => row.column_name));
+    const hasCompanyCode = userColumns.has("company_code");
+    const hasCompanyId = userColumns.has("company_id");
+    const hasDepartmentId = userColumns.has("department_id");
+    const hasDepartment = userColumns.has("department");
+
+    const companySelect = hasCompanyCode
+      ? "u.company_code"
+      : hasCompanyId
+        ? "c.company_code"
+        : "NULL";
+    const companyJoin = !hasCompanyCode && hasCompanyId
+      ? "LEFT JOIN companies c ON c.company_id = u.company_id"
+      : "";
+    const departmentSelect = hasDepartmentId
+      ? "u.department_id"
+      : hasDepartment
+        ? "NULL"
+        : "NULL";
+
     const userResult = await pool.query(
       `
-            SELECT * FROM users WHERE user_code = $1
+            SELECT
+              u.*,
+              r.role_name,
+              ${companySelect} AS resolved_company_code,
+              ${departmentSelect} AS resolved_department_id
+            FROM users u
+            INNER JOIN roles r ON r.role_id = u.role_id
+            ${companyJoin}
+            WHERE u.user_code = $1
             `,
       [user_code],
     );
@@ -115,6 +152,19 @@ export const loginUser = async (req, res) => {
 
     const user = userResult.rows[0];
 
+    if (user.resolved_company_code) {
+      const companyRes = await pool.query(
+        `SELECT is_deleted FROM companies WHERE company_code = $1`,
+        [user.resolved_company_code]
+      );
+      if (companyRes.rows.length > 0 && companyRes.rows[0].is_deleted) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied. Your company account has been deactivated.",
+        });
+      }
+    }
+
     const isValidpassword = await bcrypt.compare(password, user.password_hash);
 
     if (!isValidpassword) {
@@ -124,12 +174,19 @@ export const loginUser = async (req, res) => {
       });
     }
 
+    const normalizedUser = {
+      ...user,
+      company_code: user.resolved_company_code,
+      department_id: user.resolved_department_id,
+    };
+
     const token = jwt.sign(
       {
         userCode: user.user_code,
         roleId: Number(user.role_id),
-        companyCode: user.company_code,
-        departmentId: user.department_id,
+        roleName: user.role_name,
+        companyCode: normalizedUser.company_code,
+        departmentId: normalizedUser.department_id,
       },
       process.env.JWT_SECRET,
       {
@@ -140,7 +197,7 @@ export const loginUser = async (req, res) => {
     return res.status(200).json({
       success: true,
       token,
-      user,
+      user: normalizedUser,
     });
   } catch (error) {
     console.error(error);

@@ -6,7 +6,7 @@ export const getCategories = async (
 ) => {
   try {
     const data =
-      await service.getCategories();
+      await service.getCategories(req.user.companyCode);
 
     return res.status(200).json({
       success: true,
@@ -29,7 +29,7 @@ export const getPriorities = async (
 ) => {
   try {
     const data =
-  await service.getPriorities();
+  await service.getPriorities(req.user.companyCode);
 
     return res.status(200).json({
       success: true,
@@ -52,7 +52,7 @@ export const getStatuses = async (
 ) => {
   try {
     const data =
-  await service.getStatuses();
+  await service.getStatuses(req.user.companyCode);
 
     return res.status(200).json({
       success: true,
@@ -97,8 +97,8 @@ export const getDepartments = async (
   res
 ) => {
   try {
-    const data =
-  await service.getDepartments();
+    const companyCode = Number(req.user.roleId) === 1 ? null : req.user.companyCode;
+    const data = await service.getDepartments(companyCode);
 
     return res.status(200).json({
       success: true,
@@ -120,8 +120,8 @@ export const getCompanies = async (
   res
 ) => {
   try {
-    const data =
-  await service.getCompanies();
+    const isSuperAdmin = req.user && Number(req.user.roleId) === 4;
+    const data = await service.getCompanies(isSuperAdmin);
 
     return res.status(200).json({
       success: true,
@@ -134,6 +134,52 @@ export const getCompanies = async (
       success: false,
       message:
         "Failed to fetch companies",
+    });
+  }
+};
+
+export const deleteCompany = async (req, res) => {
+  try {
+    const { companyCode } = req.params;
+    const data = await service.deleteCompany(companyCode);
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const restoreCompany = async (req, res) => {
+  try {
+    const { companyCode } = req.params;
+    const data = await service.restoreCompany(companyCode);
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };
@@ -159,7 +205,10 @@ const sendAdminMasterResponse = (
 export const createCategory = async (req, res) => {
   try {
     const data =
-      await service.createCategory(req.body);
+      await service.createCategory({
+        ...req.body,
+        company_code: req.user.companyCode,
+      });
 
     return res.status(201).json({
       success: true,
@@ -180,7 +229,8 @@ export const updateCategory = async (req, res) => {
     const data =
       await service.updateCategory(
         req.params.categoryId,
-        req.body
+        req.body,
+        req.user.companyCode
       );
 
     return sendAdminMasterResponse(
@@ -202,7 +252,8 @@ export const deleteCategory = async (req, res) => {
   try {
     const data =
       await service.deleteCategory(
-        req.params.categoryId
+        req.params.categoryId,
+        req.user.companyCode
       );
 
     return sendAdminMasterResponse(
@@ -222,7 +273,10 @@ export const deleteCategory = async (req, res) => {
 
 export const createSubCategory = async (req, res) => {
   try {
-    const data = await service.createSubCategory(req.body);
+    const data = await service.createSubCategory({
+      ...req.body,
+      company_code: req.user.companyCode,
+    });
 
     return res.status(201).json({
       success: true,
@@ -243,6 +297,7 @@ export const updateSubCategory = async (req, res) => {
     const data = await service.updateSubCategory(
       req.params.subcategoryId,
       req.body,
+      req.user.companyCode
     );
 
     return sendAdminMasterResponse(
@@ -264,6 +319,7 @@ export const deleteSubCategory = async (req, res) => {
   try {
     const data = await service.deleteSubCategory(
       req.params.subcategoryId,
+      req.user.companyCode
     );
 
     return sendAdminMasterResponse(
@@ -284,7 +340,10 @@ export const deleteSubCategory = async (req, res) => {
 export const createStatus = async (req, res) => {
   try {
     const data =
-      await service.createStatus(req.body);
+      await service.createStatus({
+        ...req.body,
+        company_code: req.user.companyCode,
+      });
 
     return res.status(201).json({
       success: true,
@@ -305,7 +364,8 @@ export const updateStatus = async (req, res) => {
     const data =
       await service.updateStatus(
         req.params.statusId,
-        req.body
+        req.body,
+        req.user.companyCode
       );
 
     return sendAdminMasterResponse(
@@ -327,7 +387,8 @@ export const deleteStatus = async (req, res) => {
   try {
     const data =
       await service.deleteStatus(
-        req.params.statusId
+        req.params.statusId,
+        req.user.companyCode
       );
 
     return sendAdminMasterResponse(
@@ -348,7 +409,10 @@ export const deleteStatus = async (req, res) => {
 export const createPriority = async (req, res) => {
   try {
     const data =
-      await service.createPriority(req.body);
+      await service.createPriority({
+        ...req.body,
+        company_code: req.user.companyCode,
+      });
 
     return res.status(201).json({
       success: true,
@@ -369,7 +433,8 @@ export const updatePriority = async (req, res) => {
     const data =
       await service.updatePriority(
         req.params.priorityId,
-        req.body
+        req.body,
+        req.user.companyCode
       );
 
     return sendAdminMasterResponse(
@@ -391,7 +456,8 @@ export const deletePriority = async (req, res) => {
   try {
     const data =
       await service.deletePriority(
-        req.params.priorityId
+        req.params.priorityId,
+        req.user.companyCode
       );
 
     return sendAdminMasterResponse(
@@ -413,32 +479,27 @@ export const getSubCategories = async (
   req,
   res
 ) => {
-
   try {
-
     const { categoryId } = req.params;
 
     const data =
       await service.getSubCategories(
-        categoryId
+        categoryId,
+        req.user.companyCode
       );
 
     return res.status(200).json({
       success: true,
       data
     });
-
   } catch(error) {
-
     console.error(error);
 
     return res.status(500).json({
       success: false,
       message: error.message
     });
-
   }
-
 };
 
 export const getAssignableUsers = async (req, res) => {
@@ -461,6 +522,45 @@ export const getAssignableUsers = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const createCompany = async (req, res) => {
+  try {
+    const data = await service.createCompany(req.body);
+    return res.status(201).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updateCompany = async (req, res) => {
+  try {
+    const { companyCode } = req.params;
+    const data = await service.updateCompany(companyCode, req.body);
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

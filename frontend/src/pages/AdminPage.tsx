@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlternateEmailOutlined,
+  BusinessOutlined,
   ErrorOutlineOutlined,
   FolderOutlined,
   GridViewOutlined,
@@ -25,7 +26,7 @@ type Section = {
 
 const ICON_SX = { fontSize: 22 };
 
-const sections: Section[] = [
+const buildSections = (isSuperAdmin: boolean): Section[] => [
   {
     id: "general",
     title: "General settings",
@@ -48,6 +49,12 @@ const sections: Section[] = [
         description: "Users and their companies, roles and permissions.",
         path: "/admin/users",
       },
+      ...(isSuperAdmin ? [{
+        icon: <BusinessOutlined sx={ICON_SX} />,
+        title: "Companies",
+        description: "Manage companies, company codes, and company users.",
+        path: "/admin/companies",
+      }] : []),
     ],
   },
   {
@@ -89,10 +96,19 @@ const AdminPage = () => {
       }
     })();
 
-    if (Number(user.role_id) !== 1) {
+    if (![1, 4].includes(Number(user.role_id))) {
       navigate("/tickets");
     }
   }, [navigate]);
+
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
+  })();
+  const sections = buildSections(Number(currentUser.role_id) === 4);
 
   return (
     <div style={pageSx}>

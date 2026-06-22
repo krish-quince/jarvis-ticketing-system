@@ -168,7 +168,7 @@ const AdminCategoriesPage = () => {
       }
     })();
 
-    if (Number(user.role_id ?? user.roleId) !== 1) {
+    if (![1, 4].includes(Number(user.role_id ?? user.roleId))) {
       navigate("/tickets");
       return;
     }

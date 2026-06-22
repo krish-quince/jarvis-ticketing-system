@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -51,7 +51,7 @@ const AddUserPage = () => {
   const [saving, setSaving] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [companies, setCompanies] = useState<Option[]>([]);
-  const [departments, setDepartments] = useState<Option[]>([]);
+  const [departments, setDepartments] = useState<(Option & { companyCode?: string })[]>([]);
   const [roles, setRoles] = useState<Option[]>([]);
   const [toast, setToast] = useState<ToastState>({
     open: false,
@@ -67,21 +67,26 @@ const AddUserPage = () => {
     }
   }, []);
 
+  const [searchParams] = useSearchParams();
+  const paramCompanyCode = searchParams.get("companyCode") || "";
+  const paramRoleId = searchParams.get("roleId") || "";
+
   const [form, setForm] = useState({
     email: "",
     user_code: "",
     first_name: "",
     last_name: "",
-    company_code: currentUser.company_code || currentUser.companyCode || "",
+    company_code: paramCompanyCode || currentUser.company_code || currentUser.companyCode || "",
     department_id: "",
-    role_id: "",
+    role_id: paramRoleId || "",
     password: "",
     send_welcome_email: true,
     must_change_password: false,
   });
 
   useEffect(() => {
-    if (Number(currentUser.role_id) !== 1) {
+    const roleId = Number(currentUser.role_id);
+    if (roleId !== 1 && roleId !== 4) {
       navigate("/tickets");
       return;
     }
@@ -102,6 +107,7 @@ const AddUserPage = () => {
         const nextDepartments = (departmentData || []).map((department: any) => ({
           value: String(department.department_id),
           label: department.department_name,
+          companyCode: department.company_code,
         }));
         const nextRoles = (roleData || []).map((role: any) => ({
           value: String(role.role_id),
@@ -114,9 +120,10 @@ const AddUserPage = () => {
 
         setForm((prev) => ({
           ...prev,
-          company_code: prev.company_code || nextCompanies[0]?.value || "",
+          company_code: prev.company_code || paramCompanyCode || nextCompanies[0]?.value || "",
           role_id:
             prev.role_id ||
+            paramRoleId ||
             nextRoles.find((role: Option) => role.label.toLowerCase() === "employee")?.value ||
             nextRoles[0]?.value ||
             "",
@@ -276,23 +283,33 @@ const AddUserPage = () => {
               sx={fieldSx}
             />
 
-            <Typography sx={{ color: "var(--text)", fontSize: 15 }}>Company</Typography>
-            <TextField
-              select
-              fullWidth
-              value={form.company_code}
-              disabled={loadingOptions}
-              onChange={(event) => updateField("company_code", event.target.value)}
-              slotProps={{
-                select: { IconComponent: KeyboardArrowDown, displayEmpty: true },
-              }}
-              sx={fieldSx}
-            >
-              <MenuItem value="" disabled>Type for suggestions or enter new value</MenuItem>
-              {companies.map((company) => (
-                <MenuItem key={company.value} value={company.value}>{company.label}</MenuItem>
-              ))}
-            </TextField>
+            {Number(currentUser.role_id) === 4 && (
+              <>
+                <Typography sx={{ color: "var(--text)", fontSize: 15 }}>Company</Typography>
+                <TextField
+                  select
+                  fullWidth
+                  value={form.company_code}
+                  disabled={loadingOptions}
+                  onChange={(event) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      company_code: event.target.value,
+                      department_id: "",
+                    }));
+                  }}
+                  slotProps={{
+                    select: { IconComponent: KeyboardArrowDown, displayEmpty: true },
+                  }}
+                  sx={fieldSx}
+                >
+                  <MenuItem value="" disabled>Type for suggestions or enter new value</MenuItem>
+                  {companies.map((company) => (
+                    <MenuItem key={company.value} value={company.value}>{company.label}</MenuItem>
+                  ))}
+                </TextField>
+              </>
+            )}
 
             <Typography sx={{ color: "var(--text)", fontSize: 15 }}>Department</Typography>
             <TextField
@@ -307,9 +324,11 @@ const AddUserPage = () => {
               sx={fieldSx}
             >
               <MenuItem value="">No department</MenuItem>
-              {departments.map((department) => (
-                <MenuItem key={department.value} value={department.value}>{department.label}</MenuItem>
-              ))}
+              {departments
+                .filter((dept) => !form.company_code || dept.companyCode === form.company_code)
+                .map((department) => (
+                  <MenuItem key={department.value} value={department.value}>{department.label}</MenuItem>
+                ))}
             </TextField>
 
             <Typography sx={{ color: "var(--text)", fontSize: 15 }}>Role *</Typography>
@@ -325,9 +344,11 @@ const AddUserPage = () => {
               sx={fieldSx}
             >
               <MenuItem value="" disabled>Select role</MenuItem>
-              {roles.map((role) => (
-                <MenuItem key={role.value} value={role.value}>{role.label}</MenuItem>
-              ))}
+              {roles
+                .filter((role) => Number(currentUser.role_id) === 4 || role.label !== "Super Admin")
+                .map((role) => (
+                  <MenuItem key={role.value} value={role.value}>{role.label}</MenuItem>
+                ))}
             </TextField>
 
             <Typography sx={{ color: "var(--text)", fontSize: 15 }}>Password *</Typography>

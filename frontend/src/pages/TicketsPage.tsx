@@ -124,7 +124,7 @@ const TicketsPage = () => {
     }
   })();
 
-  const isAdmin = currentUser.role_id === 1;
+  const isAdmin = [1, 4].includes(Number(currentUser.role_id));
 
   // Matches the same userCode/user_code dance used elsewhere in this file
   // (see filterPill's "assigned" case) so the comparison stays consistent.

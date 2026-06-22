@@ -60,6 +60,11 @@ const UsersPage = () => {
   const [actionValue, setActionValue]   = useState("");
   const [bulkSaving, setBulkSaving]     = useState(false);
   const [optionsCache, setOptionsCache] = useState<Record<string, OptionItem[]>>({});
+  const currentUser = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}"); }
+    catch { return {}; }
+  }, []);
+  const isSuperAdmin = Number(currentUser.role_id) === 4;
 
 
   const fetchUsers = async () => {
@@ -86,13 +91,9 @@ const UsersPage = () => {
   };
 
   useEffect(() => {
-    const user = (() => {
-      try { return JSON.parse(localStorage.getItem("user") || "{}"); }
-      catch { return {}; }
-    })();
-    if (Number(user.role_id) !== 1) { navigate("/tickets"); return; }
+    if (![1, 4].includes(Number(currentUser.role_id))) { navigate("/tickets"); return; }
     Promise.all([fetchUsers(), prefetchAllOptions()]);
-  }, []);
+  }, [currentUser, navigate]);
 
 
   const handleActionClick = (label: string) => {
@@ -165,7 +166,7 @@ const UsersPage = () => {
     all:         users.length,
     regular:     users.filter((u) => Number(u.role_id) > 2).length,
     technicians: users.filter((u) => Number(u.role_id) === 2).length,
-    admins:      users.filter((u) => Number(u.role_id) === 1).length,
+    admins:      users.filter((u) => [1, 4].includes(Number(u.role_id))).length,
   }), [users]);
 
   const tabs = [
@@ -428,7 +429,11 @@ const UsersPage = () => {
               ) : (
                 // Default buttons mode
                 <Box sx={{ display: "flex", alignItems: "stretch", width: "100%" }}>
-                  {["Company", "Department", "Role"].map((label) => (
+                  {[
+                    ...(isSuperAdmin ? ["Company"] : []),
+                    "Department",
+                    "Role",
+                  ].map((label) => (
                     <Button
                       key={label}
                       size="small"

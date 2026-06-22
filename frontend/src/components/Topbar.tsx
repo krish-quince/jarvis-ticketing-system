@@ -43,7 +43,7 @@ const Topbar = () => {
     `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase() ||
     "KB";
   const userName = user.first_name || "Krish";
-  const isAdmin = user.role_id == 1;
+  const isAdmin = [1, 4].includes(Number(user.role_id));
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
