@@ -96,11 +96,4 @@ export const updateCompany = async (companyCode, payload) => {
   return repository.updateCompany(companyCode, payload);
 };
 
-export const deleteCompany = async (companyCode) => {
-  return repository.deleteCompany(companyCode);
-};
-
-export const restoreCompany = async (companyCode) => {
-  return repository.restoreCompany(companyCode);
-};
 

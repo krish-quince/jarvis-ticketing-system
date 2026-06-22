@@ -102,37 +102,7 @@ export const getCompanies = async (includeDeleted = false) => {
   return result.rows;
 };
 
-export const deleteCompany = async (companyCode) => {
-  const result = await pool.query(
-    `
-    UPDATE companies
-    SET
-      is_deleted = true,
-      update_timestamp = CURRENT_TIMESTAMP
-    WHERE company_code = $1
-    RETURNING *
-    `,
-    [companyCode]
-  );
 
-  return result.rows[0];
-};
-
-export const restoreCompany = async (companyCode) => {
-  const result = await pool.query(
-    `
-    UPDATE companies
-    SET
-      is_deleted = false,
-      update_timestamp = CURRENT_TIMESTAMP
-    WHERE company_code = $1
-    RETURNING *
-    `,
-    [companyCode]
-  );
-
-  return result.rows[0];
-};
 
 export const createCategory = async ({
   category_name,
