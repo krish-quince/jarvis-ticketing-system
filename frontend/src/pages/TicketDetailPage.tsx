@@ -145,8 +145,32 @@ const TicketDetailPage = () => {
     ticketToCheck?.assigned_to_user_code === loggedInUserCode ||
     ticketToCheck?.raised_by_user_code === loggedInUserCode;
 
+  const fetchCommentsAndHistorySilently = async () => {
+    try {
+      const [ticketData, commentsData, historyData] = await Promise.all([
+        getTicketById(ticketId),
+        getComments(ticketId),
+        getTicketHistory(ticketId).catch((historyError) => {
+          console.warn("Unable to load ticket history silently:", historyError);
+          return [];
+        }),
+      ]);
+      setTicket(ticketData);
+      setComments(commentsData || []);
+      setHistory(historyData || []);
+    } catch (error) {
+      console.warn("Unable to load background ticket updates:", error);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+
+    const interval = setInterval(() => {
+      fetchCommentsAndHistorySilently();
+    }, 1000); // Poll every 1 second for new comments/updates
+
+    return () => clearInterval(interval);
   }, [id]);
 
   const fetchData = async () => {
@@ -654,6 +678,20 @@ const TicketDetailPage = () => {
       ].filter(Boolean),
     ),
   );
+  const formatDateTime = (value?: string | Date | null) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleString("en-US", {
+      month: "numeric",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   const formatFeedTime = (value?: string) => {
     if (!value) return "";
 
@@ -2431,7 +2469,7 @@ const TicketDetailPage = () => {
                   sx={{ fontWeight: 600, color: "var(--text-h)", flex: 1 }}
                 >
                   {ticket.due_date
-                    ? new Date(ticket.due_date).toLocaleDateString()
+                    ? formatDateTime(ticket.due_date)
                     : ""}
                 </Typography>
               </Box>

@@ -1028,7 +1028,7 @@ const TicketsPage = () => {
   sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
 >
   {ticket.due_date
-    ? new Date(ticket.due_date).toLocaleDateString("en-US")
+    ? formatDateTime(ticket.due_date)
     : ""}
 </TableCell>
                         <TableCell

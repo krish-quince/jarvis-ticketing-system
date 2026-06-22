@@ -88,4 +88,9 @@ BEGIN
 END;
 $$;
 
+
+-- 6. Add created_at column to tickets table
+ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP;
+
+
 COMMIT;

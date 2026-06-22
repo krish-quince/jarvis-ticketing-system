@@ -665,12 +665,12 @@ const NewTicketPage = () => {
               >
                 <TextField
                   size="small"
-                  type="date"
+                  type="datetime-local"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
                   slotProps={{ inputLabel: { shrink: true } }}
                   sx={{
-                    width: 150,
+                    width: 220,
                     "& .MuiOutlinedInput-root": { background: "var(--bg-app)" },
                   }}
                 />

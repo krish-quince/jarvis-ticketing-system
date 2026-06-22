@@ -536,6 +536,7 @@ CREATE TABLE public.tickets (
     resolution_date timestamp without time zone,
     is_recurring boolean DEFAULT false,
     update_timestamp timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     user_code character varying(50),
     subcategory_id bigint,
     department_id bigint,
