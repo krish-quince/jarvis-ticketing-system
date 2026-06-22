@@ -59,12 +59,15 @@ export const getAllTickets = async (
         const {
             search = "",
             page = 1,
-            limit = 25
+            limit = 25,
+            companyCode
         } = req.query;
+
+        const targetCompanyCode = (Number(req.user.roleId) === 4) ? (companyCode || null) : req.user.companyCode;
 
         const tickets =
             await ticketService.getAllTickets(
-                req.user.companyCode,
+                targetCompanyCode,
                 req.user,
                 search,
                 Number(page),

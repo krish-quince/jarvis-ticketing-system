@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   CircularProgress,
@@ -43,6 +44,8 @@ type CompanyRecord = {
   email?: string;
   phone?: string;
   address?: string;
+  logo_url?: string;
+  email_domain?: string;
   is_active?: boolean;
   is_deleted?: boolean;
 };
@@ -53,6 +56,16 @@ const emptyCompany = {
   email: "",
   phone: "",
   address: "",
+  logo_url: "",
+  email_domain: "",
+};
+
+const BACKEND_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace("/api", "");
+
+const getLogoUrl = (url?: string) => {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  return `${BACKEND_URL}${url}`;
 };
 
 const AdminCompaniesPage = () => {
@@ -61,6 +74,7 @@ const AdminCompaniesPage = () => {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<CompanyRecord | null>(null);
   const [form, setForm] = useState(emptyCompany);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -114,6 +128,7 @@ const AdminCompaniesPage = () => {
   const openCreateDialog = () => {
     setSelectedCompany(null);
     setForm(emptyCompany);
+    setLogoFile(null);
     setDialogOpen(true);
   };
 
@@ -125,7 +140,10 @@ const AdminCompaniesPage = () => {
       email: company.email || "",
       phone: company.phone || "",
       address: company.address || "",
+      logo_url: company.logo_url || "",
+      email_domain: company.email_domain || "",
     });
+    setLogoFile(null);
     setDialogOpen(true);
   };
 
@@ -138,17 +156,25 @@ const AdminCompaniesPage = () => {
     try {
       setSaving(true);
       setError("");
-      const payload = {
-        ...form,
-        company_code: form.company_code.trim().toUpperCase(),
-        company_name: form.company_name.trim(),
-      };
+
+      const formData = new FormData();
+      formData.append("company_code", form.company_code.trim().toUpperCase());
+      formData.append("company_name", form.company_name.trim());
+      formData.append("email", form.email.trim());
+      formData.append("phone", form.phone.trim());
+      formData.append("address", form.address.trim());
+      formData.append("email_domain", form.email_domain.trim());
+      if (logoFile) {
+        formData.append("logo", logoFile);
+      } else {
+        formData.append("logo_url", form.logo_url);
+      }
 
       if (selectedCompany) {
-        const updated = await updateCompany(selectedCompany.company_code, payload);
+        const updated = await updateCompany(selectedCompany.company_code, formData);
         setSelectedCompany(updated);
       } else {
-        await createCompany(payload);
+        await createCompany(formData);
       }
 
       await loadCompanies();
@@ -226,17 +252,32 @@ const AdminCompaniesPage = () => {
                   opacity: company.is_deleted ? 0.6 : 1,
                 }}
               >
-                <Typography sx={{ fontSize: 14, fontWeight: 700, color: "var(--text-h)", display: "flex", alignItems: "center", gap: 1 }}>
-                  {company.company_name}
-                  {company.is_deleted && (
-                    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: "4px", backgroundColor: "#ffe4e6", color: "#be123c", fontWeight: 600 }}>
-                      Deleted
-                    </span>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  {company.logo_url ? (
+                    <Avatar src={getLogoUrl(company.logo_url)} variant="rounded" sx={{ width: 28, height: 28 }} />
+                  ) : (
+                    <Avatar variant="rounded" sx={{ width: 28, height: 28, fontSize: 12, backgroundColor: "var(--border)", color: "var(--text)" }}>
+                      {company.company_code.substring(0, 2)}
+                    </Avatar>
                   )}
-                </Typography>
-                <Typography sx={{ fontSize: 12, color: "var(--text-sub)", fontFamily: "monospace" }}>
-                  {company.company_code}
-                </Typography>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography sx={{ fontSize: 14, fontWeight: 700, color: "var(--text-h)", display: "flex", alignItems: "center", gap: 1 }}>
+                      {company.company_name}
+                      {company.is_deleted ? (
+                        <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: "4px", backgroundColor: "#ffe4e6", color: "#be123c", fontWeight: 600 }}>
+                          Inactive
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: "4px", backgroundColor: "#dcfce7", color: "#15803d", fontWeight: 600 }}>
+                          Active
+                        </span>
+                      )}
+                    </Typography>
+                    <Typography sx={{ fontSize: 12, color: "var(--text-sub)", fontFamily: "monospace" }}>
+                      {company.company_code}
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
             ))
           )}
@@ -246,16 +287,28 @@ const AdminCompaniesPage = () => {
           {selectedCompany ? (
             <>
               <Box sx={{ p: 2.5, display: "flex", justifyContent: "space-between", gap: 2 }}>
-                <Box>
-                  <Typography sx={{ fontSize: 22, fontWeight: 700, color: "var(--text-h)" }}>
-                    {selectedCompany.company_name}
-                  </Typography>
-                  <Typography sx={{ mt: 0.5, fontSize: 13, color: "var(--text-sub)" }}>
-                    {selectedCompany.company_code}
-                  </Typography>
-                  <Typography sx={{ mt: 1.5, fontSize: 13, color: "var(--text)" }}>
-                    {selectedCompany.address || "No company details added"}
-                  </Typography>
+                <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+                  {selectedCompany.logo_url ? (
+                    <Avatar src={getLogoUrl(selectedCompany.logo_url)} variant="rounded" sx={{ width: 48, height: 48 }} />
+                  ) : (
+                    <Avatar variant="rounded" sx={{ width: 48, height: 48, fontSize: 16, backgroundColor: "var(--border)", color: "var(--text)" }}>
+                      {selectedCompany.company_code.substring(0, 2)}
+                    </Avatar>
+                  )}
+                  <Box>
+                    <Typography sx={{ fontSize: 22, fontWeight: 700, color: "var(--text-h)" }}>
+                      {selectedCompany.company_name}
+                    </Typography>
+                    <Typography sx={{ mt: 0.5, fontSize: 13, color: "var(--text-sub)" }}>
+                      {selectedCompany.company_code}
+                    </Typography>
+                    <Typography sx={{ mt: 1, fontSize: 13, color: "var(--text)", fontWeight: 500 }}>
+                      Email Domain: @{selectedCompany.email_domain || "not set"}
+                    </Typography>
+                    <Typography sx={{ mt: 1.5, fontSize: 13, color: "var(--text)" }}>
+                      {selectedCompany.address || "No company details added"}
+                    </Typography>
+                  </Box>
                 </Box>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                   {selectedCompany.is_deleted ? (
@@ -269,12 +322,12 @@ const AdminCompaniesPage = () => {
                           setSelectedCompany(updated);
                           await loadCompanies();
                         } catch (err: any) {
-                          setError(err.response?.data?.message || "Failed to restore company");
+                          setError(err.response?.data?.message || "Failed to activate company");
                         }
                       }}
                       sx={{ height: 38, textTransform: "none", whiteSpace: "nowrap" }}
                     >
-                      Restore Company
+                      Activate
                     </Button>
                   ) : (
                     <>
@@ -299,19 +352,19 @@ const AdminCompaniesPage = () => {
                         color="error"
                         startIcon={<Delete />}
                         onClick={async () => {
-                          if (window.confirm(`Are you sure you want to delete ${selectedCompany.company_name}? Users of this company will not be able to log in.`)) {
+                          if (window.confirm(`Are you sure you want to deactivate ${selectedCompany.company_name}? Users of this company will not be able to log in.`)) {
                             try {
                               const updated = await deleteCompany(selectedCompany.company_code);
                               setSelectedCompany(updated);
                               await loadCompanies();
                             } catch (err: any) {
-                              setError(err.response?.data?.message || "Failed to delete company");
+                              setError(err.response?.data?.message || "Failed to deactivate company");
                             }
                           }
                         }}
                         sx={{ height: 38, textTransform: "none", whiteSpace: "nowrap" }}
                       >
-                        Delete Company
+                        Deactivate
                       </Button>
                     </>
                   )}
@@ -400,6 +453,19 @@ const AdminCompaniesPage = () => {
             fullWidth
           />
           <TextField
+            label="Email Domain (e.g. quincecapital.com)"
+            placeholder="quincecapital.com"
+            value={form.email_domain}
+            onChange={(event) => {
+              let val = event.target.value.trim().toLowerCase();
+              if (val.startsWith("@")) {
+                val = val.substring(1);
+              }
+              setForm((prev) => ({ ...prev, email_domain: val }));
+            }}
+            fullWidth
+          />
+          <TextField
             label="Company details"
             value={form.address}
             onChange={(event) => setForm((prev) => ({ ...prev, address: event.target.value }))}
@@ -407,6 +473,57 @@ const AdminCompaniesPage = () => {
             multiline
             minRows={3}
           />
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1.5 }}>
+            <Typography sx={{ fontSize: 13, color: "var(--text-sub)", fontWeight: 500 }}>
+              Company Logo
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              {logoFile ? (
+                <Avatar
+                  src={URL.createObjectURL(logoFile)}
+                  variant="rounded"
+                  sx={{ width: 48, height: 48 }}
+                />
+              ) : form.logo_url ? (
+                <Avatar
+                  src={getLogoUrl(form.logo_url)}
+                  variant="rounded"
+                  sx={{ width: 48, height: 48 }}
+                />
+              ) : (
+                <Avatar variant="rounded" sx={{ width: 48, height: 48, backgroundColor: "var(--border)", color: "var(--text)" }}>
+                  {form.company_code ? form.company_code.substring(0, 2).toUpperCase() : "?"}
+                </Avatar>
+              )}
+              <Button
+                variant="outlined"
+                component="label"
+                sx={{ textTransform: "none" }}
+              >
+                Upload Logo
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) {
+                      setLogoFile(file);
+                    }
+                  }}
+                />
+              </Button>
+              {logoFile && (
+                <Button
+                  color="error"
+                  onClick={() => setLogoFile(null)}
+                  sx={{ textTransform: "none" }}
+                >
+                  Clear Selection
+                </Button>
+              )}
+            </Box>
+          </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setDialogOpen(false)} sx={{ textTransform: "none" }}>

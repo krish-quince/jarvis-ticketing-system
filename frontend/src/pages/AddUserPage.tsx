@@ -33,6 +33,10 @@ type Option = {
   label: string;
 };
 
+type CompanyOption = Option & {
+  emailDomain?: string;
+};
+
 type ToastState = {
   open: boolean;
   message: string;
@@ -50,7 +54,7 @@ const AddUserPage = () => {
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(true);
-  const [companies, setCompanies] = useState<Option[]>([]);
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [departments, setDepartments] = useState<(Option & { companyCode?: string })[]>([]);
   const [roles, setRoles] = useState<Option[]>([]);
   const [toast, setToast] = useState<ToastState>({
@@ -84,6 +88,16 @@ const AddUserPage = () => {
     must_change_password: false,
   });
 
+  const isSuperAdminRole = useMemo(() => {
+    return roles.find(r => r.value === form.role_id)?.label === "Super Admin";
+  }, [roles, form.role_id]);
+
+  const emailDomain = useMemo(() => {
+    if (isSuperAdminRole) return null;
+    const selectedCompanyObj = companies.find(c => c.value === form.company_code);
+    return selectedCompanyObj?.emailDomain || null;
+  }, [companies, form.company_code, isSuperAdminRole]);
+
   useEffect(() => {
     const roleId = Number(currentUser.role_id);
     if (roleId !== 1 && roleId !== 4) {
@@ -103,6 +117,7 @@ const AddUserPage = () => {
         const nextCompanies = (companyData || []).map((company: any) => ({
           value: String(company.company_code),
           label: company.company_name || company.company_code,
+          emailDomain: company.email_domain,
         }));
         const nextDepartments = (departmentData || []).map((department: any) => ({
           value: String(department.department_id),
@@ -147,7 +162,7 @@ const AddUserPage = () => {
   };
 
   const handleSubmit = async () => {
-    const isSuperAdminRole = roles.find(r => r.value === form.role_id)?.label === "Super Admin";
+    const finalEmail = emailDomain ? `${form.email.trim()}@${emailDomain}` : form.email.trim();
     if (!form.email || !form.user_code || !form.password || (!form.company_code && !isSuperAdminRole) || !form.role_id) {
       setToast({
         open: true,
@@ -160,7 +175,7 @@ const AddUserPage = () => {
     try {
       setSaving(true);
       await createUser({
-        email: form.email.trim(),
+        email: finalEmail,
         user_code: form.user_code.trim(),
         first_name: form.first_name.trim(),
         last_name: form.last_name.trim(),
@@ -255,8 +270,24 @@ const AddUserPage = () => {
             <TextField
               autoFocus
               fullWidth
+              placeholder={emailDomain ? "username" : "email@domain.com"}
               value={form.email}
-              onChange={(event) => updateField("email", event.target.value)}
+              onChange={(event) => {
+                let val = event.target.value;
+                if (emailDomain) {
+                  val = val.replace(/\s+/g, "").replace(/@/g, "");
+                }
+                updateField("email", val);
+              }}
+              slotProps={{
+                input: {
+                  endAdornment: emailDomain ? (
+                    <InputAdornment position="end" sx={{ pointerEvents: 'none', userSelect: 'none', color: 'var(--text-sub)' }}>
+                      @{emailDomain}
+                    </InputAdornment>
+                  ) : null,
+                },
+              }}
               sx={fieldSx}
             />
 

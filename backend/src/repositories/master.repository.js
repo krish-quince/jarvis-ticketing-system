@@ -565,6 +565,8 @@ export const createCompany = async ({
   email,
   phone,
   address,
+  logo_url,
+  email_domain,
 }) => {
   const client = await pool.connect();
   try {
@@ -579,12 +581,14 @@ export const createCompany = async ({
         email,
         phone,
         address,
+        logo_url,
+        email_domain,
         is_active
       )
-      VALUES ($1, $2, $3, $4, $5, true)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, true)
       RETURNING *
       `,
-      [company_name, company_code, email || null, phone || null, address || null]
+      [company_name, company_code, email || null, phone || null, address || null, logo_url || null, email_domain || null]
     );
 
     const code = companyResult.rows[0].company_code;
@@ -622,6 +626,19 @@ export const createCompany = async ({
       [code]
     );
 
+    // 5. Insert default departments: IT, HR, Support, Finance
+    await client.query(
+      `
+      INSERT INTO departments (department_name, company_code, is_active)
+      VALUES 
+        ('IT', $1, true),
+        ('HR', $1, true),
+        ('Support', $1, true),
+        ('Finance', $1, true)
+      `,
+      [code]
+    );
+
     await client.query("COMMIT");
     return companyResult.rows[0];
   } catch (error) {
@@ -639,6 +656,8 @@ export const updateCompany = async (
     email,
     phone,
     address,
+    logo_url,
+    email_domain,
     is_active = true,
   }
 ) => {
@@ -650,9 +669,11 @@ export const updateCompany = async (
       email = $2,
       phone = $3,
       address = $4,
-      is_active = $5,
+      logo_url = $5,
+      email_domain = $6,
+      is_active = $7,
       update_timestamp = CURRENT_TIMESTAMP
-    WHERE company_code = $6
+    WHERE company_code = $8
     RETURNING *
     `,
     [
@@ -660,6 +681,8 @@ export const updateCompany = async (
       email || null,
       phone || null,
       address || null,
+      logo_url || null,
+      email_domain || null,
       is_active,
       companyCode,
     ]

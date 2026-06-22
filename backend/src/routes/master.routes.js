@@ -29,6 +29,7 @@ import {
 
 import { verifyToken } from "../middleware/auth.middleware.js";
 import { requireAdmin, requireSuperAdmin } from "../middleware/role.middleware.js";
+import { uploadLogo } from "../middleware/logoUpload.middleware.js";
 
 const router = express.Router();
 const adminOnly = [verifyToken, requireAdmin];
@@ -63,8 +64,8 @@ router.delete("/priorities/:priorityId", ...adminOnly, deletePriority);
 router.get("/roles", ...adminOnly, getRoles);
 router.get("/departments", ...adminOnly, getDepartments);
 router.get("/companies", ...adminOnly, getCompanies);
-router.post("/companies", verifyToken, requireSuperAdmin, createCompany);
-router.patch("/companies/:companyCode", verifyToken, requireSuperAdmin, updateCompany);
+router.post("/companies", verifyToken, requireSuperAdmin, uploadLogo.single("logo"), createCompany);
+router.patch("/companies/:companyCode", verifyToken, requireSuperAdmin, uploadLogo.single("logo"), updateCompany);
 router.delete("/companies/:companyCode", verifyToken, requireSuperAdmin, deleteCompany);
 router.post("/companies/:companyCode/restore", verifyToken, requireSuperAdmin, restoreCompany);
 

@@ -530,7 +530,11 @@ export const getAssignableUsers = async (req, res) => {
 
 export const createCompany = async (req, res) => {
   try {
-    const data = await service.createCompany(req.body);
+    const payload = { ...req.body };
+    if (req.file) {
+      payload.logo_url = `/uploads/logos/${req.file.filename}`;
+    }
+    const data = await service.createCompany(payload);
     return res.status(201).json({
       success: true,
       data,
@@ -547,7 +551,11 @@ export const createCompany = async (req, res) => {
 export const updateCompany = async (req, res) => {
   try {
     const { companyCode } = req.params;
-    const data = await service.updateCompany(companyCode, req.body);
+    const payload = { ...req.body };
+    if (req.file) {
+      payload.logo_url = `/uploads/logos/${req.file.filename}`;
+    }
+    const data = await service.updateCompany(companyCode, payload);
     if (!data) {
       return res.status(404).json({
         success: false,

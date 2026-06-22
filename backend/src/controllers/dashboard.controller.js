@@ -2,7 +2,8 @@ import pool from "../config/db.js";
 
 export const getSummary = async (req, res) => {
     try {
-        const companyCode = req.user.companyCode;
+        const isSuperAdmin = req.user && Number(req.user.roleId) === 4;
+        const targetCompanyCode = isSuperAdmin ? (req.query.companyCode || null) : req.user.companyCode;
 
         let query = `
             SELECT 
@@ -14,12 +15,20 @@ export const getSummary = async (req, res) => {
             FROM tickets t
             LEFT JOIN ticket_statuses s ON s.status_id = t.status_id
             LEFT JOIN ticket_priorities p ON p.priority_id = t.priority_id
-            WHERE t.company_code = $1
+            WHERE 1=1
         `;
-        const params = [companyCode];
+        const params = [];
+        let paramIndex = 1;
+        if (targetCompanyCode) {
+            query += ` AND t.company_code = $${paramIndex}`;
+            params.push(targetCompanyCode);
+            paramIndex++;
+        }
 
-        if (req.user && Number(req.user.roleId) !== 1) {
-            query += ` AND (t.assigned_to_user_code = $2 OR t.raised_by_user_code = $3 OR t.department_id = $4)`;
+        const isStandardAdminOrSuper = req.user && (Number(req.user.roleId) === 1 || Number(req.user.roleId) === 4);
+
+        if (!isStandardAdminOrSuper) {
+            query += ` AND (t.assigned_to_user_code = $${paramIndex} OR t.raised_by_user_code = $${paramIndex + 1} OR t.department_id = $${paramIndex + 2})`;
             params.push(req.user.userCode, req.user.userCode, req.user.departmentId);
         }
 

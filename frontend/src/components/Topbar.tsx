@@ -21,8 +21,17 @@ import {
   InsertChartOutlined,
   SettingsOutlined,
 } from "@mui/icons-material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getCompanies } from "../services/masterService";
+
+const BACKEND_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace("/api", "");
+
+const getLogoUrl = (url?: string) => {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  return `${BACKEND_URL}${url}`;
+};
 
 const Topbar = () => {
   const navigate = useNavigate();
@@ -38,6 +47,21 @@ const Topbar = () => {
       return {};
     }
   })();
+
+  const [companyInfo, setCompanyInfo] = useState<{ company_name: string; logo_url?: string } | null>(null);
+
+  useEffect(() => {
+    if (user.company_code) {
+      getCompanies()
+        .then((companies) => {
+          const myCompany = companies.find((c: any) => c.company_code === user.company_code);
+          if (myCompany) {
+            setCompanyInfo(myCompany);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [user.company_code]);
 
   const userInitials =
     `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase() ||
@@ -89,17 +113,31 @@ const Topbar = () => {
           }}
           onClick={() => navigate("/tickets")}
         >
+          {companyInfo?.logo_url ? (
+            <Avatar
+              src={getLogoUrl(companyInfo.logo_url)}
+              variant="rounded"
+              sx={{ width: 32, height: 32, border: "1px solid rgba(255,255,255,0.2)" }}
+            />
+          ) : (
+            <Avatar
+              variant="rounded"
+              sx={{ width: 32, height: 32, backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 14, fontWeight: 700 }}
+            >
+              {user.company_code ? user.company_code.substring(0, 2).toUpperCase() : "JH"}
+            </Avatar>
+          )}
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
               color: "#fff",
               lineHeight: 1.05,
-              fontSize: { xs: 18, md: 22 },
+              fontSize: { xs: 16, md: 20 },
               whiteSpace: "nowrap",
             }}
           >
-            Quincecapital Helpdesk
+            {companyInfo?.company_name || "Jarvis Helpdesk"}
           </Typography>
         </Box>
 

@@ -117,14 +117,18 @@ export const getAllTickets = async (
       ON sc.subcategory_id = t.subcategory_id
     LEFT JOIN ticket_priorities p
       ON p.priority_id = t.priority_id
-    WHERE t.company_code = $1
+    WHERE 1=1
   `;
 
-  const params = [companyCode];
+  const params = [];
+  if (companyCode) {
+    query += ` AND t.company_code = $1`;
+    params.push(companyCode);
+  }
 
-  const isAdmin = user && Number(user.roleId) === 1;
+  const isAdminOrSuperAdmin = user && (Number(user.roleId) === 1 || Number(user.roleId) === 4);
 
-  if (!isAdmin) {
+  if (!isAdminOrSuperAdmin) {
     query += `
       AND (
         t.assigned_to_user_code = $${params.length + 1}
@@ -163,8 +167,7 @@ export const getAllTickets = async (
 };
 
 export const getTicketById = async (ticketId, companyCode) => {
-  const result = await pool.query(
-    `
+  let query = `
     SELECT
         t.*,
         c.category_name,
@@ -192,26 +195,28 @@ export const getTicketById = async (ticketId, companyCode) => {
 
         FROM tickets t
 
-        INNER JOIN ticket_categories c
+        LEFT JOIN ticket_categories c
             ON c.category_id = t.category_id
 
         LEFT JOIN ticket_subcategories sc
             ON sc.subcategory_id = t.subcategory_id
 
-        INNER JOIN ticket_priorities p
+        LEFT JOIN ticket_priorities p
             ON p.priority_id = t.priority_id
 
-        INNER JOIN ticket_statuses s
+        LEFT JOIN ticket_statuses s
             ON s.status_id = t.status_id
 
         WHERE
             t.ticket_id = $1
-        AND 
-        t.company_code = $2
-    `,
-    [ticketId, companyCode],
-  );
+  `;
+  const params = [ticketId];
+  if (companyCode) {
+    query += ` AND t.company_code = $2`;
+    params.push(companyCode);
+  }
 
+  const result = await pool.query(query, params);
   return result.rows[0];
 };
 

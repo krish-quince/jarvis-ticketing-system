@@ -119,9 +119,7 @@ export const loginUser = async (req, res) => {
       : hasCompanyId
         ? "c.company_code"
         : "NULL";
-    const companyJoin = !hasCompanyCode && hasCompanyId
-      ? "LEFT JOIN companies c ON c.company_id = u.company_id"
-      : "";
+    const companyJoin = "LEFT JOIN companies c ON c.company_code = u.company_code";
     const departmentSelect = hasDepartmentId
       ? "u.department_id"
       : hasDepartment
@@ -133,6 +131,8 @@ export const loginUser = async (req, res) => {
             SELECT
               u.*,
               r.role_name,
+              c.company_name,
+              c.logo_url,
               ${companySelect} AS resolved_company_code,
               ${departmentSelect} AS resolved_department_id
             FROM users u
@@ -178,6 +178,8 @@ export const loginUser = async (req, res) => {
       ...user,
       company_code: user.resolved_company_code,
       department_id: user.resolved_department_id,
+      company_name: user.company_name,
+      logo_url: user.logo_url,
     };
 
     const token = jwt.sign(
