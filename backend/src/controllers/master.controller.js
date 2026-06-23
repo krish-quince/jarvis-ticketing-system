@@ -1,12 +1,17 @@
 import * as service from "../services/master.service.js";
 
+const getTargetCompanyCode = (req) => {
+  return req.user.companyCode;
+};
+
 export const getCategories = async (
   req,
   res
 ) => {
   try {
+    const companyCode = getTargetCompanyCode(req);
     const data =
-      await service.getCategories(req.user.companyCode);
+      await service.getCategories(companyCode);
 
     return res.status(200).json({
       success: true,
@@ -28,8 +33,9 @@ export const getPriorities = async (
   res
 ) => {
   try {
+    const companyCode = getTargetCompanyCode(req);
     const data =
-  await service.getPriorities(req.user.companyCode);
+      await service.getPriorities(companyCode);
 
     return res.status(200).json({
       success: true,
@@ -51,8 +57,9 @@ export const getStatuses = async (
   res
 ) => {
   try {
+    const companyCode = getTargetCompanyCode(req);
     const data =
-  await service.getStatuses(req.user.companyCode);
+      await service.getStatuses(companyCode);
 
     return res.status(200).json({
       success: true,
@@ -94,12 +101,7 @@ export const getRoles = async (
 
 export const getDepartments = async (req, res) => {
   try {
-    const isSuper = Number(req.user.roleId) === 4;
-    const companyCode = isSuper 
-      ? (req.query.companyCode || null) 
-      : req.user.companyCode;
-
-    const data = await service.getDepartments(companyCode);
+    const data = await service.getDepartments(req.user.companyCode);
     return res.status(200).json({
       success: true,
       data,
@@ -205,7 +207,7 @@ export const createCategory = async (req, res) => {
     const data =
       await service.createCategory({
         ...req.body,
-        company_code: req.user.companyCode,
+        company_code: getTargetCompanyCode(req),
       });
 
     return res.status(201).json({
@@ -228,7 +230,7 @@ export const updateCategory = async (req, res) => {
       await service.updateCategory(
         req.params.categoryId,
         req.body,
-        req.user.companyCode
+        getTargetCompanyCode(req)
       );
 
     return sendAdminMasterResponse(
@@ -251,7 +253,7 @@ export const deleteCategory = async (req, res) => {
     const data =
       await service.deleteCategory(
         req.params.categoryId,
-        req.user.companyCode
+        getTargetCompanyCode(req)
       );
 
     return sendAdminMasterResponse(
@@ -273,7 +275,7 @@ export const createSubCategory = async (req, res) => {
   try {
     const data = await service.createSubCategory({
       ...req.body,
-      company_code: req.user.companyCode,
+      company_code: getTargetCompanyCode(req),
     });
 
     return res.status(201).json({
@@ -295,7 +297,7 @@ export const updateSubCategory = async (req, res) => {
     const data = await service.updateSubCategory(
       req.params.subcategoryId,
       req.body,
-      req.user.companyCode
+      getTargetCompanyCode(req)
     );
 
     return sendAdminMasterResponse(
@@ -317,7 +319,7 @@ export const deleteSubCategory = async (req, res) => {
   try {
     const data = await service.deleteSubCategory(
       req.params.subcategoryId,
-      req.user.companyCode
+      getTargetCompanyCode(req)
     );
 
     return sendAdminMasterResponse(
@@ -340,7 +342,7 @@ export const createStatus = async (req, res) => {
     const data =
       await service.createStatus({
         ...req.body,
-        company_code: req.user.companyCode,
+        company_code: getTargetCompanyCode(req),
       });
 
     return res.status(201).json({
@@ -363,7 +365,7 @@ export const updateStatus = async (req, res) => {
       await service.updateStatus(
         req.params.statusId,
         req.body,
-        req.user.companyCode
+        getTargetCompanyCode(req)
       );
 
     return sendAdminMasterResponse(
@@ -386,7 +388,7 @@ export const deleteStatus = async (req, res) => {
     const data =
       await service.deleteStatus(
         req.params.statusId,
-        req.user.companyCode
+        getTargetCompanyCode(req)
       );
 
     return sendAdminMasterResponse(
@@ -409,7 +411,7 @@ export const createPriority = async (req, res) => {
     const data =
       await service.createPriority({
         ...req.body,
-        company_code: req.user.companyCode,
+        company_code: getTargetCompanyCode(req),
       });
 
     return res.status(201).json({
@@ -432,7 +434,7 @@ export const updatePriority = async (req, res) => {
       await service.updatePriority(
         req.params.priorityId,
         req.body,
-        req.user.companyCode
+        getTargetCompanyCode(req)
       );
 
     return sendAdminMasterResponse(
@@ -455,7 +457,7 @@ export const deletePriority = async (req, res) => {
     const data =
       await service.deletePriority(
         req.params.priorityId,
-        req.user.companyCode
+        getTargetCompanyCode(req)
       );
 
     return sendAdminMasterResponse(
@@ -483,7 +485,7 @@ export const getSubCategories = async (
     const data =
       await service.getSubCategories(
         categoryId,
-        req.user.companyCode
+        getTargetCompanyCode(req)
       );
 
     return res.status(200).json({
@@ -511,7 +513,7 @@ export const getAssignableUsers = async (req, res) => {
     const users =
       await service.getAssignableUsers(
         filters,
-        req.user.companyCode,
+        getTargetCompanyCode(req),
       );
 
     res.json({
@@ -575,14 +577,9 @@ export const updateCompany = async (req, res) => {
 
 export const createDepartment = async (req, res) => {
   try {
-    const isSuper = Number(req.user.roleId) === 4;
-    const companyCode = isSuper 
-      ? (req.body.company_code || req.user.companyCode) 
-      : req.user.companyCode;
-
     const data = await service.createDepartment({
       ...req.body,
-      company_code: companyCode,
+      company_code: req.user.companyCode,
     });
     return res.status(201).json({
       success: true,
@@ -599,15 +596,10 @@ export const createDepartment = async (req, res) => {
 
 export const updateDepartment = async (req, res) => {
   try {
-    const isSuper = Number(req.user.roleId) === 4;
-    const companyCode = isSuper 
-      ? (req.query.companyCode || req.body.company_code || req.user.companyCode) 
-      : req.user.companyCode;
-
     const data = await service.updateDepartment(
       req.params.departmentId,
       req.body,
-      companyCode
+      req.user.companyCode
     );
     return sendAdminMasterResponse(res, data, "Department not found");
   } catch (error) {
@@ -621,14 +613,9 @@ export const updateDepartment = async (req, res) => {
 
 export const deleteDepartment = async (req, res) => {
   try {
-    const isSuper = Number(req.user.roleId) === 4;
-    const companyCode = isSuper 
-      ? (req.query.companyCode || req.user.companyCode) 
-      : req.user.companyCode;
-
     const data = await service.deleteDepartment(
       req.params.departmentId,
-      companyCode
+      req.user.companyCode
     );
     return sendAdminMasterResponse(res, data, "Department not found");
   } catch (error) {

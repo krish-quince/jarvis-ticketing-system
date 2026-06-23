@@ -89,6 +89,7 @@ const Topbar = () => {
     "KB";
   const userName = user.first_name || "Krish";
   const isAdmin = [1, 4].includes(Number(user.role_id));
+  const isSuperAdmin = Number(user.role_id) === 4;
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -169,14 +170,15 @@ const Topbar = () => {
         </Box>
 
         {/* ── Zone 2: Search (center, expands to fill space) ── */}
-        <Box
-          sx={{
-            flex: 1,
-            display: { xs: "none", md: "flex" },
-            justifyContent: "center",
-            px: 4,
-          }}
-        >
+        {!isSuperAdmin ? (
+          <Box
+            sx={{
+              flex: 1,
+              display: { xs: "none", md: "flex" },
+              justifyContent: "center",
+              px: 4,
+            }}
+          >
           <OutlinedInput
             size="small"
             placeholder="Search... (or ticket ID)"
@@ -228,6 +230,9 @@ const Topbar = () => {
             }
           />
         </Box>
+        ) : (
+          <Box sx={{ flex: 1 }} />
+        )}
 
         {/* ── Zone 3: Actions (right) ── */}
         <Box
@@ -239,29 +244,31 @@ const Topbar = () => {
             ml: { xs: "auto", md: 0 },
           }}
         >
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => navigate("/tickets/new")}
-            sx={{
-              backgroundColor: "#F4C63D",
-              color: "#211B5A",
-              fontWeight: 700,
-              textTransform: "none",
-              borderRadius: "8px",
-              fontSize: 15,
-              px: 2,
-              py: 0.8,
-              boxShadow: "none",
-              whiteSpace: "nowrap",
-              "&:hover": {
-                backgroundColor: "#e0b22d",
+          {!isSuperAdmin && (
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => navigate("/tickets/new")}
+              sx={{
+                backgroundColor: "#F4C63D",
+                color: "#211B5A",
+                fontWeight: 700,
+                textTransform: "none",
+                borderRadius: "8px",
+                fontSize: 15,
+                px: 2,
+                py: 0.8,
                 boxShadow: "none",
-              },
-            }}
-          >
-            New ticket
-          </Button>
+                whiteSpace: "nowrap",
+                "&:hover": {
+                  backgroundColor: "#e0b22d",
+                  boxShadow: "none",
+                },
+              }}
+            >
+              New ticket
+            </Button>
+          )}
 
           {/* User Profile dropdown */}
           <Box
@@ -445,17 +452,21 @@ const Topbar = () => {
           }}
         >
           {[
-            {
-              label: "Tickets",
-              path: "/tickets",
-              icon: ConfirmationNumberOutlined,
-            },
-            {
-              label: "Reports",
-              path: "/reports",
-              disabled: true,
-              icon: InsertChartOutlined,
-            },
+            ...(!isSuperAdmin
+              ? [
+                  {
+                    label: "Tickets",
+                    path: "/tickets",
+                    icon: ConfirmationNumberOutlined,
+                  },
+                  {
+                    label: "Reports",
+                    path: "/reports",
+                    disabled: true,
+                    icon: InsertChartOutlined,
+                  },
+                ]
+              : []),
             ...(isAdmin
               ? [
                   {
