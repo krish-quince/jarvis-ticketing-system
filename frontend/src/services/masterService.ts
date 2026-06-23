@@ -105,29 +105,9 @@ export const getRoles = async () => {
   const response = await API.get("/master/roles");
   return unwrapData(response.data);
 };
-export const getDepartments = async (companyCode?: string) => {
-  const response = await API.get("/master/departments", {
-    params: companyCode ? { companyCode } : undefined,
-  });
-  return unwrapData(response.data);
-};
 
-export const createDepartment = async (payload: any) => {
-  const response = await API.post("/master/departments", payload);
-  return unwrapData(response.data);
-};
-
-export const updateDepartment = async (departmentId: number, payload: any, companyCode?: string) => {
-  const response = await API.patch(`/master/departments/${departmentId}`, payload, {
-    params: companyCode ? { companyCode } : undefined,
-  });
-  return unwrapData(response.data);
-};
-
-export const deleteDepartment = async (departmentId: number, companyCode?: string) => {
-  const response = await API.delete(`/master/departments/${departmentId}`, {
-    params: companyCode ? { companyCode } : undefined,
-  });
+export const getDepartments = async () => {
+  const response = await API.get("/master/departments");
   return unwrapData(response.data);
 };
 
@@ -195,4 +175,3 @@ export const updateCompanySettings = async (formData: FormData) => {
   });
   return unwrapData(response.data);
 };
-
