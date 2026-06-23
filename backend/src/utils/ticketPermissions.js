@@ -5,10 +5,16 @@ export const canAccessTicket = (ticket, user) => {
         return true;
     }
 
+    const allocatedList = ticket.allocated_to_user_code
+        ? ticket.allocated_to_user_code.split("|").map(c => c.trim())
+        : [];
+    const isAllocated = allocatedList.includes(user.userCode);
+
     return (
         ticket.assigned_to_user_code === user.userCode ||
         ticket.raised_by_user_code === user.userCode ||
-        Number(ticket.department_id) === (user.departmentId)
+        Number(ticket.department_id) === Number(user.departmentId) ||
+        isAllocated
     );
 };
 
@@ -19,5 +25,6 @@ export const canManageTicket = (ticket, user) => {
         return true;
     }
 
+    // Only creator and assigned user can chat / manage metadata
     return ticket.assigned_to_user_code === user.userCode || ticket.raised_by_user_code === user.userCode;
 };

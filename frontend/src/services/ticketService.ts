@@ -145,3 +145,17 @@ export const updateTicketCategory = async (
 
   return response.data;
 };
+
+export const allocateTicket = async (
+  id: number,
+  allocatedToUserCode: string
+) => {
+  const response = await API.patch(
+    `/tickets/${id}/allocate`,
+    {
+      allocated_to_user_code: allocatedToUserCode,
+    }
+  );
+
+  return response.data;
+};

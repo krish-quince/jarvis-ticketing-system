@@ -105,42 +105,44 @@ export const createTicket = async (ticketData, user, files = []) => {
       const routingUser = subCategory.assigned_user_code;
 
       if (routingUser) {
-        const routingUserResult = await pool.query(
-          `
-          SELECT department_id
-          FROM users
-          WHERE user_code = $1
-          AND company_code = $2
-          `,
-          [routingUser, user.companyCode],
-        );
+        const routingUsers = routingUser
+          .split("|")
+          .map((u) => u.trim())
+          .filter(Boolean);
 
-        const departmentId = routingUserResult.rows[0]?.department_id;
+        if (routingUsers.length > 0) {
+          const randomIndex = Math.floor(Math.random() * routingUsers.length);
+          assigned_to_user_code = routingUsers[randomIndex];
 
-        if (departmentId) {
-          const departmentUsers = await pool.query(
-            `
-            SELECT user_code
-            FROM users
-            WHERE department_id = $1
-            AND company_code = $2
-            AND is_active = true
-            `,
-            [departmentId, user.companyCode],
+          // Allocate to all of them (excluding the assigned one)
+          const allocatedList = routingUsers.filter(
+            (code) => code !== assigned_to_user_code,
           );
-
-          const users = departmentUsers.rows;
-
-          if (users.length > 0) {
-            const randomIndex = Math.floor(Math.random() * users.length);
-
-            assigned_to_user_code = users[randomIndex].user_code;
+          if (allocatedList.length > 0) {
+            ticketData.allocated_to_user_code = allocatedList.join("|");
           }
         }
       }
     }
   }
 
+  let allocated_to_user_code = ticketData.allocated_to_user_code || null;
+
+  // Let's validate allocated users if provided
+  if (allocated_to_user_code) {
+    const allocatedCodes = allocated_to_user_code.split("|").map(c => c.trim()).filter(Boolean);
+    for (const code of allocatedCodes) {
+      const userRes = await pool.query(
+        "SELECT user_code FROM users WHERE user_code = $1 AND company_code = $2 AND is_active = true",
+        [code, user.companyCode]
+      );
+      if (userRes.rows.length === 0) {
+        throw new Error(`Allocated user "${code}" not found or inactive.`);
+      }
+    }
+  }
+
+  // If manual assign_to is provided, validate it belongs to the assignable pool
   if (assigned_to_user_code) {
     const assignableUsers = await masterRepository.getAssignableUsers(
       {
@@ -160,6 +162,15 @@ export const createTicket = async (ticketData, user, files = []) => {
         "Assigned user must belong to the ticket category or department.",
       );
     }
+  } else {
+    // If no assigned user is selected, check if we have allocated users
+    if (allocated_to_user_code) {
+      const allocatedCodes = allocated_to_user_code.split("|").map(c => c.trim()).filter(Boolean);
+      if (allocatedCodes.length > 0) {
+        // Ticket can be assigned to only 1 person at a time (e.g. the first one in allocated list)
+        assigned_to_user_code = allocatedCodes[0];
+      }
+    }
   }
 
   const payload = {
@@ -173,6 +184,7 @@ export const createTicket = async (ticketData, user, files = []) => {
     status_id,
 
     assigned_to_user_code,
+    allocated_to_user_code,
     
     due_date: ticketData.due_date || null,
 
@@ -347,17 +359,18 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
     throw new Error("Access denied. Only technicians can assign tickets.");
   }
 
-  const codes = assignedToUserCode.split("|");
-  for (const code of codes) {
-    if (!code.trim()) continue;
-    const assignee = await ticketRepository.getUserByCodeAndCompany(
-      code.trim(),
-      user.companyCode,
-    );
+  // A ticket can be assigned to only 1 person at a time
+  if (assignedToUserCode.includes("|")) {
+    throw new Error("A ticket can be assigned to only 1 person at a time.");
+  }
 
-    if (!assignee) {
-      throw new Error(`Assigned user "${code}" not found.`);
-    }
+  const assignee = await ticketRepository.getUserByCodeAndCompany(
+    assignedToUserCode.trim(),
+    user.companyCode,
+  );
+
+  if (!assignee) {
+    throw new Error(`Assigned user "${assignedToUserCode}" not found.`);
   }
 
   const oldValue = ticket.assigned_to_user_code ?? "";
@@ -383,6 +396,81 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
       "AssignedTo",
       String(oldValue),
       String(assignedToUserCode),
+      user.userCode,
+      client,
+    );
+
+    await client.query("COMMIT");
+
+    return updatedTicket;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+export const updateTicketAllocated = async (ticketId, allocatedToUserCode, user) => {
+  const ticket = await ticketRepository.getTicketById(
+    ticketId,
+    user.companyCode,
+  );
+
+  if (!ticket) {
+    throw new Error("Ticket not found.");
+  }
+
+  if(ticket.status_name == "Closed") {
+    throw new Error("Can't update closed ticket.");
+  }
+
+  // Check Read Access
+  if (!canAccessTicket(ticket, user)) {
+    throw new Error("Access denied to this ticket.");
+  }
+
+  // Check Assign/Allocate Permission
+  if (!canManageTicket(ticket, user)) {
+    throw new Error("Access denied. Only technicians can allocate tickets.");
+  }
+
+  if (allocatedToUserCode) {
+    const codes = allocatedToUserCode.split("|").map(c => c.trim()).filter(Boolean);
+    for (const code of codes) {
+      const dbUser = await ticketRepository.getUserByCodeAndCompany(
+        code,
+        user.companyCode,
+      );
+      if (!dbUser) {
+        throw new Error(`Allocated user "${code}" not found.`);
+      }
+    }
+  }
+
+  const oldValue = ticket.allocated_to_user_code ?? "";
+
+  if (String(oldValue) === String(allocatedToUserCode)) {
+    return ticket;
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const updatedTicket = await ticketRepository.updateTicketAllocated(
+      ticketId,
+      allocatedToUserCode,
+      user.companyCode,
+      client,
+    );
+
+    await historyService.createHistory(
+      ticketId,
+      "Allocations",
+      String(oldValue),
+      String(allocatedToUserCode),
       user.userCode,
       client,
     );
@@ -675,29 +763,61 @@ export const takeoverTicket = async (ticketId, user) => {
     throw new Error("Access denied to this ticket.");
   }
 
-  const oldValue = ticket.assigned_to_user_code ?? "";
+  // Validate that the takeover user is in the allocated list (or they are superadmin/admin)
+  const isTechnicianAdmin = [1, 4].includes(Number(user.roleId));
+  const allocatedList = ticket.allocated_to_user_code
+    ? ticket.allocated_to_user_code.split("|").map(c => c.trim()).filter(Boolean)
+    : [];
+  const isAllocated = allocatedList.includes(user.userCode);
 
-  if (oldValue === user.userCode) {
+  if (!isAllocated && !isTechnicianAdmin) {
+    throw new Error("Only allocated people can takeover this ticket.");
+  }
+
+  const previousAssignee = ticket.assigned_to_user_code ?? "";
+
+  if (previousAssignee === user.userCode) {
     return ticket;
   }
+
+  // Shift previous assignee to allocated list, and set user as assigned
+  let nextAllocatedList = [...allocatedList];
+  if (previousAssignee && !nextAllocatedList.includes(previousAssignee)) {
+    nextAllocatedList.push(previousAssignee);
+  }
+  // Remove the taker-over from the allocated list since they are now assigned
+  nextAllocatedList = nextAllocatedList.filter(code => code !== user.userCode);
+
+  const nextAllocatedString = nextAllocatedList.join("|") || null;
 
   const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
 
-    const updatedTicket = await ticketRepository.updateTicketAssignee(
+    const updatedTicket = await ticketRepository.updateTicketAssignAndAllocate(
       ticketId,
       user.userCode,
+      nextAllocatedString,
       user.companyCode,
+      client,
+    );
+
+    // Create history logs
+    await historyService.createHistory(
+      ticketId,
+      "Takeover",
+      String(previousAssignee),
+      String(user.userCode),
+      user.userCode,
       client,
     );
 
     await historyService.createHistory(
       ticketId,
-      "Takeover",
-      String(oldValue),
-      String(user.userCode),
+      "Allocations",
+      String(ticket.allocated_to_user_code ?? ""),
+      String(nextAllocatedString ?? ""),
       user.userCode,
       client,
     );

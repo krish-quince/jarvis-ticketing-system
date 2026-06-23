@@ -1664,3 +1664,10 @@ BEGIN
     SELECT unnest(string_to_array(itemlist, delimiter_char))::character varying;
 END;
 $$;
+
+ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS allocated_to_user_code character varying(1000);
+ALTER TABLE public.ticket_subcategories ALTER COLUMN assigned_user_code TYPE character varying(1000);
+ALTER TABLE public.ticket_subcategories DROP CONSTRAINT IF EXISTS fk_subcategory_assignee;
+
+
+

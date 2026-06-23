@@ -54,6 +54,8 @@ type Ticket = {
   raised_by_user_code?: string;
   assigned_to_user_code?: string | null;
   assigned_to_name?: string | null;
+  allocated_to_user_code?: string | null;
+  allocated_to_name?: string | null;
   subcategory_name?: string | null;
   due_date?: string | null;
   created_at?: string | null;
@@ -83,8 +85,8 @@ const TicketsPage = () => {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedParents, setExpandedParents] = useState<Set<string>>(
-    new Set(["Technical"]),
+  const [collapsedParents, setCollapsedParents] = useState<Set<string>>(
+    new Set(),
   );
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
   const [searchParams] = useSearchParams();
@@ -239,7 +241,7 @@ const TicketsPage = () => {
     Object.keys(catToSubs).sort().forEach((catName) => {
       const hasSubs = catToSubs[catName].size > 0;
       tree.push({ label: catName, indent: 0, isParent: hasSubs });
-      if (hasSubs && expandedParents.has(catName)) {
+      if (hasSubs && !collapsedParents.has(catName)) {
         Array.from(catToSubs[catName]).sort().forEach((subName) => {
           tree.push({ label: subName, indent: 1, isParent: false });
         });
@@ -252,7 +254,7 @@ const TicketsPage = () => {
   const categoryTree = buildCategoryTree();
 
   const toggleParent = (label: string) => {
-    setExpandedParents((prev) => {
+    setCollapsedParents((prev) => {
       const next = new Set(prev);
       if (next.has(label)) next.delete(label);
       else next.add(label);
@@ -683,7 +685,7 @@ const TicketsPage = () => {
         >
           {categoryTree.map((cat) => {
             const isSelected = selectedCategory === cat.label;
-            const isExpanded = expandedParents.has(cat.label);
+            const isExpanded = !collapsedParents.has(cat.label);
 
             return (
               <Box

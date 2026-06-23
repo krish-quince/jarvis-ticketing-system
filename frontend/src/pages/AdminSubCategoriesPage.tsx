@@ -104,7 +104,7 @@ const AdminSubCategoriesPage = () => {
         {
           key: "assigned_user_code",
           label: "Routing assignee",
-          type: "select",
+          type: "multiselect",
           options: userOptions,
         },
       ]}
