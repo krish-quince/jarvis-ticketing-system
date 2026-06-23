@@ -247,7 +247,7 @@ Route Request ──► Middleware (Auth/Role/Validate) ──► Controller ─
 The frontend is a single-page React app that utilizes Material-UI (MUI).
 
 ### Key Pages:
-*   **Login / Registration**: Located at `/` (uses `LoginCard.tsx`).
+*   **Login / Registration**: Located at `/` (uses `LoginPage.tsx`).
     *   *Login*: Auths username/password. Saves token and user object in local storage.
     *   *Registration*: Allows selecting company (`Quince Capital` or `Alpha TNG`) and dynamically filters the available departments based on that selection to prevent invalid registrations.
 *   **Dashboard**: Located at `/dashboard`. Shows ticket statistics, statuses, priority distributions, and categories scoped to the logged-in user's tenant.
@@ -342,14 +342,14 @@ You can test the multi-tenant system by logging in with the following default ac
     INSERT INTO companies (company_code, company_name) VALUES ('NEWCO', 'New Company Corp');
     ```
 2.  Duplicate/seed default categories, subcategories, priorities, and statuses for this new company in the database so that users of this company have configurations to choose from (similar to the logic in `migration.sql`).
-3.  Add the new company mapping to the `COMPANIES` list in `frontend/src/components/LoginCard.tsx` so users can choose it during registration.
+3.  Add the new company mapping to the `COMPANIES` list in `frontend/src/pages/LoginPage.tsx` so users can choose it during registration.
 
 ### Adding a New Department:
 1.  Insert a record into the `departments` table specifying the `company_code` it belongs to:
     ```sql
     INSERT INTO departments (department_name, company_code) VALUES ('Quality Assurance', 'QC');
     ```
-2.  Add it to the static registration dictionary in `LoginCard.tsx` if you want new users to register under this department. It will automatically flow to user lists and ticketholder lists when queried from the database.
+2.  Add it to the static registration dictionary in `LoginPage.tsx` if you want new users to register under this department. It will automatically flow to user lists and ticketholder lists when queried from the database.
 
 ### Modifying Schema Rules:
 When introducing any new database column to ticket configuration entities (like categories, subcategories, priorities, etc.), remember to **always include a `company_code` column** and set up foreign key constraints pointing to `companies(company_code)`. This ensures that SaaS tenant scoping is enforced.
