@@ -53,6 +53,8 @@ type Ticket = {
   status_name?: string;
   raised_by_user_code?: string;
   assigned_to_user_code?: string | null;
+  assigned_to_name?: string | null;
+  subcategory_name?: string | null;
   due_date?: string | null;
   created_at?: string | null;
   update_timestamp?: string | null;
@@ -218,32 +220,29 @@ const TicketsPage = () => {
     const tree: CategoryTreeItem[] = [
       { label: "All categories", indent: 0, isParent: false },
     ];
-    const parentToChildren: Record<string, Set<string>> = {};
-    const topLevelOnly = new Set<string>();
+    // Map: Category Name -> Set of Subcategory Names
+    const catToSubs: Record<string, Set<string>> = {};
 
     tickets.forEach((ticket) => {
-      const parent = ticket.parent_category_name || null;
-      const child = ticket.category_name || null;
-      if (parent && child) {
-        if (!parentToChildren[parent]) parentToChildren[parent] = new Set();
-        parentToChildren[parent].add(child);
-      } else if (child) {
-        topLevelOnly.add(child);
+      const cat = ticket.category_name || null;
+      const sub = ticket.subcategory_name || null;
+      if (cat) {
+        if (!catToSubs[cat]) {
+          catToSubs[cat] = new Set();
+        }
+        if (sub) {
+          catToSubs[cat].add(sub);
+        }
       }
     });
 
-    Object.keys(parentToChildren).forEach((parentName) => {
-      tree.push({ label: parentName, indent: 0, isParent: true });
-      if (expandedParents.has(parentName)) {
-        parentToChildren[parentName].forEach((child) => {
-          tree.push({ label: child, indent: 1, isParent: false });
+    Object.keys(catToSubs).sort().forEach((catName) => {
+      const hasSubs = catToSubs[catName].size > 0;
+      tree.push({ label: catName, indent: 0, isParent: hasSubs });
+      if (hasSubs && expandedParents.has(catName)) {
+        Array.from(catToSubs[catName]).sort().forEach((subName) => {
+          tree.push({ label: subName, indent: 1, isParent: false });
         });
-      }
-    });
-
-    topLevelOnly.forEach((catName) => {
-      if (!parentToChildren[catName]) {
-        tree.push({ label: catName, indent: 0, isParent: false });
       }
     });
 
@@ -310,8 +309,7 @@ const TicketsPage = () => {
     if (selectedCategory === "All categories") return true;
     return (
       ticket.category_name?.toLowerCase() === selectedCategory.toLowerCase() ||
-      ticket.parent_category_name?.toLowerCase() ===
-        selectedCategory.toLowerCase()
+      ticket.subcategory_name?.toLowerCase() === selectedCategory.toLowerCase()
     );
   };
 
@@ -321,12 +319,12 @@ const TicketsPage = () => {
 
   const lastSelectedTicketId = selectedTickets[selectedTickets.length - 1];
 
-  const getCategoryCount = (catName: string) => {
-    if (catName === "All categories") return tickets.length;
+  const getCategoryCount = (name: string) => {
+    if (name === "All categories") return tickets.length;
     return tickets.filter(
       (t) =>
-        t.category_name?.toLowerCase() === catName.toLowerCase() ||
-        t.parent_category_name?.toLowerCase() === catName.toLowerCase(),
+        t.category_name?.toLowerCase() === name.toLowerCase() ||
+        t.subcategory_name?.toLowerCase() === name.toLowerCase(),
     ).length;
   };
 
@@ -1038,7 +1036,15 @@ const TicketsPage = () => {
                             backgroundColor: "inherit",
                           }}
                         >
-                          {ticket.assigned_to_user_code || (
+                          {ticket.assigned_to_name ? (
+                            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                              {ticket.assigned_to_name.split(", ").map((name, i) => (
+                                <Box key={i} component="span" sx={{ whiteSpace: "nowrap" }}>
+                                  {name}
+                                </Box>
+                              ))}
+                            </Box>
+                          ) : (
                             <Box
                               component="span"
                               sx={{
