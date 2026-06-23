@@ -111,7 +111,7 @@ const TicketDetailPage = () => {
   const [editingCategory, setEditingCategory] = useState(false);
   const [selectedCategoryValue, setSelectedCategoryValue] = useState("");
   const [editingAssignee, setEditingAssignee] = useState(false);
-  const [selectedAssigneeValue, setSelectedAssigneeValue] = useState("");
+  const [selectedAssigneeValue, setSelectedAssigneeValue] = useState<string[]>([]);
   const [replyHtml, setReplyHtml] = useState("");
   const [replyComposerOpen, setReplyComposerOpen] = useState(false);
   const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
@@ -551,7 +551,7 @@ const TicketDetailPage = () => {
       });
       await fetchData();
       setEditingAssignee(false);
-      setSelectedAssigneeValue("");
+      setSelectedAssigneeValue([]);
     } catch (error: any) {
       console.error(error);
       setToast({
@@ -566,7 +566,7 @@ const TicketDetailPage = () => {
 
   const handleAssigneeEditStart = async () => {
     if (!canManageTicketMetadata()) return;
-    setSelectedAssigneeValue(ticket.assigned_to_user_code || "");
+    setSelectedAssigneeValue(ticket.assigned_to_user_code ? ticket.assigned_to_user_code.split("|") : []);
     setEditingAssignee(true);
     if (users.length === 0) {
       try {
@@ -585,16 +585,14 @@ const TicketDetailPage = () => {
 
   const handleAssigneeEditCancel = () => {
     setEditingAssignee(false);
-    setSelectedAssigneeValue("");
+    setSelectedAssigneeValue([]);
   };
 
-  const handleAssigneeSelectChange = (event: SelectChangeEvent<string>) => {
-    setSelectedAssigneeValue(event.target.value);
-  };
+  
 
   const handleAssigneeSave = async () => {
-    if (!selectedAssigneeValue) return;
-    await handleAssigneeChange(selectedAssigneeValue);
+    if (selectedAssigneeValue.length === 0) return;
+    await handleAssigneeChange(selectedAssigneeValue.join("|"));
   };
 
   if (loading) {
@@ -2317,17 +2315,29 @@ const TicketDetailPage = () => {
                     }}
                   >
                     <Select
+                      multiple
                       size="small"
                       value={selectedAssigneeValue}
-                      onChange={handleAssigneeSelectChange}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedAssigneeValue(typeof val === "string" ? val.split(",") : val);
+                      }}
                       displayEmpty
                       disabled={updatingMetadata}
                       sx={inlineEditControlSx}
                       MenuProps={inlineMenuProps}
+                      renderValue={(selected) => {
+                        if (!selected || selected.length === 0) {
+                          return <span style={{ color: "var(--text-secondary)" }}>Select assignee</span>;
+                        }
+                        return selected
+                          .map((code) => {
+                            const u = users.find((user) => user.user_code === code);
+                            return u ? `${u.first_name} ${u.last_name}` : code;
+                          })
+                          .join(", ");
+                      }}
                     >
-                      <MenuItem value="" disabled>
-                        Select assignee
-                      </MenuItem>
                       {users.map((u) => (
                         <MenuItem key={u.user_code} value={u.user_code}>
                           {u.first_name} {u.last_name} ({u.user_code})
@@ -2337,7 +2347,7 @@ const TicketDetailPage = () => {
                     <IconButton
                       size="small"
                       onClick={handleAssigneeSave}
-                      disabled={!selectedAssigneeValue || updatingMetadata}
+                      disabled={selectedAssigneeValue.length === 0 || updatingMetadata}
                       sx={inlineSaveButtonSx}
                     >
                       <CheckIcon sx={{ fontSize: 18 }} />
@@ -2363,7 +2373,7 @@ const TicketDetailPage = () => {
                         cursor: canEditRightCard ? "pointer" : "default",
                       }}
                     >
-                      {ticket.assigned_to_user_code || "Unassigned"}
+                      {ticket.assigned_to_name || "Unassigned"}
                     </Typography>
                     {canEditRightCard && (
                       <IconButton

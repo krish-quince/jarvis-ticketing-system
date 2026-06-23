@@ -216,7 +216,7 @@ const DashboardPage = () => {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={ticket.category_name || "General"}
+                          label={(ticket as any).subcategory_name ? `${ticket.category_name} / ${(ticket as any).subcategory_name}` : (ticket.category_name || "General")}
                           size="small"
                           sx={{
                             backgroundColor: "#E2E8F0",

@@ -918,7 +918,7 @@ const TicketsPage = () => {
                               component="span"
                               sx={{ color: "var(--text-muted)", fontSize: 13 }}
                             >
-                              {ticket.category_name}
+                              {ticket.category_name}{(ticket as any).subcategory_name ? " / " + (ticket as any).subcategory_name : ""}
                             </Box>
                             <Box
                               component="span"
