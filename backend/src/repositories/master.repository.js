@@ -510,7 +510,12 @@ export const getAssignableUsers = async (
     }
 
     const routingUser = subCategoryResult.rows[0].assigned_user_code;
-    await addRoutingDepartment(routingUser);
+    if (routingUser) {
+      const usersList = routingUser.split("|").map(u => u.trim()).filter(Boolean);
+      for (const u of usersList) {
+        await addRoutingDepartment(u);
+      }
+    }
   }
 
   if (!subcategoryId && categoryId) {
@@ -518,7 +523,8 @@ export const getAssignableUsers = async (
       `
       SELECT DISTINCT u.department_id
       FROM ticket_subcategories sc
-      INNER JOIN users u ON u.user_code = sc.assigned_user_code
+      JOIN ReturnTable(sc.assigned_user_code, '|') rt ON true
+      INNER JOIN users u ON u.user_code = rt.Value
       WHERE sc.category_id = $1
       AND sc.is_active = true
       AND sc.company_code = $2

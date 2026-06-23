@@ -1,16 +1,66 @@
-import { Box, Snackbar, Alert } from "@mui/material";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-
-import Header from "../components/Header";
-import LoginCard from "../components/LoginCard";
-import Carousel from "../components/Carousel";
-
+import {
+  Box,
+  Button,
+  IconButton,
+  TextField,
+  Typography,
+  InputAdornment,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Checkbox,
+  FormControlLabel,
+  Link,
+  Snackbar,
+  Alert,
+} from "@mui/material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { login, register } from "../services/authService";
+
+const COMPANIES = [
+  { code: "QC", label: "Quince Capital" },
+  { code: "ATNG", label: "Alpha TNG" },
+];
+
+const DEPARTMENTS: Record<string, { id: number; label: string }[]> = {
+  QC: [
+    { id: 1, label: "Sales" },
+    { id: 2, label: "HR" },
+    { id: 3, label: "IT" },
+    { id: 4, label: "Finance" },
+  ],
+  ATNG: [
+    { id: 5, label: "Sales" },
+    { id: 6, label: "HR" },
+    { id: 7, label: "IT" },
+    { id: 8, label: "Finance" },
+  ],
+};
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"login" | "register">("login");
 
+  // Login inputs
+  const [loginIdentifier, setLoginIdentifier] = useState(""); // Can be email or user_code
+  const [loginPassword, setLoginPassword] = useState("");
+
+  // Registration inputs
+  const [regFirstName, setRegFirstName] = useState("");
+  const [regLastName, setRegLastName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regCompanyCode, setRegCompanyCode] = useState("");
+  const [regDepartmentId, setRegDepartmentId] = useState<number | "">("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{
     open: boolean;
     message: string;
@@ -25,131 +75,569 @@ const LoginPage = () => {
     setToast((prev) => ({ ...prev, open: false }));
   };
 
-  const handleLogin = async (loginData: {
-    user_code: string;
-    password: string;
-  }) => {
+  const handleTogglePassword = () => setShowPassword((prev) => !prev);
+
+  const validateEmail = (emailStr: string) => /\S+@\S+\.\S+/.test(emailStr);
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const tempErrors: Record<string, string> = {};
+    if (!loginIdentifier.trim()) {
+      tempErrors.loginIdentifier = "Username or email is required";
+    }
+    if (!loginPassword) {
+      tempErrors.loginPassword = "Password is required";
+    }
+
+    if (Object.keys(tempErrors).length > 0) {
+      setErrors(tempErrors);
+      return;
+    }
+
+    setErrors({});
     try {
-      const data: any = await login(loginData.user_code, loginData.password);
-
+      // Backend auth controller handles either user_code or email
+      const data: any = await login(loginIdentifier.trim(), loginPassword);
       localStorage.setItem("token", data.token);
-
       localStorage.setItem("user", JSON.stringify(data.user));
-
-      console.log("Login Success:", data);
-
       navigate("/tickets");
     } catch (error) {
       console.error(error);
       setToast({
         open: true,
-        message: "Invalid Email or Password",
+        message: "Invalid Username/Email or Password",
         severity: "error",
       });
     }
   };
 
-  const handleRegister = async (userData: {
-    first_name: string;
-    last_name: string;
-    email: string;
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const tempErrors: Record<string, string> = {};
+    if (!regFirstName.trim()) tempErrors.firstName = "First name is required";
+    if (!regLastName.trim()) tempErrors.lastName = "Last name is required";
+    if (!regEmail.trim()) {
+      tempErrors.email = "Email is required";
+    } else if (!validateEmail(regEmail)) {
+      tempErrors.email = "Please enter a valid email";
+    }
+    if (!regCompanyCode) tempErrors.companyCode = "Company is required";
+    if (!regDepartmentId) tempErrors.departmentId = "Department is required";
+    if (!regPassword) {
+      tempErrors.password = "Password is required";
+    } else if (regPassword.length < 6) {
+      tempErrors.password = "Password must be at least 6 characters";
+    }
+    if (regPassword !== regConfirmPassword) {
+      tempErrors.confirmPassword = "Passwords do not match";
+    }
 
-    company_code: string;
-    department_id: number;
-    role_id: number;
+    if (Object.keys(tempErrors).length > 0) {
+      setErrors(tempErrors);
+      return;
+    }
 
-    password?: string;
-  }) => {
+    setErrors({});
     try {
-      const clean = (value: string) =>
-        value
+      const cleanName = (val: string) =>
+        val
           .trim()
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "_")
           .replace(/^_+|_+$/g, "");
-      const userCode = [
-        userData.company_code.toUpperCase(),
+      const generatedCode = [
+        regCompanyCode.toUpperCase(),
         "employee",
-        clean(`${userData.first_name} ${userData.last_name}`),
+        cleanName(`${regFirstName} ${regLastName}`),
       ].filter(Boolean).join("_");
 
-      // Call backend auth/register mapping standard required DB fields
-      const result = await register({
-        company_code: userData.company_code,
-
-        role_id: userData.role_id,
-
-        user_code: userCode,
-
-        first_name: userData.first_name,
-
-        last_name: userData.last_name,
-
-        email: userData.email,
-
-        password: userData.password || "abcd1234",
-
+      await register({
+        company_code: regCompanyCode,
+        role_id: 3, // Standard Employee role
+        user_code: generatedCode,
+        first_name: regFirstName,
+        last_name: regLastName,
+        email: regEmail,
+        password: regPassword,
         phone: "",
-
-        department_id: userData.department_id,
+        department_id: Number(regDepartmentId),
       });
 
       setToast({
         open: true,
-        message: `User ${result.user?.first_name || userData.first_name} registered successfully!`,
+        message: "Account created successfully! Please log in.",
         severity: "success",
       });
+      setMode("login");
+      setLoginIdentifier(regEmail);
+      setLoginPassword(regPassword);
     } catch (error: any) {
       console.error(error);
-      const errMsg =
-        error.response?.data?.message ||
-        "Registration failed. Please try again.";
       setToast({
         open: true,
-        message: errMsg,
+        message: error.response?.data?.message || "Registration failed. Try again.",
         severity: "error",
       });
-      throw new Error(errMsg);
     }
   };
+
+  const departmentsList = useMemo(() => {
+    if (!regCompanyCode) return [];
+    return DEPARTMENTS[regCompanyCode] || [];
+  }, [regCompanyCode]);
 
   return (
     <Box
       sx={{
         minHeight: "100vh",
-        backgroundColor: "#f5f5f5",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "linear-gradient(135deg, #0d0b27, #211b5a, #3b319c)",
+        p: 2,
       }}
     >
-      <Header />
-
       <Box
         sx={{
-          minHeight: "calc(100vh - 70px)",
+          width: "1100px",
+          maxWidth: "100%",
+          backgroundColor: "#fff",
+          borderRadius: "20px",
+          overflow: "hidden",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "space-evenly",
-          px: 4,
-
-          "@media (max-width:900px)": {
-            flexDirection: "column",
-            gap: 4,
-            py: 4,
-          },
+          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          flexDirection: { xs: "column", md: "row" },
         }}
       >
-        <LoginCard handleLogin={handleLogin} handleRegister={handleRegister} />
-
+        {/* Left Hero Panel */}
         <Box
           sx={{
-            width: 500,
-
-            "@media (max-width:900px)": {
-              width: "100%",
-              maxWidth: 450,
-            },
+            width: { xs: "100%", md: "45%" },
+            background: "linear-gradient(135deg, #211b5a, #3b319c)",
+            color: "#fff",
+            p: { xs: 4, md: 7 },
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
           }}
         >
-          <Carousel />
+          <Typography
+            variant="h1"
+            sx={{
+              fontSize: { xs: "32px", md: "42px" },
+              fontWeight: 700,
+              mb: 2,
+              lineHeight: 1.2,
+            }}
+          >
+            ServiceDesk Pro
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{
+              fontSize: "15px",
+              lineHeight: 1.8,
+              opacity: 0.9,
+              mb: 4,
+            }}
+          >
+            Enterprise Helpdesk & Service Management Platform for IT, HR, Operations, Finance and Business Support Teams.
+          </Typography>
+
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Typography variant="body2" sx={{ fontSize: "14px", fontWeight: 500 }}>✓ Incident & Ticket Management</Typography>
+            <Typography variant="body2" sx={{ fontSize: "14px", fontWeight: 500 }}>✓ SLA & Escalation Tracking</Typography>
+            <Typography variant="body2" sx={{ fontSize: "14px", fontWeight: 500 }}>✓ Asset Management</Typography>
+            <Typography variant="body2" sx={{ fontSize: "14px", fontWeight: 500 }}>✓ Knowledge Base</Typography>
+            <Typography variant="body2" sx={{ fontSize: "14px", fontWeight: 500 }}>✓ Workflow Automation</Typography>
+            <Typography variant="body2" sx={{ fontSize: "14px", fontWeight: 500 }}>✓ Audit Logs & Security</Typography>
+          </Box>
+        </Box>
+
+        {/* Right Form Panel */}
+        <Box
+          sx={{
+            width: { xs: "100%", md: "55%" },
+            p: { xs: 4, md: 6 },
+            backgroundColor: "#fff",
+          }}
+        >
+          {mode === "login" ? (
+            <Box component="form" onSubmit={handleLoginSubmit} noValidate>
+              <Typography
+                variant="h2"
+                sx={{
+                  color: "#211b5a",
+                  fontSize: "30px",
+                  fontWeight: 700,
+                  textAlign: "center",
+                  mb: 1,
+                }}
+              >
+                Welcome Back
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#64748b",
+                  textAlign: "center",
+                  mb: 4,
+                  fontSize: "14px",
+                }}
+              >
+                Sign in securely to access your dashboard
+              </Typography>
+
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+                <TextField
+                  fullWidth
+                  label="Username or Email Address"
+                  placeholder="name@company.com or userCode"
+                  value={loginIdentifier}
+                  onChange={(e) => setLoginIdentifier(e.target.value)}
+                  error={!!errors.loginIdentifier}
+                  helperText={errors.loginIdentifier}
+                  size="small"
+                  slotProps={{
+                    htmlInput: { style: { padding: "12px 14px" } }
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  type={showPassword ? "text" : "password"}
+                  label="Password"
+                  placeholder="Enter Password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  error={!!errors.loginPassword}
+                  helperText={errors.loginPassword}
+                  size="small"
+                  slotProps={{
+                    htmlInput: { style: { padding: "12px 14px" } },
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={handleTogglePassword} edge="end" size="small">
+                            {showPassword ? <VisibilityOffIcon sx={{ fontSize: 18 }} /> : <VisibilityIcon sx={{ fontSize: 18 }} />}
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }
+                  }}
+                />
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mt: -0.5,
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        sx={{ color: "#dbe3ef", "&.Mui-checked": { color: "#211b5a" } }}
+                      />
+                    }
+                    label={<Typography sx={{ fontSize: "13px", color: "#334155" }}>Remember Me</Typography>}
+                  />
+                  <Link href="#" sx={{ fontSize: "13px", color: "#211b5a", textDecoration: "none", fontWeight: 500 }}>
+                    Forgot Password?
+                  </Link>
+                </Box>
+
+                <Button
+                  fullWidth
+                  type="submit"
+                  variant="contained"
+                  sx={{
+                    backgroundColor: "#211b5a",
+                    color: "#fff",
+                    fontWeight: 600,
+                    py: 1.5,
+                    textTransform: "none",
+                    borderRadius: "8px",
+                    "&:hover": { backgroundColor: "#3b319c" },
+                  }}
+                >
+                  Sign In
+                </Button>
+
+                {/* SSO Buttons */}
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    position: "relative",
+                    my: 1,
+                    color: "#94a3b8",
+                    fontSize: "13px",
+                    "&::before, &::after": {
+                      content: '""',
+                      position: "absolute",
+                      top: "50%",
+                      width: "42%",
+                      height: "1px",
+                      backgroundColor: "#e2e8f0",
+                    },
+                    "&::before": { left: 0 },
+                    "&::after": { right: 0 },
+                  }}
+                >
+                  OR
+                </Box>
+
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  sx={{
+                    py: 1.2,
+                    textTransform: "none",
+                    color: "#0078D4",
+                    borderColor: "#dbe3ef",
+                    borderRadius: "8px",
+                    fontWeight: 500,
+                    fontSize: "13px",
+                    backgroundColor: "#fff",
+                    "&:hover": { backgroundColor: "#f8fafc", borderColor: "#cbd5e1" },
+                  }}
+                >
+                  🪟 Sign in with Microsoft 365
+                </Button>
+
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  sx={{
+                    py: 1.2,
+                    textTransform: "none",
+                    color: "#DB4437",
+                    borderColor: "#dbe3ef",
+                    borderRadius: "8px",
+                    fontWeight: 500,
+                    fontSize: "13px",
+                    backgroundColor: "#fff",
+                    "&:hover": { backgroundColor: "#f8fafc", borderColor: "#cbd5e1" },
+                  }}
+                >
+                  🔵 Sign in with Google Workspace
+                </Button>
+
+                {/* 2FA Enabled Box */}
+                <Box
+                  sx={{
+                    backgroundColor: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    p: 2,
+                    mt: 1.5,
+                  }}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e293b", display: "flex", alignItems: "center", gap: 1, fontSize: "14px" }}>
+                    🔐 Multi-Factor Authentication Enabled
+                  </Typography>
+                  <Typography sx={{ color: "#64748b", fontSize: "12px", mt: 0.5, lineHeight: 1.5 }}>
+                    After successful login, users will be prompted to verify their identity using a secure authenticator application.
+                  </Typography>
+                  <Box sx={{ display: "flex", gap: 1, mt: 1.5 }}>
+                    <Box sx={{ backgroundColor: "#e0e7ff", color: "#211b5a", px: 1.5, py: 0.5, borderRadius: "20px", fontSize: "11px", fontWeight: 600 }}>
+                      Microsoft Authenticator
+                    </Box>
+                    <Box sx={{ backgroundColor: "#e0e7ff", color: "#211b5a", px: 1.5, py: 0.5, borderRadius: "20px", fontSize: "11px", fontWeight: 600 }}>
+                      Google Authenticator
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Box sx={{ textAlign: "center", mt: 1 }}>
+                  <Typography variant="body2" sx={{ fontSize: "13px", color: "#64748b" }}>
+                    Don't have an account?{" "}
+                    <Link
+                      component="button"
+                      type="button"
+                      onClick={() => {
+                        setMode("register");
+                        setErrors({});
+                      }}
+                      sx={{ color: "#211b5a", fontWeight: 600, textDecoration: "none", fontSize: "13px" }}
+                    >
+                      Sign Up
+                    </Link>
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          ) : (
+            <Box component="form" onSubmit={handleRegisterSubmit} noValidate>
+              <Typography
+                variant="h2"
+                sx={{
+                  color: "#211b5a",
+                  fontSize: "30px",
+                  fontWeight: 700,
+                  textAlign: "center",
+                  mb: 1,
+                }}
+              >
+                Create Account
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#64748b",
+                  textAlign: "center",
+                  mb: 4,
+                  fontSize: "14px",
+                }}
+              >
+                Register to get started with ServiceDesk Pro
+              </Typography>
+
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Box sx={{ display: "flex", gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="First Name"
+                    value={regFirstName}
+                    onChange={(e) => setRegFirstName(e.target.value)}
+                    error={!!errors.firstName}
+                    helperText={errors.firstName}
+                    size="small"
+                  />
+                  <TextField
+                    fullWidth
+                    label="Last Name"
+                    value={regLastName}
+                    onChange={(e) => setRegLastName(e.target.value)}
+                    error={!!errors.lastName}
+                    helperText={errors.lastName}
+                    size="small"
+                  />
+                </Box>
+
+                <TextField
+                  fullWidth
+                  label="Email Address"
+                  type="email"
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  error={!!errors.email}
+                  helperText={errors.email}
+                  size="small"
+                />
+
+                <Box sx={{ display: "flex", gap: 2 }}>
+                  <FormControl fullWidth size="small" error={!!errors.companyCode}>
+                    <InputLabel id="reg-company-label">Company</InputLabel>
+                    <Select
+                      labelId="reg-company-label"
+                      label="Company"
+                      value={regCompanyCode}
+                      onChange={(e) => {
+                        setRegCompanyCode(e.target.value);
+                        setRegDepartmentId("");
+                      }}
+                    >
+                      {COMPANIES.map((c) => (
+                        <MenuItem key={c.code} value={c.code}>
+                          {c.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <FormControl fullWidth size="small" error={!!errors.departmentId} disabled={!regCompanyCode}>
+                    <InputLabel id="reg-dept-label">Department</InputLabel>
+                    <Select
+                      labelId="reg-dept-label"
+                      label="Department"
+                      value={regDepartmentId}
+                      onChange={(e) => setRegDepartmentId(Number(e.target.value))}
+                    >
+                      {departmentsList.map((d) => (
+                        <MenuItem key={d.id} value={d.id}>
+                          {d.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                <Box sx={{ display: "flex", gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    type={showPassword ? "text" : "password"}
+                    label="Password"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    error={!!errors.password}
+                    helperText={errors.password}
+                    size="small"
+                  />
+                  <TextField
+                    fullWidth
+                    type={showPassword ? "text" : "password"}
+                    label="Confirm Password"
+                    value={regConfirmPassword}
+                    onChange={(e) => setRegConfirmPassword(e.target.value)}
+                    error={!!errors.confirmPassword}
+                    helperText={errors.confirmPassword}
+                    size="small"
+                  />
+                </Box>
+
+                <Button
+                  fullWidth
+                  type="submit"
+                  variant="contained"
+                  sx={{
+                    backgroundColor: "#211b5a",
+                    color: "#fff",
+                    fontWeight: 600,
+                    py: 1.5,
+                    mt: 1,
+                    textTransform: "none",
+                    borderRadius: "8px",
+                    "&:hover": { backgroundColor: "#3b319c" },
+                  }}
+                >
+                  Sign Up
+                </Button>
+
+                <Box sx={{ textAlign: "center", mt: 1 }}>
+                  <Typography variant="body2" sx={{ fontSize: "13px", color: "#64748b" }}>
+                    Already have an account?{" "}
+                    <Link
+                      component="button"
+                      type="button"
+                      onClick={() => {
+                        setMode("login");
+                        setErrors({});
+                      }}
+                      sx={{ color: "#211b5a", fontWeight: 600, textDecoration: "none", fontSize: "13px" }}
+                    >
+                      Sign In
+                    </Link>
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          )}
+
+          <Typography
+            sx={{
+              mt: 4,
+              textAlign: "center",
+              color: "#94a3b8",
+              fontSize: "12px",
+            }}
+          >
+            © 2026 ServiceDesk Pro | Secure Access • SSO • 2FA Enabled
+          </Typography>
         </Box>
       </Box>
 

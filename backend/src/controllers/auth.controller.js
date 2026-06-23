@@ -138,7 +138,7 @@ export const loginUser = async (req, res) => {
             FROM users u
             INNER JOIN roles r ON r.role_id = u.role_id
             ${companyJoin}
-            WHERE u.user_code = $1
+            WHERE u.user_code = $1 OR u.email = $1
             `,
       [user_code],
     );
