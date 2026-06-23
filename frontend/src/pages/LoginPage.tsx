@@ -96,7 +96,6 @@ const LoginPage = () => {
 
     setErrors({});
     try {
-      // Backend auth controller handles either user_code or email
       const data: any = await login(loginIdentifier.trim(), loginPassword);
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
@@ -153,7 +152,7 @@ const LoginPage = () => {
 
       await register({
         company_code: regCompanyCode,
-        role_id: 3, // Standard Employee role
+        role_id: 3,
         user_code: generatedCode,
         first_name: regFirstName,
         last_name: regLastName,
@@ -191,84 +190,77 @@ const LoginPage = () => {
       sx={{
         minHeight: "100vh",
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "linear-gradient(135deg, #0d0b27, #211b5a, #3b319c)",
-        p: 2,
+        flexDirection: { xs: "column", md: "row" },
+        backgroundColor: "#fff",
       }}
     >
+      {/* Left Panel: Hero Section */}
       <Box
         sx={{
-          width: "1100px",
-          maxWidth: "100%",
-          backgroundColor: "#fff",
-          borderRadius: "20px",
-          overflow: "hidden",
+          width: { xs: "100%", md: "45%" },
+          background: "linear-gradient(135deg, #1e40af, #2563eb)",
+          color: "#fff",
+          p: { xs: 5, md: 8, lg: 10 },
           display: "flex",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-          flexDirection: { xs: "column", md: "row" },
+          flexDirection: "column",
+          justifyContent: "center",
+          minHeight: { xs: "auto", md: "100vh" },
         }}
       >
-        {/* Left Hero Panel */}
-        <Box
+        <Typography
+          variant="h1"
           sx={{
-            width: { xs: "100%", md: "45%" },
-            background: "linear-gradient(135deg, #211b5a, #3b319c)",
-            color: "#fff",
-            p: { xs: 4, md: 7 },
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
+            fontSize: { xs: "34px", md: "44px", lg: "50px" },
+            fontWeight: 700,
+            mb: 2,
+            lineHeight: 1.2,
           }}
         >
-          <Typography
-            variant="h1"
-            sx={{
-              fontSize: { xs: "32px", md: "42px" },
-              fontWeight: 700,
-              mb: 2,
-              lineHeight: 1.2,
-            }}
-          >
-            ServiceDesk Pro
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              fontSize: "15px",
-              lineHeight: 1.8,
-              opacity: 0.9,
-              mb: 4,
-            }}
-          >
-            Enterprise Helpdesk & Service Management Platform for IT, HR, Operations, Finance and Business Support Teams.
-          </Typography>
+          ServiceDesk Pro
+        </Typography>
+        <Typography
+          variant="body1"
+          sx={{
+            fontSize: { xs: "15px", lg: "16px" },
+            lineHeight: 1.8,
+            opacity: 0.9,
+            mb: 4,
+          }}
+        >
+          Enterprise Helpdesk & Service Management Platform for IT, HR, Operations, Finance and Business Support Teams.
+        </Typography>
 
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <Typography variant="body2" sx={{ fontSize: "14px", fontWeight: 500 }}>✓ Incident & Ticket Management</Typography>
-            <Typography variant="body2" sx={{ fontSize: "14px", fontWeight: 500 }}>✓ SLA & Escalation Tracking</Typography>
-            <Typography variant="body2" sx={{ fontSize: "14px", fontWeight: 500 }}>✓ Asset Management</Typography>
-            <Typography variant="body2" sx={{ fontSize: "14px", fontWeight: 500 }}>✓ Knowledge Base</Typography>
-            <Typography variant="body2" sx={{ fontSize: "14px", fontWeight: 500 }}>✓ Workflow Automation</Typography>
-            <Typography variant="body2" sx={{ fontSize: "14px", fontWeight: 500 }}>✓ Audit Logs & Security</Typography>
-          </Box>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2.2 }}>
+          <Typography variant="body2" sx={{ fontSize: "15px", fontWeight: 500 }}>✓ Incident & Ticket Management</Typography>
+          <Typography variant="body2" sx={{ fontSize: "15px", fontWeight: 500 }}>✓ SLA & Escalation Tracking</Typography>
+          <Typography variant="body2" sx={{ fontSize: "15px", fontWeight: 500 }}>✓ Asset Management</Typography>
+          <Typography variant="body2" sx={{ fontSize: "15px", fontWeight: 500 }}>✓ Knowledge Base</Typography>
+          <Typography variant="body2" sx={{ fontSize: "15px", fontWeight: 500 }}>✓ Workflow Automation</Typography>
+          <Typography variant="body2" sx={{ fontSize: "15px", fontWeight: 500 }}>✓ Audit Logs & Security</Typography>
         </Box>
+      </Box>
 
-        {/* Right Form Panel */}
-        <Box
-          sx={{
-            width: { xs: "100%", md: "55%" },
-            p: { xs: 4, md: 6 },
-            backgroundColor: "#fff",
-          }}
-        >
+      {/* Right Panel: Interactive Form */}
+      <Box
+        sx={{
+          width: { xs: "100%", md: "55%" },
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          p: { xs: 4, md: 6, lg: 8 },
+          minHeight: { xs: "auto", md: "100vh" },
+          overflowY: "auto",
+        }}
+      >
+        <Box sx={{ width: "100%", maxWidth: "480px" }}>
           {mode === "login" ? (
             <Box component="form" onSubmit={handleLoginSubmit} noValidate>
               <Typography
                 variant="h2"
                 sx={{
-                  color: "#211b5a",
-                  fontSize: "30px",
+                  color: "#1e3a8a",
+                  fontSize: "36px",
                   fontWeight: 700,
                   textAlign: "center",
                   mb: 1,
@@ -281,8 +273,8 @@ const LoginPage = () => {
                 sx={{
                   color: "#64748b",
                   textAlign: "center",
-                  mb: 4,
-                  fontSize: "14px",
+                  mb: 4.5,
+                  fontSize: "15px",
                 }}
               >
                 Sign in securely to access your dashboard
@@ -341,12 +333,12 @@ const LoginPage = () => {
                         size="small"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
-                        sx={{ color: "#dbe3ef", "&.Mui-checked": { color: "#211b5a" } }}
+                        sx={{ color: "#dbe3ef", "&.Mui-checked": { color: "#2563eb" } }}
                       />
                     }
-                    label={<Typography sx={{ fontSize: "13px", color: "#334155" }}>Remember Me</Typography>}
+                    label={<Typography sx={{ fontSize: "14px", color: "#334155" }}>Remember Me</Typography>}
                   />
-                  <Link href="#" sx={{ fontSize: "13px", color: "#211b5a", textDecoration: "none", fontWeight: 500 }}>
+                  <Link href="#" sx={{ fontSize: "14px", color: "#2563eb", textDecoration: "none", fontWeight: 500 }}>
                     Forgot Password?
                   </Link>
                 </Box>
@@ -356,13 +348,14 @@ const LoginPage = () => {
                   type="submit"
                   variant="contained"
                   sx={{
-                    backgroundColor: "#211b5a",
+                    backgroundColor: "#2563eb",
                     color: "#fff",
                     fontWeight: 600,
-                    py: 1.5,
+                    py: 1.6,
                     textTransform: "none",
-                    borderRadius: "8px",
-                    "&:hover": { backgroundColor: "#3b319c" },
+                    borderRadius: "10px",
+                    fontSize: "15px",
+                    "&:hover": { backgroundColor: "#1d4ed8" },
                   }}
                 >
                   Sign In
@@ -373,9 +366,9 @@ const LoginPage = () => {
                   sx={{
                     textAlign: "center",
                     position: "relative",
-                    my: 1,
+                    my: 1.5,
                     color: "#94a3b8",
-                    fontSize: "13px",
+                    fontSize: "14px",
                     "&::before, &::after": {
                       content: '""',
                       position: "absolute",
@@ -395,13 +388,13 @@ const LoginPage = () => {
                   fullWidth
                   variant="outlined"
                   sx={{
-                    py: 1.2,
+                    py: 1.4,
                     textTransform: "none",
                     color: "#0078D4",
                     borderColor: "#dbe3ef",
-                    borderRadius: "8px",
+                    borderRadius: "10px",
                     fontWeight: 500,
-                    fontSize: "13px",
+                    fontSize: "14px",
                     backgroundColor: "#fff",
                     "&:hover": { backgroundColor: "#f8fafc", borderColor: "#cbd5e1" },
                   }}
@@ -413,13 +406,13 @@ const LoginPage = () => {
                   fullWidth
                   variant="outlined"
                   sx={{
-                    py: 1.2,
+                    py: 1.4,
                     textTransform: "none",
                     color: "#DB4437",
                     borderColor: "#dbe3ef",
-                    borderRadius: "8px",
+                    borderRadius: "10px",
                     fontWeight: 500,
-                    fontSize: "13px",
+                    fontSize: "14px",
                     backgroundColor: "#fff",
                     "&:hover": { backgroundColor: "#f8fafc", borderColor: "#cbd5e1" },
                   }}
@@ -433,28 +426,28 @@ const LoginPage = () => {
                     backgroundColor: "#f8fafc",
                     border: "1px solid #e2e8f0",
                     borderRadius: "12px",
-                    p: 2,
+                    p: 2.5,
                     mt: 1.5,
                   }}
                 >
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e293b", display: "flex", alignItems: "center", gap: 1, fontSize: "14px" }}>
                     🔐 Multi-Factor Authentication Enabled
                   </Typography>
-                  <Typography sx={{ color: "#64748b", fontSize: "12px", mt: 0.5, lineHeight: 1.5 }}>
+                  <Typography sx={{ color: "#64748b", fontSize: "13px", mt: 0.5, lineHeight: 1.6 }}>
                     After successful login, users will be prompted to verify their identity using a secure authenticator application.
                   </Typography>
-                  <Box sx={{ display: "flex", gap: 1, mt: 1.5 }}>
-                    <Box sx={{ backgroundColor: "#e0e7ff", color: "#211b5a", px: 1.5, py: 0.5, borderRadius: "20px", fontSize: "11px", fontWeight: 600 }}>
+                  <Box sx={{ display: "flex", gap: 1.2, mt: 2 }}>
+                    <Box sx={{ backgroundColor: "#e0e7ff", color: "#1e40af", px: 1.8, py: 0.6, borderRadius: "20px", fontSize: "12px", fontWeight: 600 }}>
                       Microsoft Authenticator
                     </Box>
-                    <Box sx={{ backgroundColor: "#e0e7ff", color: "#211b5a", px: 1.5, py: 0.5, borderRadius: "20px", fontSize: "11px", fontWeight: 600 }}>
+                    <Box sx={{ backgroundColor: "#e0e7ff", color: "#1e40af", px: 1.8, py: 0.6, borderRadius: "20px", fontSize: "12px", fontWeight: 600 }}>
                       Google Authenticator
                     </Box>
                   </Box>
                 </Box>
 
                 <Box sx={{ textAlign: "center", mt: 1 }}>
-                  <Typography variant="body2" sx={{ fontSize: "13px", color: "#64748b" }}>
+                  <Typography variant="body2" sx={{ fontSize: "14px", color: "#64748b" }}>
                     Don't have an account?{" "}
                     <Link
                       component="button"
@@ -463,7 +456,7 @@ const LoginPage = () => {
                         setMode("register");
                         setErrors({});
                       }}
-                      sx={{ color: "#211b5a", fontWeight: 600, textDecoration: "none", fontSize: "13px" }}
+                      sx={{ color: "#2563eb", fontWeight: 600, textDecoration: "none", fontSize: "14px" }}
                     >
                       Sign Up
                     </Link>
@@ -476,8 +469,8 @@ const LoginPage = () => {
               <Typography
                 variant="h2"
                 sx={{
-                  color: "#211b5a",
-                  fontSize: "30px",
+                  color: "#1e3a8a",
+                  fontSize: "36px",
                   fontWeight: 700,
                   textAlign: "center",
                   mb: 1,
@@ -490,8 +483,8 @@ const LoginPage = () => {
                 sx={{
                   color: "#64748b",
                   textAlign: "center",
-                  mb: 4,
-                  fontSize: "14px",
+                  mb: 4.5,
+                  fontSize: "15px",
                 }}
               >
                 Register to get started with ServiceDesk Pro
@@ -595,21 +588,22 @@ const LoginPage = () => {
                   type="submit"
                   variant="contained"
                   sx={{
-                    backgroundColor: "#211b5a",
+                    backgroundColor: "#2563eb",
                     color: "#fff",
                     fontWeight: 600,
-                    py: 1.5,
+                    py: 1.6,
                     mt: 1,
                     textTransform: "none",
-                    borderRadius: "8px",
-                    "&:hover": { backgroundColor: "#3b319c" },
+                    borderRadius: "10px",
+                    fontSize: "15px",
+                    "&:hover": { backgroundColor: "#1d4ed8" },
                   }}
                 >
                   Sign Up
                 </Button>
 
                 <Box sx={{ textAlign: "center", mt: 1 }}>
-                  <Typography variant="body2" sx={{ fontSize: "13px", color: "#64748b" }}>
+                  <Typography variant="body2" sx={{ fontSize: "14px", color: "#64748b" }}>
                     Already have an account?{" "}
                     <Link
                       component="button"
@@ -618,7 +612,7 @@ const LoginPage = () => {
                         setMode("login");
                         setErrors({});
                       }}
-                      sx={{ color: "#211b5a", fontWeight: 600, textDecoration: "none", fontSize: "13px" }}
+                      sx={{ color: "#2563eb", fontWeight: 600, textDecoration: "none", fontSize: "14px" }}
                     >
                       Sign In
                     </Link>
@@ -630,10 +624,10 @@ const LoginPage = () => {
 
           <Typography
             sx={{
-              mt: 4,
+              mt: 5,
               textAlign: "center",
               color: "#94a3b8",
-              fontSize: "12px",
+              fontSize: "13px",
             }}
           >
             © 2026 ServiceDesk Pro | Secure Access • SSO • 2FA Enabled
