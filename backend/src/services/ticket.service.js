@@ -63,18 +63,22 @@ export const createTicket = async (ticketData, user, files = []) => {
   }
 
   if (assigned_to_user_code) {
-    const assigneeResult = await pool.query(
-      `
-    SELECT user_code
-    FROM users
-    WHERE user_code = $1
-    AND company_code = $2
-    `,
-      [assigned_to_user_code, user.companyCode],
-    );
+    const assignees = assigned_to_user_code.split("|");
+    for (const code of assignees) {
+      if (!code.trim()) continue;
+      const assigneeResult = await pool.query(
+        `
+      SELECT user_code
+      FROM users
+      WHERE user_code = $1
+      AND company_code = $2
+      `,
+        [code.trim(), user.companyCode],
+      );
 
-    if (assigneeResult.rows.length === 0) {
-      throw new Error("Assigned user not found.");
+      if (assigneeResult.rows.length === 0) {
+        throw new Error(`Assigned user "${code}" not found.`);
+      }
     }
   }
 
@@ -343,13 +347,17 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
     throw new Error("Access denied. Only technicians can assign tickets.");
   }
 
-  const assignee = await ticketRepository.getUserByCodeAndCompany(
-    assignedToUserCode,
-    user.companyCode,
-  );
+  const codes = assignedToUserCode.split("|");
+  for (const code of codes) {
+    if (!code.trim()) continue;
+    const assignee = await ticketRepository.getUserByCodeAndCompany(
+      code.trim(),
+      user.companyCode,
+    );
 
-  if (!assignee) {
-    throw new Error("Assigned user not found.");
+    if (!assignee) {
+      throw new Error(`Assigned user "${code}" not found.`);
+    }
   }
 
   const oldValue = ticket.assigned_to_user_code ?? "";

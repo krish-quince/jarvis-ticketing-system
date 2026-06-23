@@ -1643,3 +1643,24 @@ ALTER TABLE ONLY public.users
 
 \unrestrict KRATJ1Nz8J0EaPDFPg5MKAdawIzLQNyfav1o14k8SWe6aRB3PX47EuuPcHsuMwq
 
+
+
+CREATE OR REPLACE FUNCTION public.returntable(itemlist text, delimiter_char text)
+RETURNS TABLE(value character varying)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT unnest(string_to_array(itemlist, delimiter_char))::character varying;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.ReturnTable(itemlist text, delimiter_char text)
+RETURNS TABLE(value character varying)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT unnest(string_to_array(itemlist, delimiter_char))::character varying;
+END;
+$$;

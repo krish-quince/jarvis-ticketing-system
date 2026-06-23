@@ -102,6 +102,11 @@ export const getAllTickets = async (
   let query = `
     SELECT
       t.*,
+      (
+        SELECT string_agg(u.first_name || ' ' || u.last_name, ', ')
+        FROM ReturnTable(t.assigned_to_user_code, '|') rt
+        JOIN users u ON u.user_code = rt.Value
+      ) AS assigned_to_name,
       s.status_name,
       s.status_color,
       c.category_name,
@@ -131,7 +136,7 @@ export const getAllTickets = async (
   if (!isAdminOrSuperAdmin) {
     query += `
       AND (
-        t.assigned_to_user_code = $${params.length + 1}
+        $${params.length + 1} IN (SELECT Value FROM ReturnTable(t.assigned_to_user_code, '|'))
         OR t.raised_by_user_code = $${params.length + 1}
       )
     `;
@@ -176,6 +181,24 @@ export const getTicketById = async (ticketId, companyCode) => {
         p.priority_color,
         s.status_name,
         s.status_color,
+        (
+          SELECT string_agg(u.first_name || ' ' || u.last_name, ', ')
+          FROM ReturnTable(t.assigned_to_user_code, '|') rt
+          JOIN users u ON u.user_code = rt.Value
+        ) AS assigned_to_name,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'user_code', u.user_code,
+                'name', u.first_name || ' ' || u.last_name
+              )
+            )
+            FROM ReturnTable(t.assigned_to_user_code, '|') rt
+            JOIN users u ON u.user_code = rt.Value
+          ),
+          '[]'::json
+        ) AS assigned_users,
         COALESCE(
           (
             SELECT json_agg(

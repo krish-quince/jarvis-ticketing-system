@@ -99,7 +99,7 @@ const NewTicketPage = () => {
   const [subcategoryId, setSubcategoryId] = useState("");
   const [priorityId, setPriorityId] = useState("");
 
-  const [assignTo, setAssignTo] = useState("");
+  const [assignTo, setAssignTo] = useState<string[]>([]);
   const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
 
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -201,11 +201,11 @@ const NewTicketPage = () => {
         subcategoryId: nextSubcategoryId || null,
       });
       setAssignableUsers(users || []);
-      setAssignTo("");
+      setAssignTo([]);
     } catch (error) {
       console.error(error);
       setAssignableUsers([]);
-      setAssignTo("");
+      setAssignTo([]);
     }
   };
 
@@ -253,7 +253,7 @@ const NewTicketPage = () => {
     setCategoryId("");
     setSubcategoryId("");
     setPriorityId("");
-    setAssignTo("");
+    setAssignTo([]);
     setAssignableUsers([]);
     setAttachments([]);
   };
@@ -290,7 +290,7 @@ const NewTicketPage = () => {
         category_id: Number(categoryId),
         subcategory_id: subcategoryId ? Number(subcategoryId) : null,
         priority_id: Number(priorityId),
-        assigned_to_user_code: assignTo || null,
+        assigned_to_user_code: assignTo.length > 0 ? assignTo.join("|") : null,
         due_date: dueDate || null,
         tags,
         is_recurring: recurring,
@@ -455,7 +455,7 @@ const NewTicketPage = () => {
       onClick={() => {
         setCategoryId("");
         setSubcategoryId("");
-        setAssignTo("");
+        setAssignTo([]);
         setAssignableUsers([]);
         closePopover();
       }}
@@ -677,23 +677,30 @@ const NewTicketPage = () => {
 
                 <FormControl sx={{ minWidth: 200 }}>
                   <Select
+                    multiple
                     value={assignTo}
                     displayEmpty
-                    onChange={(e) => setAssignTo(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setAssignTo(typeof val === "string" ? val.split(",") : val);
+                    }}
                     size="small"
-                    renderValue={(value) => {
-                      if (!value) {
+                    renderValue={(selected) => {
+                      if (!selected || selected.length === 0) {
                         return <span style={{ color: "var(--text-secondary)" }}>(Assigned to)</span>;
                       }
-                      const user = assignableUsers.find((u) => u.user_code === value);
-                      return user ? `${user.first_name} ${user.last_name}` : value;
+                      return selected
+                        .map((code) => {
+                          const user = assignableUsers.find((u) => u.user_code === code);
+                          return user ? `${user.first_name} ${user.last_name}` : code;
+                        })
+                        .join(", ");
                     }}
                     sx={{
                       background: "var(--bg-app)",
-                      color: assignTo ? "var(--text-h)" : "var(--text-secondary)",
+                      color: assignTo.length > 0 ? "var(--text-h)" : "var(--text-secondary)",
                     }}
                   >
-                    <MenuItem value="">Auto Assign</MenuItem>
                     {assignableUsers.map((user) => (
                       <MenuItem key={user.user_code} value={user.user_code}>
                         {user.first_name} {user.last_name}
