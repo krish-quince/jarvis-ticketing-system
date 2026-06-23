@@ -110,7 +110,7 @@ const AdminMasterManager = ({
     }
 
     loadItems();
-  }, [navigate, fetchItems]);
+  }, [navigate]);
 
   const resetDraft = () => {
     setEditingId(null);

@@ -32,17 +32,6 @@ const buildSections = (isSuperAdmin: boolean): Section[] => [
     title: "General settings",
     items: [
       {
-        icon: <PeopleOutlineOutlined sx={ICON_SX} />,
-        title: "Users",
-        description: "Users and their companies, roles and permissions.",
-        path: "/admin/users",
-      },
-      ...(isSuperAdmin ? [{
-        icon: <BusinessOutlined sx={ICON_SX} />,
-        title: "Companies",
-        description: "Manage companies, company codes, and company users.",
-        path: "/admin/companies",
-      }] : [{
         icon: <SettingsOutlined sx={ICON_SX} />,
         title: "General settings",
         description: "General application settings: colors, options, and more.",
@@ -53,10 +42,22 @@ const buildSections = (isSuperAdmin: boolean): Section[] => [
         title: "Email settings",
         description: "Email integration settings: notifications, inbound email, and more.",
         path: "/admin/email-settings",
-      }]),
+      },
+      {
+        icon: <PeopleOutlineOutlined sx={ICON_SX} />,
+        title: "Users",
+        description: "Users and their companies, roles and permissions.",
+        path: "/admin/users",
+      },
+      ...(isSuperAdmin ? [{
+        icon: <BusinessOutlined sx={ICON_SX} />,
+        title: "Companies",
+        description: "Manage companies, company codes, and company users.",
+        path: "/admin/companies",
+      }] : []),
     ],
   },
-  ...(!isSuperAdmin ? [{
+  {
     id: "tickets",
     title: "Tickets",
     items: [
@@ -86,7 +87,7 @@ const buildSections = (isSuperAdmin: boolean): Section[] => [
         path: "/admin/departments",
       },
     ],
-  }] : []),
+  },
 ];
 
 const AdminPage = () => {
