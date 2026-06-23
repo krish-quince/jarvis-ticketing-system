@@ -773,3 +773,57 @@ export const deleteDepartment = async (departmentId, companyCode) => {
   return result.rows[0];
 };
 
+export const getCompanySettings = async (companyCode) => {
+  const result = await pool.query(
+    `
+    SELECT company_code, company_name, logo_url, favicon_url, helpdesk_title, title_link
+    FROM companies
+    WHERE company_code = $1 AND is_deleted = false
+    `,
+    [companyCode]
+  );
+  return result.rows[0];
+};
+
+export const updateCompanySettings = async (companyCode, { logo_url, favicon_url, helpdesk_title, title_link }) => {
+  const fields = [];
+  const params = [];
+  let index = 1;
+
+  if (logo_url !== undefined) {
+    fields.push(`logo_url = $${index++}`);
+    params.push(logo_url);
+  }
+  if (favicon_url !== undefined) {
+    fields.push(`favicon_url = $${index++}`);
+    params.push(favicon_url);
+  }
+  if (helpdesk_title !== undefined) {
+    fields.push(`helpdesk_title = $${index++}`);
+    params.push(helpdesk_title);
+  }
+  if (title_link !== undefined) {
+    fields.push(`title_link = $${index++}`);
+    params.push(title_link);
+  }
+
+  if (fields.length === 0) {
+    return getCompanySettings(companyCode);
+  }
+
+  params.push(companyCode);
+  const result = await pool.query(
+    `
+    UPDATE companies
+    SET
+      ${fields.join(", ")},
+      update_timestamp = CURRENT_TIMESTAMP
+    WHERE company_code = $${index}
+    RETURNING company_code, company_name, logo_url, favicon_url, helpdesk_title, title_link
+    `,
+    params
+  );
+  return result.rows[0];
+};
+
+

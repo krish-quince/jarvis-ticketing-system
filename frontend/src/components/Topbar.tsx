@@ -23,7 +23,7 @@ import {
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getCompanies } from "../services/masterService";
+import { getCompanySettings } from "../services/masterService";
 
 const BACKEND_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace("/api", "");
 
@@ -48,19 +48,40 @@ const Topbar = () => {
     }
   })();
 
-  const [companyInfo, setCompanyInfo] = useState<{ company_name: string; logo_url?: string } | null>(null);
+  const [companyInfo, setCompanyInfo] = useState<{ company_name: string; logo_url?: string; favicon_url?: string; helpdesk_title?: string; title_link?: string } | null>(null);
 
-  useEffect(() => {
+  const updateFavicon = (faviconUrl?: string) => {
+    let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.getElementsByTagName("head")[0].appendChild(link);
+    }
+    link.href = faviconUrl ? getLogoUrl(faviconUrl) : "/favicon.ico";
+  };
+
+  const fetchAndSetSettings = () => {
     if (user.company_code) {
-      getCompanies()
-        .then((companies) => {
-          const myCompany = companies.find((c: any) => c.company_code === user.company_code);
-          if (myCompany) {
-            setCompanyInfo(myCompany);
+      getCompanySettings()
+        .then((settings) => {
+          if (settings) {
+            setCompanyInfo(settings);
+            if (settings.favicon_url) {
+              updateFavicon(settings.favicon_url);
+            }
           }
         })
         .catch(console.error);
     }
+  };
+
+  useEffect(() => {
+    fetchAndSetSettings();
+
+    window.addEventListener("company-settings-updated", fetchAndSetSettings);
+    return () => {
+      window.removeEventListener("company-settings-updated", fetchAndSetSettings);
+    };
   }, [user.company_code]);
 
   const userInitials =
@@ -111,7 +132,13 @@ const Topbar = () => {
             cursor: "pointer",
             flexShrink: 0,
           }}
-          onClick={() => navigate("/tickets")}
+          onClick={() => {
+            if (companyInfo?.title_link) {
+              window.open(companyInfo.title_link, "_blank", "noopener,noreferrer");
+            } else {
+              navigate("/tickets");
+            }
+          }}
         >
           {companyInfo?.logo_url ? (
             <Avatar
@@ -137,7 +164,7 @@ const Topbar = () => {
               whiteSpace: "nowrap",
             }}
           >
-            {companyInfo?.company_name || "Jarvis Helpdesk"}
+            {companyInfo?.helpdesk_title || companyInfo?.company_name || "Jarvis Helpdesk"}
           </Typography>
         </Box>
 

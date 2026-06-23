@@ -28,11 +28,14 @@ import {
   createDepartment,
   updateDepartment,
   deleteDepartment,
+  getCompanySettings,
+  updateCompanySettings,
 } from "../controllers/master.controller.js";
 
 import { verifyToken } from "../middleware/auth.middleware.js";
 import { requireAdmin, requireSuperAdmin } from "../middleware/role.middleware.js";
 import { uploadLogo } from "../middleware/logoUpload.middleware.js";
+import { uploadLogoAndFavicon } from "../middleware/logoFaviconUpload.middleware.js";
 
 const router = express.Router();
 const adminOnly = [verifyToken, requireAdmin];
@@ -76,5 +79,7 @@ router.patch("/companies/:companyCode", verifyToken, requireSuperAdmin, uploadLo
 router.delete("/companies/:companyCode", verifyToken, requireSuperAdmin, deleteCompany);
 router.post("/companies/:companyCode/restore", verifyToken, requireSuperAdmin, restoreCompany);
 
+router.get("/company-settings", ...adminOnly, getCompanySettings);
+router.patch("/company-settings", ...adminOnly, uploadLogoAndFavicon, updateCompanySettings);
 
 export default router;

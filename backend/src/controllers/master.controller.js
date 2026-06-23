@@ -640,3 +640,62 @@ export const deleteDepartment = async (req, res) => {
   }
 };
 
+export const getCompanySettings = async (req, res) => {
+  try {
+    const companyCode = req.user.companyCode;
+    const settings = await service.getCompanySettings(companyCode);
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: "Company settings not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      data: settings,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updateCompanySettings = async (req, res) => {
+  try {
+    const companyCode = req.user.companyCode;
+    const payload = {};
+    
+    if (req.files) {
+      if (req.files.logo && req.files.logo[0]) {
+        payload.logo_url = `/uploads/logos/${req.files.logo[0].filename}`;
+      }
+      if (req.files.favicon && req.files.favicon[0]) {
+        payload.favicon_url = `/uploads/logos/${req.files.favicon[0].filename}`;
+      }
+    }
+
+    if (req.body.helpdesk_title !== undefined) {
+      payload.helpdesk_title = req.body.helpdesk_title;
+    }
+    if (req.body.title_link !== undefined) {
+      payload.title_link = req.body.title_link;
+    }
+
+    const data = await service.updateCompanySettings(companyCode, payload);
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+

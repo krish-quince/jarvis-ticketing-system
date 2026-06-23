@@ -108,4 +108,13 @@ export const deleteDepartment = async (departmentId, companyCode) => {
   return repository.deleteDepartment(departmentId, companyCode);
 };
 
+export const getCompanySettings = async (companyCode) => {
+  return repository.getCompanySettings(companyCode);
+};
+
+export const updateCompanySettings = async (companyCode, payload) => {
+  return repository.updateCompanySettings(companyCode, payload);
+};
+
+
 
