@@ -20,6 +20,7 @@ export const createTicket = async (ticket, client = null) => {
 
     raised_by_user_code,
     assigned_to_user_code,
+    allocated_to_user_code,
 
     due_date,
 
@@ -30,9 +31,9 @@ export const createTicket = async (ticket, client = null) => {
     $1,$2,$3,$4,
     $5,$6,
     $7,$8,
-    $9,$10,
-    $11,
-    $12
+    $9,$10,$11,
+    $12,
+    $13
 )
         RETURNING *
         `,
@@ -50,6 +51,7 @@ export const createTicket = async (ticket, client = null) => {
 
       ticket.raisedByUserCode,
       ticket.assigned_to_user_code,
+      ticket.allocated_to_user_code,
 
       ticket.due_date,
 
@@ -107,6 +109,11 @@ export const getAllTickets = async (
         FROM ReturnTable(t.assigned_to_user_code, '|') rt
         JOIN users u ON u.user_code = rt.Value
       ) AS assigned_to_name,
+      (
+        SELECT string_agg(u.first_name || ' ' || u.last_name, ', ')
+        FROM ReturnTable(t.allocated_to_user_code, '|') rt
+        JOIN users u ON u.user_code = rt.Value
+      ) AS allocated_to_name,
       s.status_name,
       s.status_color,
       c.category_name,
@@ -137,6 +144,7 @@ export const getAllTickets = async (
     query += `
       AND (
         $${params.length + 1} IN (SELECT Value FROM ReturnTable(t.assigned_to_user_code, '|'))
+        OR $${params.length + 1} IN (SELECT Value FROM ReturnTable(t.allocated_to_user_code, '|'))
         OR t.raised_by_user_code = $${params.length + 1}
       )
     `;
@@ -186,6 +194,11 @@ export const getTicketById = async (ticketId, companyCode) => {
           FROM ReturnTable(t.assigned_to_user_code, '|') rt
           JOIN users u ON u.user_code = rt.Value
         ) AS assigned_to_name,
+        (
+          SELECT string_agg(u.first_name || ' ' || u.last_name, ', ')
+          FROM ReturnTable(t.allocated_to_user_code, '|') rt
+          JOIN users u ON u.user_code = rt.Value
+        ) AS allocated_to_name,
         COALESCE(
           (
             SELECT json_agg(
@@ -199,6 +212,19 @@ export const getTicketById = async (ticketId, companyCode) => {
           ),
           '[]'::json
         ) AS assigned_users,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'user_code', u.user_code,
+                'name', u.first_name || ' ' || u.last_name
+              )
+            )
+            FROM ReturnTable(t.allocated_to_user_code, '|') rt
+            JOIN users u ON u.user_code = rt.Value
+          ),
+          '[]'::json
+        ) AS allocated_users,
         COALESCE(
           (
             SELECT json_agg(
@@ -278,6 +304,47 @@ export const updateTicketAssignee = async (
             RETURNING *
         `,
     [assignedToUserCode, ticketId, companyCode],
+  );
+
+  return result.rows[0];
+};
+
+export const updateTicketAllocated = async (
+  ticketId,
+  allocatedToUserCode,
+  companyCode,
+  client = null,
+) => {
+  const db = client || pool;
+  const result = await db.query(
+    `
+            UPDATE tickets
+            SET allocated_to_user_code = $1, update_timestamp = CURRENT_TIMESTAMP
+            WHERE ticket_id = $2 AND company_code = $3
+            RETURNING *
+        `,
+    [allocatedToUserCode, ticketId, companyCode],
+  );
+
+  return result.rows[0];
+};
+
+export const updateTicketAssignAndAllocate = async (
+  ticketId,
+  assignedToUserCode,
+  allocatedToUserCode,
+  companyCode,
+  client = null,
+) => {
+  const db = client || pool;
+  const result = await db.query(
+    `
+            UPDATE tickets
+            SET assigned_to_user_code = $1, allocated_to_user_code = $2, update_timestamp = CURRENT_TIMESTAMP
+            WHERE ticket_id = $3 AND company_code = $4
+            RETURNING *
+        `,
+    [assignedToUserCode, allocatedToUserCode, ticketId, companyCode],
   );
 
   return result.rows[0];

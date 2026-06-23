@@ -36,7 +36,14 @@ const ProtectedRoute = () => {
 const GuestRoute = () => {
   const token = localStorage.getItem("token");
   if (token) {
-    return <Navigate to="/tickets" replace />;
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (Number(user.role_id) === 4) {
+        return <Navigate to="/admin" replace />;
+      }
+    } catch {
+      // ignore
+    }
   }
   return <Outlet />;
 };

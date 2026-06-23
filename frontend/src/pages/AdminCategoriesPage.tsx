@@ -7,9 +7,12 @@ import {
   Button,
   Chip,
   CircularProgress,
+  FormControl,
   IconButton,
+  InputLabel,
   MenuItem,
   Paper,
+  Select,
   Snackbar,
   TextField,
   Tooltip,
@@ -442,22 +445,29 @@ const AdminCategoriesPage = () => {
                   setSubcategoryDraft((prev) => ({ ...prev, subcategory_description: event.target.value }))
                 }
               />
-              <TextField
-                select
-                size="small"
-                label="Routing assignee"
-                value={subcategoryDraft.assigned_user_code}
-                onChange={(event) =>
-                  setSubcategoryDraft((prev) => ({ ...prev, assigned_user_code: event.target.value }))
-                }
-              >
-                <MenuItem value="">None</MenuItem>
-                {users.map((user) => (
-                  <MenuItem key={user.user_code} value={user.user_code}>
-                    {usersByCode[user.user_code]}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <FormControl size="small" fullWidth sx={{ mb: 1 }}>
+                <InputLabel id="routing-assignee-label">Routing assignee</InputLabel>
+                <Select
+                  labelId="routing-assignee-label"
+                  multiple
+                  label="Routing assignee"
+                  value={subcategoryDraft.assigned_user_code ? subcategoryDraft.assigned_user_code.split("|").filter(Boolean) : []}
+                  onChange={(event) => {
+                    const val = event.target.value;
+                    const joinedVal = Array.isArray(val) ? val.join("|") : val;
+                    setSubcategoryDraft((prev) => ({ ...prev, assigned_user_code: joinedVal }));
+                  }}
+                  renderValue={(selected) =>
+                    selected.map((code) => usersByCode[code] || code).join(", ")
+                  }
+                >
+                  {users.map((user) => (
+                    <MenuItem key={user.user_code} value={user.user_code}>
+                      {usersByCode[user.user_code]}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <Box sx={{ display: "flex", gap: 1 }}>
                 <Button
                   variant="contained"
@@ -489,7 +499,7 @@ const AdminCategoriesPage = () => {
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                 <Chip
                   size="small"
-                  label={subcategory.assigned_user_code ? usersByCode[subcategory.assigned_user_code] || subcategory.assigned_user_code : "Everyone"}
+                  label={subcategory.assigned_user_code ? subcategory.assigned_user_code.split("|").map(code => usersByCode[code] || code).join(", ") : "Everyone"}
                   sx={{ color: "#476282", backgroundColor: "rgba(71, 98, 130, 0.09)", fontWeight: 600 }}
                 />
                 <Tooltip title="Remove">
@@ -601,7 +611,7 @@ const AdminCategoriesPage = () => {
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                       <Chip
                         size="small"
-                        label={subcategory.assigned_user_code ? usersByCode[subcategory.assigned_user_code] || subcategory.assigned_user_code : "Everyone"}
+                        label={subcategory.assigned_user_code ? subcategory.assigned_user_code.split("|").map(code => usersByCode[code] || code).join(", ") : "Everyone"}
                         sx={{ color: "#476282", backgroundColor: "rgba(71, 98, 130, 0.09)", fontWeight: 600 }}
                       />
                       <ContentCopyOutlined sx={{ fontSize: 18, color: "var(--text-sub)" }} />

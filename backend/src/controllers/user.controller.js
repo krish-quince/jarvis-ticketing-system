@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import pool from "../config/db.js";
+import { sendWelcomeEmail } from "../services/email.service.js";
 
 export const getAllUsers = async (req, res) => {
     try {
@@ -283,6 +284,20 @@ export const createUser = async (req, res) => {
         finalDepartmentId,
       ],
     );
+
+    // Send welcome email with credentials in background
+    sendWelcomeEmail({
+      email,
+      user_code,
+      password, // Pass plain text temporary password
+      first_name: first_name || user_code,
+      last_name: last_name || null,
+      role_id,
+      company_code: finalCompanyCode,
+      department_id: finalDepartmentId
+    }).catch(err => {
+      console.error("Welcome email async trigger failed:", err);
+    });
 
     return res.status(201).json({
       success: true,

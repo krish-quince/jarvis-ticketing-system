@@ -43,6 +43,7 @@ import {
   updateTicketPriority,
   updateTicketCategory,
   assignTicket,
+  takeoverTicket,
   getComments,
   getTicketHistory,
   createComment,
@@ -112,6 +113,7 @@ const TicketDetailPage = () => {
   const [selectedCategoryValue, setSelectedCategoryValue] = useState("");
   const [editingAssignee, setEditingAssignee] = useState(false);
   const [selectedAssigneeValue, setSelectedAssigneeValue] = useState<string[]>([]);
+
   const [replyHtml, setReplyHtml] = useState("");
   const [replyComposerOpen, setReplyComposerOpen] = useState(false);
   const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
@@ -144,6 +146,22 @@ const TicketDetailPage = () => {
     isAdminOrDev ||
     ticketToCheck?.assigned_to_user_code === loggedInUserCode ||
     ticketToCheck?.raised_by_user_code === loggedInUserCode;
+
+  // Allocated people can only view, check if logged in user is in allocated list
+  const isAllocatedUser = () => {
+    if (!ticket || !ticket.allocated_to_user_code) return false;
+    const allocatedList = ticket.allocated_to_user_code
+      .split("|")
+      .map((c: string) => c.trim())
+      .filter(Boolean);
+    return allocatedList.includes(loggedInUserCode);
+  };
+
+  const isTakeoverAllowed = () => {
+    if (isClosed) return false;
+    if (ticket.assigned_to_user_code === loggedInUserCode) return false;
+    return isAdminOrDev || isAllocatedUser();
+  };
 
   useEffect(() => {
     fetchData();
@@ -364,7 +382,7 @@ const TicketDetailPage = () => {
   const handleTakeover = async () => {
     try {
       setUpdatingMetadata(true);
-      await assignTicket(ticketId, loggedInUser.user_code);
+      await takeoverTicket(ticketId);
       setToast({
         open: true,
         message: "Ticket assigned to you",
@@ -592,8 +610,10 @@ const TicketDetailPage = () => {
 
   const handleAssigneeSave = async () => {
     if (selectedAssigneeValue.length === 0) return;
-    await handleAssigneeChange(selectedAssigneeValue.join("|"));
+    await handleAssigneeChange(selectedAssigneeValue[0]);
   };
+
+
 
   if (loading) {
     return (
@@ -703,6 +723,19 @@ const TicketDetailPage = () => {
   const getUserDisplayName = (userCode?: string) => {
     if (!userCode) return "";
 
+    // Handle pipe-separated codes for Allocations lists
+    if (userCode.includes("|")) {
+      return userCode
+        .split("|")
+        .map(code => {
+          const u = users.find((user) => String(user.user_code) === String(code));
+          if (!u) return code;
+          const name = [u.first_name, u.last_name].filter(Boolean).join(" ");
+          return name ? `${name} (${u.user_code})` : u.user_code;
+        })
+        .join(", ");
+    }
+
     const matchingUser = users.find(
       (user) => String(user.user_code) === String(userCode),
     );
@@ -782,6 +815,10 @@ const TicketDetailPage = () => {
       case "assignedto":
       case "assignedtousercode":
       case "assignee":
+      case "takeover":
+      case "allocations":
+      case "allocatedto":
+      case "allocatedtousercode":
         return getUserDisplayName(value);
       default:
         return String(value);
@@ -802,6 +839,10 @@ const TicketDetailPage = () => {
       assignedto: "assignee",
       assignedtousercode: "assignee",
       assignee: "assignee",
+      takeover: "assignee",
+      allocations: "allocated users",
+      allocatedto: "allocated users",
+      allocatedtousercode: "allocated users",
     };
     const fieldName =
       fieldNameMap[fieldKey] || String(field).replace(/_/g, " ").toLowerCase();
@@ -981,8 +1022,7 @@ const TicketDetailPage = () => {
                   Reply
                 </Button>
 
-                {isAdminOrDev &&
-                  ticket.assigned_to_user_code !== loggedInUser.user_code && (
+                 {isTakeoverAllowed() && (
                     <Button
                       variant="outlined"
                       startIcon={<TakeoverIcon />}
@@ -1215,7 +1255,9 @@ const TicketDetailPage = () => {
               </Box>
             )}
             
-            {!replyComposerOpen ? (
+            {/* Only allow reply if the user is the assignee, creator, or admin */}
+            {canManageTicketMetadata() && (
+              !replyComposerOpen ? (
               <Box
                 sx={{
                   display: "flex",
@@ -1450,7 +1492,7 @@ const TicketDetailPage = () => {
                   </Box>
                 </Box>
               </Box>
-            )}
+            ))}
           </Card>
 
           {/* Comment and update feed */}
@@ -2315,39 +2357,49 @@ const TicketDetailPage = () => {
                     }}
                   >
                     <Select
-                      multiple
                       size="small"
-                      value={selectedAssigneeValue}
+                      value={selectedAssigneeValue[0] || ""}
                       onChange={(e) => {
                         const val = e.target.value;
-                        setSelectedAssigneeValue(typeof val === "string" ? val.split(",") : val);
+                        setSelectedAssigneeValue(val ? [val] : []);
                       }}
                       displayEmpty
                       disabled={updatingMetadata}
                       sx={inlineEditControlSx}
                       MenuProps={inlineMenuProps}
                       renderValue={(selected) => {
-                        if (!selected || selected.length === 0) {
+                        if (!selected) {
                           return <span style={{ color: "var(--text-secondary)" }}>Select assignee</span>;
                         }
-                        return selected
-                          .map((code) => {
-                            const u = users.find((user) => user.user_code === code);
-                            return u ? `${u.first_name} ${u.last_name}` : code;
-                          })
-                          .join(", ");
+                        const u = users.find((user) => user.user_code === selected);
+                        return u ? `${u.first_name} ${u.last_name}` : selected;
                       }}
                     >
-                      {users.map((u) => (
-                        <MenuItem key={u.user_code} value={u.user_code}>
-                          {u.first_name} {u.last_name} ({u.user_code})
-                        </MenuItem>
-                      ))}
+                      <MenuItem value="">
+                        <em>Unassigned</em>
+                      </MenuItem>
+                      {users
+                        .filter((u) => {
+                          const isAllocated = ticket.allocated_to_user_code
+                            ? ticket.allocated_to_user_code
+                                .split("|")
+                                .map((c: string) => c.trim())
+                                .includes(u.user_code)
+                            : false;
+                          const inDepartment =
+                            Number(u.department_id) === Number(ticket.department_id);
+                          return isAllocated || inDepartment;
+                        })
+                        .map((u) => (
+                          <MenuItem key={u.user_code} value={u.user_code}>
+                            {u.first_name} {u.last_name} ({u.user_code})
+                          </MenuItem>
+                        ))}
                     </Select>
                     <IconButton
                       size="small"
                       onClick={handleAssigneeSave}
-                      disabled={selectedAssigneeValue.length === 0 || updatingMetadata}
+                      disabled={updatingMetadata}
                       sx={inlineSaveButtonSx}
                     >
                       <CheckIcon sx={{ fontSize: 18 }} />
@@ -2387,6 +2439,8 @@ const TicketDetailPage = () => {
                   </>
                 )}
               </Box>
+
+
 
               {/* Date */}
               <Box

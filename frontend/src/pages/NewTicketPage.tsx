@@ -100,6 +100,7 @@ const NewTicketPage = () => {
   const [priorityId, setPriorityId] = useState("");
 
   const [assignTo, setAssignTo] = useState<string[]>([]);
+  const [allocatedTo, setAllocatedTo] = useState<string[]>([]);
   const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
 
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -254,6 +255,7 @@ const NewTicketPage = () => {
     setSubcategoryId("");
     setPriorityId("");
     setAssignTo([]);
+    setAllocatedTo([]);
     setAssignableUsers([]);
     setAttachments([]);
   };
@@ -290,7 +292,8 @@ const NewTicketPage = () => {
         category_id: Number(categoryId),
         subcategory_id: subcategoryId ? Number(subcategoryId) : null,
         priority_id: Number(priorityId),
-        assigned_to_user_code: assignTo.length > 0 ? assignTo.join("|") : null,
+        assigned_to_user_code: assignTo.length > 0 ? assignTo[0] : null, // Limit assign_to to only 1 person
+        allocated_to_user_code: allocatedTo.length > 0 ? allocatedTo.join("|") : null,
         due_date: dueDate || null,
         tags,
         is_recurring: recurring,
@@ -677,30 +680,28 @@ const NewTicketPage = () => {
 
                 <FormControl sx={{ minWidth: 200 }}>
                   <Select
-                    multiple
-                    value={assignTo}
+                    value={assignTo[0] || ""}
                     displayEmpty
                     onChange={(e) => {
                       const val = e.target.value;
-                      setAssignTo(typeof val === "string" ? val.split(",") : val);
+                      setAssignTo(val ? [val] : []);
                     }}
                     size="small"
                     renderValue={(selected) => {
-                      if (!selected || selected.length === 0) {
+                      if (!selected) {
                         return <span style={{ color: "var(--text-secondary)" }}>(Assigned to)</span>;
                       }
-                      return selected
-                        .map((code) => {
-                          const user = assignableUsers.find((u) => u.user_code === code);
-                          return user ? `${user.first_name} ${user.last_name}` : code;
-                        })
-                        .join(", ");
+                      const user = assignableUsers.find((u) => u.user_code === selected);
+                      return user ? `${user.first_name} ${user.last_name}` : selected;
                     }}
                     sx={{
                       background: "var(--bg-app)",
                       color: assignTo.length > 0 ? "var(--text-h)" : "var(--text-secondary)",
                     }}
                   >
+                    <MenuItem value="">
+                      <em>Unassigned</em>
+                    </MenuItem>
                     {assignableUsers.map((user) => (
                       <MenuItem key={user.user_code} value={user.user_code}>
                         {user.first_name} {user.last_name}

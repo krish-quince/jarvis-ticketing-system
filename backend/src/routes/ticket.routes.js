@@ -2,6 +2,7 @@ import { Router } from "express";
 import { verifyToken } from "../middleware/auth.middleware.js";
 import {
     assignTicket,
+    allocateTicket,
     createTicket,
     getAllTickets,
     getTicketById,
@@ -44,6 +45,7 @@ router.get("/", verifyToken, getAllTickets);
 
 router.patch("/:ticketId/status", verifyToken, validate(updateStatusSchema), updateTicketStatus);
 router.patch("/:ticketId/assign", verifyToken, validate(assignTicketSchema), assignTicket);
+router.patch("/:ticketId/allocate", verifyToken, allocateTicket);
 router.patch("/:ticketId/priority", verifyToken, validate(updatePrioritySchema), updateTicketPriority);
 router.patch("/:ticketId/category", verifyToken, validate(updateCategorySchema), updateTicketCategory);
 router.patch("/:ticketId/resolve", verifyToken, resolveTicket);

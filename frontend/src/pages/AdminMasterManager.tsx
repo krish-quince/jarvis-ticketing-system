@@ -6,9 +6,12 @@ import {
   Button,
   Checkbox,
   CircularProgress,
+  FormControl,
   IconButton,
+  InputLabel,
   MenuItem,
   Paper,
+  Select,
   Snackbar,
   Table,
   TableBody,
@@ -32,7 +35,7 @@ import {
 export type FieldConfig = {
   key: string;
   label: string;
-  type?: "text" | "number" | "color" | "checkbox" | "select";
+  type?: "text" | "number" | "color" | "checkbox" | "select" | "multiselect";
   options?: { value: any; label: string }[];
   required?: boolean;
 };
@@ -200,6 +203,11 @@ const AdminMasterManager = ({
       return field.options?.find((option) => String(option.value) === String(value))?.label || "";
     }
 
+    if (field.type === "multiselect") {
+      const arr = String(value || "").split("|").map(v => v.trim()).filter(Boolean);
+      return arr.map(val => field.options?.find((option) => String(option.value) === String(val))?.label || val).join(", ") || "None";
+    }
+
     return String(value ?? "");
   };
 
@@ -224,6 +232,41 @@ const AdminMasterManager = ({
             {field.label}
           </Typography>
         </Box>
+      );
+    }
+
+    if (field.type === "multiselect") {
+      const selectValue = typeof draft[field.key] === "string"
+        ? (draft[field.key] ? draft[field.key].split("|") : [])
+        : (Array.isArray(draft[field.key]) ? draft[field.key] : []);
+
+      return (
+        <FormControl key={field.key} size="small" sx={{ minWidth: 180 }}>
+          <InputLabel id={`label-${field.key}`}>{field.label}</InputLabel>
+          <Select
+            labelId={`label-${field.key}`}
+            multiple
+            label={field.label}
+            value={selectValue}
+            onChange={(event) => {
+              const val = event.target.value;
+              const joinedVal = Array.isArray(val) ? val.join("|") : val;
+              setDraft((prev) => ({
+                ...prev,
+                [field.key]: joinedVal,
+              }));
+            }}
+            renderValue={(selected) =>
+              selected.map((val: any) => field.options?.find((opt) => String(opt.value) === String(val))?.label || val).join(", ")
+            }
+          >
+            {(field.options || []).map((option) => (
+              <MenuItem key={String(option.value)} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       );
     }
 

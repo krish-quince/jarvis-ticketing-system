@@ -164,6 +164,33 @@ export const assignTicket = async(req, res) => {
     }
 };
 
+export const allocateTicket = async(req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const { allocated_to_user_code } = req.body;
+
+        const ticket = await ticketService.updateTicketAllocated(
+            ticketId,
+            allocatedToUserCodeMappingHelper(allocated_to_user_code),
+            req.user
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: ticket,
+        });
+    } catch (error) {
+        console.error(error);
+
+        return sendTicketError(res, error);
+    }
+};
+
+const allocatedToUserCodeMappingHelper = (val) => {
+    if (Array.isArray(val)) return val.join("|");
+    return val;
+};
+
 export const updateTicketPriority = async(req, res) => {
     try {
         const { ticketId } = req.params;

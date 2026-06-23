@@ -1,4 +1,5 @@
 import * as commmentRepository from "../repositories/comment.repository.js";
+import { canAccessTicket, canManageTicket } from "../utils/ticketPermissions.js";
 
 export const createComment = async(ticketId, commentText, user, files = []) => {
 
@@ -8,11 +9,8 @@ export const createComment = async(ticketId, commentText, user, files = []) => {
         throw new Error("Ticket not found.");
     }
 
-    if (user && Number(user.roleId) !== 1 &&
-        ticket.assigned_to_user_code !== user.userCode &&
-        ticket.raised_by_user_code !== user.userCode &&
-        Number(ticket.department_id) !== Number(user.departmentId)) {
-        throw new Error("Access denied to this ticket.");
+    if (!canManageTicket(ticket, user)) {
+        throw new Error("Access denied. Only the assignee, creator, or admins can chat.");
     }
 
     return await commmentRepository.createCommentWithAttachments(
@@ -27,10 +25,7 @@ export const getCommentsByTicketId = async(ticketId, user) => {
         throw new Error("Ticket not found.");
     }
 
-    if (user && Number(user.roleId) !== 1 &&
-        ticket.assigned_to_user_code !== user.userCode &&
-        ticket.raised_by_user_code !== user.userCode &&
-        Number(ticket.department_id) !== Number(user.departmentId)) {
+    if (!canAccessTicket(ticket, user)) {
         throw new Error("Access denied to this ticket.");
     }
 
