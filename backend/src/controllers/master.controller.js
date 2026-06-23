@@ -92,25 +92,23 @@ export const getRoles = async (
   }
 };
 
-export const getDepartments = async (
-  req,
-  res
-) => {
+export const getDepartments = async (req, res) => {
   try {
-    const companyCode = Number(req.user.roleId) === 1 ? null : req.user.companyCode;
-    const data = await service.getDepartments(companyCode);
+    const isSuper = Number(req.user.roleId) === 4;
+    const companyCode = isSuper 
+      ? (req.query.companyCode || null) 
+      : req.user.companyCode;
 
+    const data = await service.getDepartments(companyCode);
     return res.status(200).json({
       success: true,
       data,
     });
   } catch (error) {
     console.error(error);
-
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch departments",
+      message: "Failed to fetch departments",
     });
   }
 };
@@ -574,3 +572,71 @@ export const updateCompany = async (req, res) => {
     });
   }
 };
+
+export const createDepartment = async (req, res) => {
+  try {
+    const isSuper = Number(req.user.roleId) === 4;
+    const companyCode = isSuper 
+      ? (req.body.company_code || req.user.companyCode) 
+      : req.user.companyCode;
+
+    const data = await service.createDepartment({
+      ...req.body,
+      company_code: companyCode,
+    });
+    return res.status(201).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updateDepartment = async (req, res) => {
+  try {
+    const isSuper = Number(req.user.roleId) === 4;
+    const companyCode = isSuper 
+      ? (req.query.companyCode || req.body.company_code || req.user.companyCode) 
+      : req.user.companyCode;
+
+    const data = await service.updateDepartment(
+      req.params.departmentId,
+      req.body,
+      companyCode
+    );
+    return sendAdminMasterResponse(res, data, "Department not found");
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const deleteDepartment = async (req, res) => {
+  try {
+    const isSuper = Number(req.user.roleId) === 4;
+    const companyCode = isSuper 
+      ? (req.query.companyCode || req.user.companyCode) 
+      : req.user.companyCode;
+
+    const data = await service.deleteDepartment(
+      req.params.departmentId,
+      companyCode
+    );
+    return sendAdminMasterResponse(res, data, "Department not found");
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+

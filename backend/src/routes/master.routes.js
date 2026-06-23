@@ -25,6 +25,9 @@ import {
   updatePriority,
   updateStatus,
   updateSubCategory,
+  createDepartment,
+  updateDepartment,
+  deleteDepartment,
 } from "../controllers/master.controller.js";
 
 import { verifyToken } from "../middleware/auth.middleware.js";
@@ -61,6 +64,10 @@ router.post("/priorities", ...adminOnly, createPriority);
 router.patch("/priorities/:priorityId", ...adminOnly, updatePriority);
 router.delete("/priorities/:priorityId", ...adminOnly, deletePriority);
 
+router.post("/departments", ...adminOnly, createDepartment);
+router.patch("/departments/:departmentId", ...adminOnly, updateDepartment);
+router.delete("/departments/:departmentId", ...adminOnly, deleteDepartment);
+
 router.get("/roles", ...adminOnly, getRoles);
 router.get("/departments", ...adminOnly, getDepartments);
 router.get("/companies", ...adminOnly, getCompanies);
@@ -68,5 +75,6 @@ router.post("/companies", verifyToken, requireSuperAdmin, uploadLogo.single("log
 router.patch("/companies/:companyCode", verifyToken, requireSuperAdmin, uploadLogo.single("logo"), updateCompany);
 router.delete("/companies/:companyCode", verifyToken, requireSuperAdmin, deleteCompany);
 router.post("/companies/:companyCode/restore", verifyToken, requireSuperAdmin, restoreCompany);
+
 
 export default router;

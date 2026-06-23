@@ -80,6 +80,12 @@ const buildSections = (isSuperAdmin: boolean): Section[] => [
         description: "Add custom priority levels along with the default Low, Normal, High, Critical.",
         path: "/admin/priorities",
       },
+      {
+        icon: <BusinessOutlined sx={ICON_SX} />,
+        title: "Departments",
+        description: "Manage departments in your organization.",
+        path: "/admin/departments",
+      },
     ],
   },
 ];

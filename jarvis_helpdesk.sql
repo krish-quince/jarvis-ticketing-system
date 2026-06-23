@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict tLEOgnSV5Dc6wjDx3yOjTcwbhQu20trLMOCKKPa9YMeL23WdYeaLLaYEOKAecMX
+\restrict KRATJ1Nz8J0EaPDFPg5MKAdawIzLQNyfav1o14k8SWe6aRB3PX47EuuPcHsuMwq
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
 
--- Started on 2026-06-22 11:43:00
+-- Started on 2026-06-22 17:00:52
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -72,7 +72,9 @@ CREATE TABLE public.companies (
     address text,
     is_active boolean DEFAULT true,
     update_timestamp timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    is_deleted boolean DEFAULT false
+    is_deleted boolean DEFAULT false,
+    logo_url text,
+    email_domain character varying(100)
 );
 
 
@@ -586,7 +588,7 @@ CREATE TABLE public.users (
     is_active boolean DEFAULT true,
     update_timestamp timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     department_id bigint,
-    company_code character varying(50) NOT NULL
+    company_code character varying(50)
 );
 
 
@@ -739,10 +741,12 @@ COPY public.comment_attachments (attachment_id, comment_id, file_name, stored_na
 -- Data for Name: companies; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.companies (company_id, company_name, company_code, email, phone, address, is_active, update_timestamp, is_deleted) FROM stdin;
-2	Alpha TNG	ATNG	admin@alphatng.com	+91-9000000002	Pune, India	t	2026-06-21 18:56:47.669231	f
-1	Quince Capital Modified	QC	admin@quincecapital.com	9999999001	Test Address	t	2026-06-22 10:58:03.216886	f
-3	Satyam	SAT	satyam@gmail.com	91-741852963	Satyam pvt ltd.	t	2026-06-22 11:15:01.451557	f
+COPY public.companies (company_id, company_name, company_code, email, phone, address, is_active, update_timestamp, is_deleted, logo_url, email_domain) FROM stdin;
+1	Quince Capital Modified	QC	admin@quincecapital.com	9999999001	Test Address	t	2026-06-22 10:58:03.216886	f	\N	quincecapital.com
+3	Satyam	SAT	satyam@gmail.com	91-741852963	Satyam pvt ltd.	t	2026-06-22 11:15:01.451557	f	\N	sat.com
+4	Temp	TEMP	Temp@gmail.com	1234567890	asdfghjkl;qwertyuiopzxcvbnm	t	2026-06-22 14:35:10.350615	f	\N	temp.com
+5	nandu	NANDU	n@gmail.com	741852963	asdfghjklzxcvbnm,wertyuio	t	2026-06-22 15:05:22.576554	f	\N	\N
+2	Alpha TND	ATNG	admin@alphatnd.com	+91-9000000002	Pune, India	t	2026-06-22 16:49:19.6583	f	/uploads/logos/1782127159608-0c5880b7-0d1a-412e-8ecf-26048073c804.jpg	alphatnd.com
 \.
 
 
@@ -761,6 +765,10 @@ COPY public.departments (department_id, department_name, is_active, update_times
 6	HR	t	2026-06-16 11:33:46.127791	ATNG
 7	IT	t	2026-06-16 11:33:46.127791	ATNG
 8	Finance	t	2026-06-16 11:33:46.127791	ATNG
+9	IT	t	2026-06-22 15:05:22.576554	NANDU
+10	HR	t	2026-06-22 15:05:22.576554	NANDU
+11	Support	t	2026-06-22 15:05:22.576554	NANDU
+12	Finance	t	2026-06-22 15:05:22.576554	NANDU
 \.
 
 
@@ -836,6 +844,8 @@ COPY public.ticket_categories (category_id, category_name, category_description,
 11	temp	remp request	f	2026-06-21 13:40:40.334641	ATNG
 12	temp	temp 1	t	2026-06-22 10:28:53.543086	SAT
 13	temp2	temp 2	t	2026-06-22 10:29:05.478851	SAT
+14	General	General support queries	t	2026-06-22 14:35:10.350615	TEMP
+15	General	General support queries	t	2026-06-22 15:05:22.576554	NANDU
 \.
 
 
@@ -930,6 +940,12 @@ COPY public.ticket_priorities (priority_id, priority_name, priority_value, prior
 13	low	1	#687386	t	2026-06-22 10:31:29.019143	SAT
 14	medium	1	#687386	t	2026-06-22 10:31:33.420259	SAT
 15	high	1	#687386	t	2026-06-22 10:31:37.503208	SAT
+16	Low	1	#4CAF50	t	2026-06-22 14:35:10.350615	TEMP
+17	Medium	2	#FF9800	t	2026-06-22 14:35:10.350615	TEMP
+18	High	3	#F44336	t	2026-06-22 14:35:10.350615	TEMP
+19	Low	1	#4CAF50	t	2026-06-22 15:05:22.576554	NANDU
+20	Medium	2	#FF9800	t	2026-06-22 15:05:22.576554	NANDU
+21	High	3	#F44336	t	2026-06-22 15:05:22.576554	NANDU
 \.
 
 
@@ -951,6 +967,12 @@ COPY public.ticket_statuses (status_id, status_name, status_color, display_order
 12	new	#004fd6	1	t	f	t	2026-06-22 10:31:14.09147	SAT
 13	in progress	#687386	1	f	f	t	2026-06-22 10:31:49.630785	SAT
 14	closed	#687386	1	f	f	t	2026-06-22 10:31:53.939269	SAT
+15	New	#2196F3	1	t	f	t	2026-06-22 14:35:10.350615	TEMP
+16	In Progress	#FFC107	2	f	f	t	2026-06-22 14:35:10.350615	TEMP
+17	Closed	#4CAF50	3	f	t	t	2026-06-22 14:35:10.350615	TEMP
+18	New	#2196F3	1	t	f	t	2026-06-22 15:05:22.576554	NANDU
+19	In Progress	#FFC107	2	f	f	t	2026-06-22 15:05:22.576554	NANDU
+20	Closed	#4CAF50	3	f	t	t	2026-06-22 15:05:22.576554	NANDU
 \.
 
 
@@ -1006,7 +1028,6 @@ COPY public.tickets (ticket_id, ticket_no, subject, description, category_id, pr
 --
 
 COPY public.users (user_serial_no, role_id, user_code, first_name, last_name, email, password_hash, phone, is_active, update_timestamp, department_id, company_code) FROM stdin;
-40	4	QC_super_admin_system_admin	System	Admin	superadmin@quincecapital.com	$2b$10$jMCMc5N4OsxWW/a7WJzKDOkknW8uq1MAoe9hACVURx31f..t2jsJK	9999999000	t	2026-06-21 13:02:55.858024	3	QC
 2	1	QC_admin_rahul_patil	Rahul	Patil	sales1@quincecapital.com	$2b$10$jMCMc5N4OsxWW/a7WJzKDOkknW8uq1MAoe9hACVURx31f..t2jsJK	9999999002	t	2026-06-21 13:02:55.853525	1	QC
 3	1	ATNG_admin_priya_shah	Priya	Shah	sales2@quincecapital.com	$2b$10$jMCMc5N4OsxWW/a7WJzKDOkknW8uq1MAoe9hACVURx31f..t2jsJK	9999999003	t	2026-06-21 13:02:55.853525	6	ATNG
 4	2	QC_manager_anjali_verma	Anjali	Verma	hr1@quincecapital.com	$2b$10$jMCMc5N4OsxWW/a7WJzKDOkknW8uq1MAoe9hACVURx31f..t2jsJK	9999999004	t	2026-06-21 13:02:55.853525	2	QC
@@ -1023,10 +1044,13 @@ COPY public.users (user_serial_no, role_id, user_code, first_name, last_name, em
 37	3	QC_employee_krish_bhojwani	krish	bhojwani	k@gmail.com	$2b$10$jMCMc5N4OsxWW/a7WJzKDOkknW8uq1MAoe9hACVURx31f..t2jsJK		t	2026-06-21 13:02:55.853525	1	QC
 38	3	QC_employee_krish_bhojwani_2	krish	bhojwani	krish@gmail.com	$2b$10$jMCMc5N4OsxWW/a7WJzKDOkknW8uq1MAoe9hACVURx31f..t2jsJK		t	2026-06-21 13:02:55.853525	1	QC
 39	1	QC_admin_krish_bhojwani_2	Krish	Bhojwani	krishtbhojwani@gmail.com	$2b$10$jMCMc5N4OsxWW/a7WJzKDOkknW8uq1MAoe9hACVURx31f..t2jsJK	\N	t	2026-06-21 13:02:55.853525	3	QC
-1	4	QC_admin_krish_bhojwani	Krish	Bhojwani	admin@quincecapital.com	$2b$10$jMCMc5N4OsxWW/a7WJzKDOkknW8uq1MAoe9hACVURx31f..t2jsJK	9999999001	t	2026-06-21 13:02:55.853525	3	QC
 42	1	SAT_ADMIN_NANDU	nandu	gatla	nandu@gmail.com	$2b$10$eZnVxJAJaX11xoBKXvK/E.LMpf01mhAcrfJkiZwdAtqtc0vMNxX3m	\N	t	2026-06-22 10:27:13.162617	\N	SAT
 43	3	SAT_EMPLOYEE_KRISH	krish	bhojwani	krish56@gmail.com	$2b$10$pihCAJXseDYb8N8mDZu8X.6iJfvilQKgeCftF4/zHfuP43Q8wZtZ.	\N	t	2026-06-22 10:28:31.456154	\N	SAT
 44	3	SAT_EMPLOYEE_temp	temp	temp	sdfg@dfghj.com	$2b$10$bOMgdOu0m6EzsZ4sDVA8aOPyOK/KnBmnuT/Nims5q6i4kIlbPRPLe	\N	t	2026-06-22 10:30:23.594634	\N	SAT
+40	4	QC_super_admin_system_admin	System	Admin	superadmin@quincecapital.com	$2b$10$jMCMc5N4OsxWW/a7WJzKDOkknW8uq1MAoe9hACVURx31f..t2jsJK	9999999000	t	2026-06-21 13:02:55.858024	\N	\N
+1	4	QC_admin_krish_bhojwani	Krish	Bhojwani	admin@quincecapital.com	$2b$10$jMCMc5N4OsxWW/a7WJzKDOkknW8uq1MAoe9hACVURx31f..t2jsJK	9999999001	t	2026-06-21 13:02:55.853525	\N	\N
+45	1	TEMP_krish	krish	bhojwani	krish98765@gmail.com	$2b$10$JgWqW6sjY/B8sIffIB/w2.nH5kMO6dRnhUmWSgdANGB72pVMyHage	\N	t	2026-06-22 14:36:01.196029	\N	TEMP
+46	2	ALPHA_Krishsf6	krish	xfghjkl	krishsg6@alphatnd.com	$2b$10$Vl6Ci2ONuyixYsUQ2lazTe5HLDYdDnRx6SbvegYYui/0qQ5Fih2dK	\N	t	2026-06-22 15:38:45.403939	8	ATNG
 \.
 
 
@@ -1045,7 +1069,7 @@ SELECT pg_catalog.setval('public.comment_attachments_attachment_id_seq', 3, true
 -- Name: companies_company_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.companies_company_id_seq', 3, true);
+SELECT pg_catalog.setval('public.companies_company_id_seq', 5, true);
 
 
 --
@@ -1054,7 +1078,7 @@ SELECT pg_catalog.setval('public.companies_company_id_seq', 3, true);
 -- Name: departments_department_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.departments_department_id_seq', 8, true);
+SELECT pg_catalog.setval('public.departments_department_id_seq', 12, true);
 
 
 --
@@ -1090,7 +1114,7 @@ SELECT pg_catalog.setval('public.ticket_attachments_attachment_id_seq', 2, true)
 -- Name: ticket_categories_category_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ticket_categories_category_id_seq', 13, true);
+SELECT pg_catalog.setval('public.ticket_categories_category_id_seq', 15, true);
 
 
 --
@@ -1117,7 +1141,7 @@ SELECT pg_catalog.setval('public.ticket_history_history_id_seq', 40, true);
 -- Name: ticket_priorities_priority_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ticket_priorities_priority_id_seq', 15, true);
+SELECT pg_catalog.setval('public.ticket_priorities_priority_id_seq', 21, true);
 
 
 --
@@ -1126,7 +1150,7 @@ SELECT pg_catalog.setval('public.ticket_priorities_priority_id_seq', 15, true);
 -- Name: ticket_statuses_status_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ticket_statuses_status_id_seq', 14, true);
+SELECT pg_catalog.setval('public.ticket_statuses_status_id_seq', 20, true);
 
 
 --
@@ -1153,7 +1177,7 @@ SELECT pg_catalog.setval('public.tickets_ticket_id_seq', 15, true);
 -- Name: users_user_serial_no_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_user_serial_no_seq', 44, true);
+SELECT pg_catalog.setval('public.users_user_serial_no_seq', 46, true);
 
 
 --
@@ -1611,11 +1635,11 @@ ALTER TABLE ONLY public.users
     ADD CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES public.roles(role_id);
 
 
--- Completed on 2026-06-22 11:43:00
+-- Completed on 2026-06-22 17:00:52
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict tLEOgnSV5Dc6wjDx3yOjTcwbhQu20trLMOCKKPa9YMeL23WdYeaLLaYEOKAecMX
+\unrestrict KRATJ1Nz8J0EaPDFPg5MKAdawIzLQNyfav1o14k8SWe6aRB3PX47EuuPcHsuMwq
 

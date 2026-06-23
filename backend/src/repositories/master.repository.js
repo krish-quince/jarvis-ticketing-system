@@ -720,3 +720,56 @@ export const restoreCompany = async (companyCode) => {
   return result.rows[0];
 };
 
+export const createDepartment = async ({ department_name, company_code }) => {
+  await pool.query(
+    `
+    SELECT setval(
+      'public.departments_department_id_seq',
+      COALESCE((SELECT MAX(department_id) FROM departments), 0) + 1,
+      false
+    )
+    `
+  );
+
+  const result = await pool.query(
+    `
+    INSERT INTO departments (department_name, company_code)
+    VALUES ($1, $2)
+    RETURNING *
+    `,
+    [department_name, company_code]
+  );
+  return result.rows[0];
+};
+
+export const updateDepartment = async (departmentId, { department_name, is_active = true }, companyCode) => {
+  const result = await pool.query(
+    `
+    UPDATE departments
+    SET
+      department_name = $1,
+      is_active = $2,
+      update_timestamp = CURRENT_TIMESTAMP
+    WHERE department_id = $3 AND company_code = $4
+    RETURNING *
+    `,
+    [department_name, is_active, departmentId, companyCode]
+  );
+  return result.rows[0];
+};
+
+export const deleteDepartment = async (departmentId, companyCode) => {
+  const result = await pool.query(
+    `
+    UPDATE departments
+    SET
+      is_active = false,
+      update_timestamp = CURRENT_TIMESTAMP
+    WHERE department_id = $1 AND company_code = $2
+    RETURNING *
+    `,
+    [departmentId, companyCode]
+  );
+  return result.rows[0];
+};
+

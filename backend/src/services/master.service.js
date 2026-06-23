@@ -96,4 +96,16 @@ export const updateCompany = async (companyCode, payload) => {
   return repository.updateCompany(companyCode, payload);
 };
 
+export const createDepartment = async (payload) => {
+  return repository.createDepartment(payload);
+};
+
+export const updateDepartment = async (departmentId, payload, companyCode) => {
+  return repository.updateDepartment(departmentId, payload, companyCode);
+};
+
+export const deleteDepartment = async (departmentId, companyCode) => {
+  return repository.deleteDepartment(departmentId, companyCode);
+};
+
 
