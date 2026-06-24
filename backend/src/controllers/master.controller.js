@@ -670,6 +670,27 @@ export const updateCompanySettings = async (req, res) => {
     if (req.body.title_link !== undefined) {
       payload.title_link = req.body.title_link;
     }
+    if (req.body.smtp_host !== undefined) {
+      payload.smtp_host = req.body.smtp_host;
+    }
+    if (req.body.smtp_port !== undefined) {
+      payload.smtp_port = req.body.smtp_port;
+    }
+    if (req.body.smtp_user !== undefined) {
+      payload.smtp_user = req.body.smtp_user;
+    }
+    if (req.body.smtp_pass !== undefined) {
+      payload.smtp_pass = req.body.smtp_pass;
+    }
+    if (req.body.email_from_name !== undefined) {
+      payload.email_from_name = req.body.email_from_name;
+    }
+    if (req.body.welcome_subject !== undefined) {
+      payload.welcome_subject = req.body.welcome_subject;
+    }
+    if (req.body.welcome_template !== undefined) {
+      payload.welcome_template = req.body.welcome_template;
+    }
 
     const data = await service.updateCompanySettings(companyCode, payload);
     return res.status(200).json({

@@ -18,6 +18,7 @@ import timeTrackingRoutes from "./routes/timeTracking.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import masterRoutes from "./routes/master.routes.js";
+import emailConfigRoutes from "./routes/emailConfig.routes.js";
 
 dotenv.config();
 
@@ -88,6 +89,11 @@ app.get("/profile", verifyToken, (req, res) => {
 app.use(
   "/api/master",
   masterRoutes
+);
+
+app.use(
+  "/api/email-configs",
+  emailConfigRoutes
 );
 
 export default app;

@@ -782,7 +782,8 @@ export const deleteDepartment = async (departmentId, companyCode) => {
 export const getCompanySettings = async (companyCode) => {
   const result = await pool.query(
     `
-    SELECT company_code, company_name, logo_url, favicon_url, helpdesk_title, title_link
+    SELECT company_code, company_name, logo_url, favicon_url, helpdesk_title, title_link,
+           smtp_host, smtp_port, smtp_user, smtp_pass, email_from_name, welcome_subject, welcome_template
     FROM companies
     WHERE company_code = $1 AND is_deleted = false
     `,
@@ -791,7 +792,10 @@ export const getCompanySettings = async (companyCode) => {
   return result.rows[0];
 };
 
-export const updateCompanySettings = async (companyCode, { logo_url, favicon_url, helpdesk_title, title_link }) => {
+export const updateCompanySettings = async (companyCode, { 
+  logo_url, favicon_url, helpdesk_title, title_link,
+  smtp_host, smtp_port, smtp_user, smtp_pass, email_from_name, welcome_subject, welcome_template 
+}) => {
   const fields = [];
   const params = [];
   let index = 1;
@@ -812,6 +816,34 @@ export const updateCompanySettings = async (companyCode, { logo_url, favicon_url
     fields.push(`title_link = $${index++}`);
     params.push(title_link);
   }
+  if (smtp_host !== undefined) {
+    fields.push(`smtp_host = $${index++}`);
+    params.push(smtp_host);
+  }
+  if (smtp_port !== undefined) {
+    fields.push(`smtp_port = $${index++}`);
+    params.push(smtp_port === "" || smtp_port === null ? null : Number(smtp_port));
+  }
+  if (smtp_user !== undefined) {
+    fields.push(`smtp_user = $${index++}`);
+    params.push(smtp_user);
+  }
+  if (smtp_pass !== undefined) {
+    fields.push(`smtp_pass = $${index++}`);
+    params.push(smtp_pass);
+  }
+  if (email_from_name !== undefined) {
+    fields.push(`email_from_name = $${index++}`);
+    params.push(email_from_name);
+  }
+  if (welcome_subject !== undefined) {
+    fields.push(`welcome_subject = $${index++}`);
+    params.push(welcome_subject);
+  }
+  if (welcome_template !== undefined) {
+    fields.push(`welcome_template = $${index++}`);
+    params.push(welcome_template);
+  }
 
   if (fields.length === 0) {
     return getCompanySettings(companyCode);
@@ -825,7 +857,8 @@ export const updateCompanySettings = async (companyCode, { logo_url, favicon_url
       ${fields.join(", ")},
       update_timestamp = CURRENT_TIMESTAMP
     WHERE company_code = $${index}
-    RETURNING company_code, company_name, logo_url, favicon_url, helpdesk_title, title_link
+    RETURNING company_code, company_name, logo_url, favicon_url, helpdesk_title, title_link,
+              smtp_host, smtp_port, smtp_user, smtp_pass, email_from_name, welcome_subject, welcome_template
     `,
     params
   );

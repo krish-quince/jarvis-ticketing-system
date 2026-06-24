@@ -19,6 +19,7 @@ import AdminPrioritiesPage from "./pages/AdminPrioritiesPage";
 import AdminCompaniesPage from "./pages/AdminCompaniesPage";
 import AdminDepartmentsPage from "./pages/AdminDepartmentsPage";
 import GeneralSettingsPage from "./pages/GeneralSettingsPage";
+import EmailSettingsPage from "./pages/EmailSettingsPage";
 
 import MainLayout from "./layouts/MainLayout";
 import UsersPage from "./pages/UserPage";
@@ -92,6 +93,7 @@ function App() {
               <Route path="/admin/companies" element={<AdminCompaniesPage />} />
               <Route path="/admin/departments" element={<AdminDepartmentsPage />} />
               <Route path="/admin/settings" element={<GeneralSettingsPage />} />
+              <Route path="/admin/email-settings" element={<EmailSettingsPage />} />
             </Route>
           </Route>
         </Route>

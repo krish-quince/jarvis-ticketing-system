@@ -18,34 +18,75 @@ dotenv.config();
  * @param {number|string} [userDetails.department_id]
  */
 export const sendWelcomeEmail = async (userDetails) => {
-  // Check if SMTP is configured. If not, log and bypass.
-  const smtpUser = process.env.EMAIL_USER || process.env.SMTP_USER;
-  const smtpPass = process.env.EMAIL_PASS || process.env.SMTP_PASS || process.env.APP_PASSWORD;
-  const smtpHost = process.env.EMAIL_HOST || process.env.SMTP_HOST || "smtp.gmail.com";
-  const smtpPort = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || "587");
+  let companyName = "Quince Capital";
+  let companyLogo = ""; 
+  let smtpHostDb = null;
+  let smtpPortDb = null;
+  let smtpUserDb = null;
+  let smtpPassDb = null;
+  let emailFromNameDb = null;
+  let welcomeSubjectDb = null;
+  let welcomeTemplateDb = null;
+
+  let sendWelcomeEmailToggle = true;
+
+  try {
+    if (userDetails.company_code) {
+      const companyRes = await pool.query(
+        "SELECT company_name, logo_url FROM companies WHERE company_code = $1", 
+        [userDetails.company_code]
+      );
+      if (companyRes.rows.length > 0) {
+        const cRow = companyRes.rows[0];
+        companyName = cRow.company_name;
+        companyLogo = cRow.logo_url || "";
+      }
+
+      const configRes = await pool.query(
+        "SELECT * FROM email_configs WHERE company_code = $1 AND is_active = true LIMIT 1",
+        [userDetails.company_code]
+      );
+      if (configRes.rows.length > 0) {
+        const cfg = configRes.rows[0];
+        smtpHostDb = cfg.smtp_host;
+        smtpPortDb = cfg.smtp_port;
+        smtpUserDb = cfg.smtp_user;
+        smtpPassDb = cfg.smtp_pass;
+        emailFromNameDb = cfg.email_from_name;
+        welcomeSubjectDb = cfg.welcome_subject;
+        welcomeTemplateDb = cfg.welcome_template;
+        sendWelcomeEmailToggle = cfg.send_welcome_email !== false;
+      }
+    }
+  } catch (dbErr) {
+    console.warn("Failed to load SMTP settings from database, using env fallbacks:", dbErr);
+  }
+
+  // If the active config specifies not to send the welcome email, abort early
+  if (!sendWelcomeEmailToggle) {
+    console.log(`Welcome email is disabled in active configuration for company ${userDetails.company_code}. Not sending.`);
+    return false;
+  }
+
+  // Resolve SMTP configuration
+  const smtpUser = smtpUserDb || process.env.EMAIL_USER || process.env.SMTP_USER;
+  const smtpPass = smtpPassDb || process.env.EMAIL_PASS || process.env.SMTP_PASS || process.env.APP_PASSWORD;
+  const smtpHost = smtpHostDb || process.env.EMAIL_HOST || process.env.SMTP_HOST || "smtp.gmail.com";
+  const smtpPort = smtpPortDb ? Number(smtpPortDb) : parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || "587");
+  const fromName = emailFromNameDb || companyName || "Jarvis Helpdesk";
 
   if (!smtpUser || !smtpPass) {
-    console.warn("SMTP credentials (EMAIL_USER/SMTP_USER and EMAIL_PASS/SMTP_PASS/APP_PASSWORD) not found in environment. Email not sent.");
+    console.warn("SMTP credentials (EMAIL_USER/SMTP_USER and EMAIL_PASS/SMTP_PASS/APP_PASSWORD) not found in environment or database. Email not sent.");
     return false;
   }
 
   try {
-    // 1. Fetch metadata (role name, company name, company logo, department name)
+    // 1. Fetch metadata (role name, department name)
     let roleName = "User";
     if (userDetails.role_id) {
       const roleRes = await pool.query("SELECT role_name FROM roles WHERE role_id = $1", [userDetails.role_id]);
       if (roleRes.rows.length > 0) {
         roleName = roleRes.rows[0].role_name;
-      }
-    }
-
-    let companyName = "Quince Capital";
-    let companyLogo = ""; // relative or absolute URL, fallback to text logo
-    if (userDetails.company_code) {
-      const companyRes = await pool.query("SELECT company_name, logo_url FROM companies WHERE company_code = $1", [userDetails.company_code]);
-      if (companyRes.rows.length > 0) {
-        companyName = companyRes.rows[0].company_name;
-        companyLogo = companyRes.rows[0].logo_url || "";
       }
     }
 
@@ -58,7 +99,6 @@ export const sendWelcomeEmail = async (userDetails) => {
     }
 
     // Determine Backend URL or public URL for logo parsing
-    // In local dev, uploads are served statically.
     const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
     let logoHtml = `<span style="font-size: 20px; font-weight: bold; color: #ffffff;">${companyName}</span>`;
     
@@ -79,9 +119,23 @@ export const sendWelcomeEmail = async (userDetails) => {
     });
 
     const fullName = [userDetails.first_name, userDetails.last_name].filter(Boolean).join(" ");
+    const welcomeSubject = welcomeSubjectDb || `[ACTION REQUIRED] Account Created - ${companyName} Jarvis`;
 
-    // HTML Email Template based strictly on the user provided styling layout
-    const htmlContent = `
+    // Process HTML Template
+    let htmlContent = "";
+    if (welcomeTemplateDb) {
+      htmlContent = welcomeTemplateDb
+        .replace(/\{\{first_name\}\}/g, userDetails.first_name || "")
+        .replace(/\{\{last_name\}\}/g, userDetails.last_name || "")
+        .replace(/\{\{user_code\}\}/g, userDetails.user_code || "")
+        .replace(/\{\{password\}\}/g, userDetails.password || "")
+        .replace(/\{\{email\}\}/g, userDetails.email || "")
+        .replace(/\{\{role\}\}/g, roleName || "")
+        .replace(/\{\{company_name\}\}/g, companyName || "")
+        .replace(/\{\{department\}\}/g, departmentName || "");
+    } else {
+      // Default Fallback Styled Template
+      htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -212,13 +266,14 @@ export const sendWelcomeEmail = async (userDetails) => {
   </table>
 </body>
 </html>
-    `;
+      `;
+    }
 
     // 3. Send Email
     const mailOptions = {
-      from: `"${companyName} Jarvis" <${smtpUser}>`,
+      from: `"${fromName}" <${smtpUser}>`,
       to: userDetails.email,
-      subject: `[ACTION REQUIRED] Account Created - ${companyName} Jarvis`,
+      subject: welcomeSubject,
       html: htmlContent,
     };
 
