@@ -641,48 +641,7 @@ const MainLayout = () => {
                     }}
                   />
 
-                  {/* Company Filter */}
-                  <TextField
-                    fullWidth
-                    label="Company"
-                    placeholder="Company name"
-                    size="small"
-                    value={tempFilters.company}
-                    onChange={(e) =>
-                      setTempFilters((prev: any) => ({
-                        ...prev,
-                        company: e.target.value,
-                      }))
-                    }
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    sx={{
-                      "& .MuiOutlinedInput-root": { borderRadius: "8px" },
-                    }}
-                  />
 
-                  {/* Department Filter */}
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="filter-dept-label">Department</InputLabel>
-                    <Select
-                      labelId="filter-dept-label"
-                      value={tempFilters.department}
-                      label="Department"
-                      onChange={(e) =>
-                        setTempFilters((prev: any) => ({
-                          ...prev,
-                          department: e.target.value,
-                        }))
-                      }
-                      sx={{ borderRadius: "8px" }}
-                    >
-                      <MenuItem value="">Select Department</MenuItem>
-                      {filterOptions.departments.map((d) => (
-                        <MenuItem key={d.department_id} value={d.department_name}>
-                          {d.department_name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
 
                   {/* Tech Filter */}
                   <FormControl fullWidth size="small">

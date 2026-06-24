@@ -417,14 +417,17 @@ const TicketsPage = () => {
 
   const getSortValue = (ticket: Ticket, opt: string) => {
     switch (opt) {
-      case "Ticket number":
-        return ticket.ticket_no || "";
+      case "Ticket number": {
+        // extract numeric part of ticket_no if possible (e.g., TKT-1002 -> 1002) for proper numeric sorting
+        const match = ticket.ticket_no?.match(/\d+/);
+        return match ? parseInt(match[0], 10) : (ticket.ticket_no || "");
+      }
       case "Subject":
-        return ticket.subject || "";
+        return (ticket.subject || "").toLowerCase();
       case "From":
-        return ticket.raised_by_user_code || "";
+        return (ticket.raised_by_user_code || "").toLowerCase();
       case "Company":
-        return ticket.company_code || "";
+        return (ticket.company_code || "").toLowerCase();
       case "Priority": {
         const pName = ticket.priority_name?.toLowerCase();
         if (pName === "critical") return 4;
@@ -433,16 +436,22 @@ const TicketsPage = () => {
         return 1;
       }
       case "Status":
-        return ticket.status_name || "";
-      case "Date":
-        return ticket.created_at ? new Date(ticket.created_at).getTime() : 0;
-      case "Due":
-        return ticket.due_date ? new Date(ticket.due_date).getTime() : 0;
+        return (ticket.status_name || "").toLowerCase();
+      case "Date": {
+        const d = ticket.created_at ? new Date(ticket.created_at).getTime() : 0;
+        return Number.isNaN(d) ? 0 : d;
+      }
+      case "Due": {
+        const d = ticket.due_date ? new Date(ticket.due_date).getTime() : 0;
+        return Number.isNaN(d) ? 0 : d;
+      }
       case "Tech":
-        return ticket.assigned_to_name || "";
+        return (ticket.assigned_to_name || "").toLowerCase();
       case "Updated":
-      default:
-        return ticket.update_timestamp ? new Date(ticket.update_timestamp).getTime() : 0;
+      default: {
+        const d = ticket.update_timestamp ? new Date(ticket.update_timestamp).getTime() : 0;
+        return Number.isNaN(d) ? 0 : d;
+      }
     }
   };
 
