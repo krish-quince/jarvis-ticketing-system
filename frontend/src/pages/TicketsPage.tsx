@@ -25,6 +25,7 @@ import {
   TextField,
   Typography,
   IconButton,
+  useTheme,
 } from "@mui/material";
 import { KeyboardArrowDown, KeyboardArrowUp, MailOutlined, ContentCopy } from "@mui/icons-material";
 import {
@@ -87,6 +88,8 @@ type BulkAction = "assign" | "priority" | "category" | "due" | null;
 
 const TicketsPage = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const { columnVisibility, sortBy, sortOrder, handleSortSelect, filters } = useOutletContext<any>();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,6 +99,12 @@ const TicketsPage = () => {
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
   const [searchParams] = useSearchParams();
   const searchText = searchParams.get("search") || "";
+  const [searchVal, setSearchVal] = useState(searchText);
+
+  useEffect(() => {
+    setSearchVal(searchText);
+  }, [searchText]);
+
   const activePill = searchParams.get("filter") || "all";
   const [selectedCategory, setSelectedCategory] = useState("All categories");
   const [toast, setToast] = useState<ToastState>({
@@ -866,16 +875,59 @@ const TicketsPage = () => {
         minHeight: "calc(100vh - 255px)",
       }}
     >
-      {/* {searchText && (
-        <Typography
+      {searchText && (
+        <Box
           sx={{
-            mb: 2,
-            color: "#999",
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            bgcolor: isDark ? "rgba(255,255,255,0.03)" : "#fff",
+            border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#cbd5e1"}`,
+            borderRadius: "8px",
+            p: 2.5,
+            mb: 3,
           }}
         >
-          Search Results For: "{searchText}"
-        </Typography>
-      )} */}
+          <TextField
+            size="small"
+            value={searchVal}
+            onChange={(e) => setSearchVal(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                navigate(`/tickets?search=${encodeURIComponent(searchVal)}`);
+              }
+            }}
+            sx={{
+              width: "360px",
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "6px",
+                bgcolor: isDark ? "#0f172a" : "#fff",
+              },
+            }}
+          />
+          <Button
+            variant="contained"
+            onClick={() => navigate(`/tickets?search=${encodeURIComponent(searchVal)}`)}
+            sx={{
+              backgroundColor: "#211B5A",
+              color: "#fff",
+              textTransform: "none",
+              fontWeight: 600,
+              px: 3,
+              py: 0.8,
+              borderRadius: "6px",
+              boxShadow: "none",
+              "&:hover": {
+                backgroundColor: "#1c164d",
+                boxShadow: "none",
+              },
+            }}
+          >
+            Search
+          </Button>
+
+        </Box>
+      )}
 
       <Box
         sx={{
