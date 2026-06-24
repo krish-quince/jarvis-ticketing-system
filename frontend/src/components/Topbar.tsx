@@ -17,7 +17,9 @@ import {
   Search as SearchIcon,
   Add,
   KeyboardArrowDown,
-  ConfirmationNumberOutlined,
+  ListAltOutlined,
+  MenuBookOutlined,
+  DnsOutlined,
   InsertChartOutlined,
   SettingsOutlined,
 } from "@mui/icons-material";
@@ -116,12 +118,16 @@ const Topbar = () => {
     <AppBar
       position="sticky"
       elevation={0}
-      sx={{ backgroundColor: "#211B5A", color: "#fff" }}
+      sx={{
+        backgroundColor: isDark ? "#1e293b" : "#e5e7eb",
+        color: isDark ? "#fff" : "#1e293b",
+        borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#cbd5e1"}`,
+      }}
     >
       <Toolbar
         sx={{
           px: { xs: 2, md: 4 },
-          py: "28px",
+          py: "16px",
           minHeight: "64px !important",
         }}
       >
@@ -158,12 +164,19 @@ const Topbar = () => {
                 <Avatar
                   src={getLogoUrl(companyInfo.logo_url)}
                   variant="rounded"
-                  sx={{ width: 32, height: 32, border: "1px solid rgba(255,255,255,0.2)" }}
+                  sx={{ width: 32, height: 32, border: `1px solid ${isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.1)"}` }}
                 />
               ) : (
                 <Avatar
                   variant="rounded"
-                  sx={{ width: 32, height: 32, backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 14, fontWeight: 700 }}
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    backgroundColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(33, 27, 90, 0.1)",
+                    color: isDark ? "#fff" : "#211B5A",
+                    fontSize: 14,
+                    fontWeight: 700,
+                  }}
                 >
                   {user.company_code ? user.company_code.substring(0, 2).toUpperCase() : "JH"}
                 </Avatar>
@@ -172,7 +185,7 @@ const Topbar = () => {
                 variant="h6"
                 sx={{
                   fontWeight: 700,
-                  color: "#fff",
+                  color: isDark ? "#fff" : "#1e293b",
                   lineHeight: 1.05,
                   fontSize: { xs: 16, md: 20 },
                   whiteSpace: "nowrap",
@@ -190,61 +203,56 @@ const Topbar = () => {
             sx={{
               flex: 1,
               display: { xs: "none", md: "flex" },
-              justifyContent: "center",
-              px: 4,
+              justifyContent: "flex-end",
+              pr: 2,
             }}
           >
-          <OutlinedInput
-            size="small"
-            placeholder="Search... (or ticket ID)"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                navigate(`/tickets?search=${encodeURIComponent(searchText)}`);
-              }
-            }}
-            sx={{
-              width: "100%",
-              maxWidth: 480,
-              borderRadius: "8px",
-              bgcolor: isDark ? "#312A70" : "#fff",
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: isDark
-                  ? "rgba(255,255,255,0.15)"
-                  : "rgba(0,0,0,0.15)",
-              },
-              "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: isDark
-                  ? "rgba(255,255,255,0.3)"
-                  : "rgba(0,0,0,0.3)",
-              },
-              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#F4C63D",
-              },
-              "& input": {
-                color: "#F4C63D",
-                fontSize: "15px",
-                py: 0.9,
-              },
-              "& input::placeholder": {
-                color: "#F4C63D",
-                opacity: 1,
-              },
-            }}
-            startAdornment={
-              <InputAdornment
-                position="start"
-                sx={{ cursor: "pointer" }}
-                onClick={() =>
-                  navigate(`/tickets?search=${encodeURIComponent(searchText)}`)
+            <OutlinedInput
+              size="small"
+              placeholder="search... (or ticket ID)"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  navigate(`/tickets?search=${encodeURIComponent(searchText)}`);
                 }
-              >
-                <SearchIcon sx={{ color: "#F4C63D", fontSize: 22 }} />
-              </InputAdornment>
-            }
-          />
-        </Box>
+              }}
+              sx={{
+                width: "280px",
+                borderRadius: "6px",
+                bgcolor: isDark ? "#0f172a" : "#fff",
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: isDark ? "rgba(255,255,255,0.15)" : "#cbd5e1",
+                },
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: isDark ? "rgba(255,255,255,0.3)" : "#94a3b8",
+                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#3b36db",
+                },
+                "& input": {
+                  color: isDark ? "#fff" : "#1e293b",
+                  fontSize: "14px",
+                  py: 0.9,
+                },
+                "& input::placeholder": {
+                  color: isDark ? "rgba(255,255,255,0.4)" : "#94a3b8",
+                  opacity: 1,
+                },
+              }}
+              startAdornment={
+                <InputAdornment
+                  position="start"
+                  sx={{ cursor: "pointer" }}
+                  onClick={() =>
+                    navigate(`/tickets?search=${encodeURIComponent(searchText)}`)
+                  }
+                >
+                  <SearchIcon sx={{ color: "#3b36db", fontSize: 20 }} />
+                </InputAdornment>
+              }
+            />
+          </Box>
         ) : (
           <Box sx={{ flex: 1 }} />
         )}
@@ -254,7 +262,7 @@ const Topbar = () => {
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: { xs: 1, md: 1.5 },
+            gap: { xs: 1.5, md: 2 },
             flexShrink: 0,
             ml: { xs: "auto", md: 0 },
           }}
@@ -262,26 +270,25 @@ const Topbar = () => {
           {!isSuperAdmin && (
             <Button
               variant="contained"
-              startIcon={<Add />}
               onClick={() => navigate("/tickets/new")}
               sx={{
-                backgroundColor: "#F4C63D",
-                color: "#211B5A",
-                fontWeight: 700,
+                backgroundColor: "#3b36db",
+                color: "#fff",
+                fontWeight: 600,
                 textTransform: "none",
-                borderRadius: "8px",
-                fontSize: 15,
+                borderRadius: "6px",
+                fontSize: 14,
                 px: 2,
-                py: 0.8,
+                py: 0.7,
                 boxShadow: "none",
                 whiteSpace: "nowrap",
                 "&:hover": {
-                  backgroundColor: "#e0b22d",
+                  backgroundColor: "#2f2bbf",
                   boxShadow: "none",
                 },
               }}
             >
-              New ticket
+              + New ticket
             </Button>
           )}
 
@@ -297,12 +304,12 @@ const Topbar = () => {
           >
             <Avatar
               sx={{
-                width: 40,
-                height: 40,
-                fontSize: "14px",
-                fontWeight: 700,
-                backgroundColor: "#F4C63D",
-                color: "#211B5A",
+                width: 32,
+                height: 32,
+                fontSize: "13px",
+                fontWeight: 600,
+                backgroundColor: isDark ? "#334155" : "#cbd5e1",
+                color: isDark ? "#cbd5e1" : "#475569",
               }}
             >
               {userInitials}
@@ -310,15 +317,15 @@ const Topbar = () => {
             <Typography
               variant="body2"
               sx={{
-                color: "#fff",
-                fontWeight: 600,
-                fontSize: 15,
+                color: isDark ? "#fff" : "#1e293b",
+                fontWeight: 500,
+                fontSize: 14,
                 display: { xs: "none", sm: "block" },
               }}
             >
               {userName}
             </Typography>
-            <KeyboardArrowDown sx={{ color: "#F4C63D", fontSize: 22 }} />
+            <KeyboardArrowDown sx={{ color: isDark ? "rgba(255,255,255,0.6)" : "#64748b", fontSize: 20 }} />
           </Box>
 
           {/* Profile Popover */}
@@ -334,9 +341,10 @@ const Topbar = () => {
                   p: 3,
                   width: 290,
                   borderRadius: 3,
-                  backgroundColor: "#242038",
-                  color: "#fff",
-                  boxShadow: "0px 8px 30px rgba(0, 0, 0, 0.35)",
+                  backgroundColor: isDark ? "#242038" : "#fff",
+                  color: isDark ? "#fff" : "#1e293b",
+                  boxShadow: "0px 8px 30px rgba(0, 0, 0, 0.15)",
+                  border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "#cbd5e1"}`,
                   mt: 1.5,
                 },
               },
@@ -351,8 +359,8 @@ const Topbar = () => {
                   height: 48,
                   fontSize: "18px",
                   fontWeight: 700,
-                  backgroundColor: "rgba(255, 255, 255, 0.12)",
-                  color: "#fff",
+                  backgroundColor: isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)",
+                  color: isDark ? "#fff" : "#1e293b",
                 }}
               >
                 {userInitials}
@@ -369,7 +377,7 @@ const Topbar = () => {
                   variant="caption"
                   noWrap
                   sx={{
-                    color: "rgba(255, 255, 255, 0.55)",
+                    color: isDark ? "rgba(255, 255, 255, 0.55)" : "rgba(0, 0, 0, 0.55)",
                     display: "block",
                     mt: 0.2,
                   }}
@@ -380,14 +388,14 @@ const Topbar = () => {
             </Box>
 
             <Divider
-              sx={{ borderColor: "rgba(255, 255, 255, 0.08)", my: 1.5 }}
+              sx={{ borderColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)", my: 1.5 }}
             />
 
             <Box sx={{ mb: 2.5 }}>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "rgba(255, 255, 255, 0.35)",
+                  color: isDark ? "rgba(255, 255, 255, 0.35)" : "rgba(0, 0, 0, 0.45)",
                   fontWeight: 600,
                   display: "block",
                   mb: 1,
@@ -404,7 +412,7 @@ const Topbar = () => {
                     height: 28,
                     fontSize: "12px",
                     fontWeight: 700,
-                    backgroundColor: "#211b5a",
+                    backgroundColor: "#3b36db",
                     color: "#fff",
                   }}
                 >
@@ -419,12 +427,12 @@ const Topbar = () => {
                 fullWidth
                 onClick={handleCloseMenu}
                 sx={{
-                  backgroundColor: "#211b5a",
-                  color: "#fff",
+                  backgroundColor: isDark ? "#211b5a" : "#cbd5e1",
+                  color: isDark ? "#fff" : "#1e293b",
                   textTransform: "none",
                   fontWeight: 600,
                   borderRadius: "6px",
-                  "&:hover": { backgroundColor: "#2D2675" },
+                  "&:hover": { backgroundColor: isDark ? "#2D2675" : "#b8c2cc" },
                 }}
               >
                 Profile
@@ -434,12 +442,12 @@ const Topbar = () => {
                 fullWidth
                 onClick={handleLogout}
                 sx={{
-                  backgroundColor: "#211b5a",
-                  color: "#fff",
+                  backgroundColor: isDark ? "#211b5a" : "#cbd5e1",
+                  color: isDark ? "#fff" : "#1e293b",
                   textTransform: "none",
                   fontWeight: 600,
                   borderRadius: "6px",
-                  "&:hover": { backgroundColor: "#2D3748" },
+                  "&:hover": { backgroundColor: isDark ? "#2D3748" : "#b8c2cc" },
                 }}
               >
                 Log out
@@ -452,16 +460,15 @@ const Topbar = () => {
       {/* Secondary Navigation Row (Tabs) */}
       <Box
         sx={{
-          backgroundColor: "",
+          borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#cbd5e1"}`,
           display: "flex",
           px: 4,
-          
         }}
       >
         <Box
           sx={{
             display: "flex",
-            gap: { xs: 0, md: 3 },
+            gap: { xs: 0, md: 4 },
             width: "100%",
             overflowX: "auto",
           }}
@@ -472,7 +479,19 @@ const Topbar = () => {
                   {
                     label: "Tickets",
                     path: "/tickets",
-                    icon: ConfirmationNumberOutlined,
+                    icon: ListAltOutlined,
+                  },
+                  {
+                    label: "Knowledge base",
+                    path: "/knowledge-base",
+                    disabled: true,
+                    icon: MenuBookOutlined,
+                  },
+                  {
+                    label: "Assets",
+                    path: "/assets",
+                    disabled: true,
+                    icon: DnsOutlined,
                   },
                   {
                     label: "Reports",
@@ -492,7 +511,9 @@ const Topbar = () => {
                 ]
               : []),
           ].map((tab) => {
-            const isTabActive = location.pathname === tab.path;
+            const isTabActive = tab.path === "/admin"
+              ? location.pathname.startsWith("/admin")
+              : location.pathname === tab.path;
             const Icon = tab.icon;
             return (
               <Button
@@ -509,30 +530,34 @@ const Topbar = () => {
                   }
                 }}
                 sx={{
-                  color: isTabActive ? "#F4C63D" : "rgba(255, 255, 255, 0.88)",
+                  color: isTabActive ? "#3b36db" : (isDark ? "rgba(255, 255, 255, 0.6)" : "#475569"),
                   fontWeight: 600,
-                  fontSize: 15,
-                  py: 1.45,
+                  fontSize: 14,
+                  py: 1.5,
                   px: 1,
                   textTransform: "none",
                   borderRadius: 0,
                   borderBottom: isTabActive
-                    ? "2px solid #F4C63D"
-                    : "2px solid transparent",
+                    ? "3px solid #3b36db"
+                    : "3px solid transparent",
                   transition: "all 0.15s ease",
                   minWidth: "max-content",
                   "&:hover": {
-                    color: "#F4C63D",
+                    color: "#3b36db",
                     backgroundColor: "transparent",
+                    "& .MuiButton-startIcon": {
+                      color: "#3b36db",
+                    },
                   },
                 }}
                 startIcon={
                   <Icon
                     sx={{
-                      fontSize: "22px !important",
+                      fontSize: "20px !important",
                       color: isTabActive
-                        ? "#F4C63D"
-                        : "rgba(255, 255, 255, 0.62)",
+                        ? "#3b36db"
+                        : (isDark ? "rgba(255, 255, 255, 0.4)" : "#64748b"),
+                      transition: "color 0.15s ease",
                     }}
                   />
                 }
