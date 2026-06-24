@@ -482,18 +482,6 @@ const Topbar = () => {
                     icon: ListAltOutlined,
                   },
                   {
-                    label: "Knowledge base",
-                    path: "/knowledge-base",
-                    disabled: true,
-                    icon: MenuBookOutlined,
-                  },
-                  {
-                    label: "Assets",
-                    path: "/assets",
-                    disabled: true,
-                    icon: DnsOutlined,
-                  },
-                  {
                     label: "Reports",
                     path: "/reports",
                     disabled: true,
