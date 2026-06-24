@@ -3,11 +3,15 @@ import API from "./api";
 const unwrapData = (responseData: any) => responseData.data ?? responseData;
 
 export const getTickets = async (
-  search = ""
+  search = "",
+  sortBy = "",
+  sortOrder = ""
 ) => {
   const response = await API.get("/tickets", {
     params: {
       search,
+      sortBy,
+      sortOrder,
     },
   });
 

@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useOutletContext } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -60,6 +60,7 @@ type Ticket = {
   due_date?: string | null;
   created_at?: string | null;
   update_timestamp?: string | null;
+  company_code?: string | null;
 };
 
 type CategoryTreeItem = {
@@ -83,6 +84,7 @@ type BulkAction = "assign" | "priority" | "category" | "due" | null;
 
 const TicketsPage = () => {
   const navigate = useNavigate();
+  const { columnVisibility, sortBy, sortOrder, handleSortSelect, filters } = useOutletContext<any>();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsedParents, setCollapsedParents] = useState<Set<string>>(
@@ -193,7 +195,7 @@ const TicketsPage = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const ticketsData = await getTickets(searchText);
+      const ticketsData = await getTickets(searchText, sortBy, sortOrder);
       setTickets(ticketsData || []);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -209,14 +211,13 @@ const TicketsPage = () => {
     // canBulkAssign; this just makes sure the dropdown isn't empty when it
     // IS shown. Backend must still gate the actual update.
     loadUsers();
-    fetchData();
     loadPriorities();
     loadCategories();
   }, []);
 
   useEffect(() => {
     fetchData();
-  }, [searchText]);
+  }, [searchText, sortBy, sortOrder]);
 
   const buildCategoryTree = (): CategoryTreeItem[] => {
     const tree: CategoryTreeItem[] = [
@@ -315,9 +316,152 @@ const TicketsPage = () => {
     );
   };
 
+  const filterCustom = (ticket: Ticket) => {
+    if (!filters) return true;
+    
+    // 1. Date filter (created_at)
+    if (filters.date) {
+      if (!ticket.created_at) return false;
+      const createdDate = new Date(ticket.created_at);
+      const now = new Date();
+      if (filters.date === "Today") {
+        if (createdDate.toDateString() !== now.toDateString()) return false;
+      } else if (filters.date === "Last 7 days") {
+        const diff = (now.getTime() - createdDate.getTime()) / (1000 * 3600 * 24);
+        if (diff > 7) return false;
+      } else if (filters.date === "Last 30 days") {
+        const diff = (now.getTime() - createdDate.getTime()) / (1000 * 3600 * 24);
+        if (diff > 30) return false;
+      }
+    }
+
+    // 2. Due in days filter (due_date)
+    if (filters.dueInDays) {
+      if (!ticket.due_date) return false;
+      const dueDate = new Date(ticket.due_date);
+      const now = new Date();
+      const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+      if (diffDays < 0 || diffDays > Number(filters.dueInDays)) return false;
+    }
+
+    // 3. Updated filter (update_timestamp)
+    if (filters.updated) {
+      if (!ticket.update_timestamp) return false;
+      const updatedDate = new Date(ticket.update_timestamp);
+      const now = new Date();
+      if (filters.updated === "Today") {
+        if (updatedDate.toDateString() !== now.toDateString()) return false;
+      } else if (filters.updated === "Last 7 days") {
+        const diff = (now.getTime() - updatedDate.getTime()) / (1000 * 3600 * 24);
+        if (diff > 7) return false;
+      } else if (filters.updated === "Last 30 days") {
+        const diff = (now.getTime() - updatedDate.getTime()) / (1000 * 3600 * 24);
+        if (diff > 30) return false;
+      }
+    }
+
+    // 4. Status filter
+    if (filters.status) {
+      if (ticket.status_name?.toLowerCase() !== filters.status.toLowerCase()) return false;
+    }
+
+    // 5. Priority filter
+    if (filters.priority) {
+      if (ticket.priority_name?.toLowerCase() !== filters.priority.toLowerCase()) return false;
+    }
+
+    // 6. From filter (Email or username of the creator)
+    if (filters.from) {
+      const match =
+        ticket.raised_by_user_code?.toLowerCase().includes(filters.from.toLowerCase()) ||
+        false;
+      if (!match) return false;
+    }
+
+    // 7. Company filter
+    if (filters.company) {
+      const match =
+        ticket.company_code?.toLowerCase().includes(filters.company.toLowerCase()) ||
+        false;
+      if (!match) return false;
+    }
+
+    // 8. Department filter
+    if (filters.department) {
+      if (ticket.department?.toLowerCase() !== filters.department.toLowerCase()) return false;
+    }
+
+    // 9. Tech filter (Assigned technician)
+    if (filters.tech) {
+      const match =
+        ticket.assigned_to_user_code?.toLowerCase() === filters.tech.toLowerCase();
+      if (!match) return false;
+    }
+
+    // 10. Subscribed Only filter
+    if (filters.subscribedOnly) {
+      const userCode = currentUser.userCode || currentUser.user_code;
+      const isCreator = ticket.raised_by_user_code === userCode;
+      const isAssignee = ticket.assigned_to_user_code === userCode;
+      const isAllocated = ticket.allocated_to_user_code?.split("|").includes(userCode) || false;
+      if (!isCreator && !isAssignee && !isAllocated) return false;
+    }
+
+    return true;
+  };
+
   const filteredTickets = tickets.filter(
-    (t) => filterPill(t) && filterCategory(t),
+    (t) => filterPill(t) && filterCategory(t) && filterCustom(t),
   );
+
+  const getSortValue = (ticket: Ticket, opt: string) => {
+    switch (opt) {
+      case "Ticket number": {
+        // extract numeric part of ticket_no if possible (e.g., TKT-1002 -> 1002) for proper numeric sorting
+        const match = ticket.ticket_no?.match(/\d+/);
+        return match ? parseInt(match[0], 10) : (ticket.ticket_no || "");
+      }
+      case "Subject":
+        return (ticket.subject || "").toLowerCase();
+      case "From":
+        return (ticket.raised_by_user_code || "").toLowerCase();
+      case "Company":
+        return (ticket.company_code || "").toLowerCase();
+      case "Priority": {
+        const pName = ticket.priority_name?.toLowerCase();
+        if (pName === "critical") return 4;
+        if (pName === "high") return 3;
+        if (pName === "medium" || pName === "normal") return 2;
+        return 1;
+      }
+      case "Status":
+        return (ticket.status_name || "").toLowerCase();
+      case "Date": {
+        const d = ticket.created_at ? new Date(ticket.created_at).getTime() : 0;
+        return Number.isNaN(d) ? 0 : d;
+      }
+      case "Due": {
+        const d = ticket.due_date ? new Date(ticket.due_date).getTime() : 0;
+        return Number.isNaN(d) ? 0 : d;
+      }
+      case "Tech":
+        return (ticket.assigned_to_name || "").toLowerCase();
+      case "Updated":
+      default: {
+        const d = ticket.update_timestamp ? new Date(ticket.update_timestamp).getTime() : 0;
+        return Number.isNaN(d) ? 0 : d;
+      }
+    }
+  };
+
+  const sortedTickets = [...filteredTickets].sort((a, b) => {
+    if (!sortBy) return 0;
+    const valA = getSortValue(a, sortBy);
+    const valB = getSortValue(b, sortBy);
+    if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+    if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
 
   const lastSelectedTicketId = selectedTickets[selectedTickets.length - 1];
 
@@ -781,17 +925,17 @@ const TicketsPage = () => {
                   <Checkbox
                     size="small"
                     checked={
-                      filteredTickets.length > 0 &&
-                      selectedTickets.length === filteredTickets.length
+                      sortedTickets.length > 0 &&
+                      selectedTickets.length === sortedTickets.length
                     }
                     indeterminate={
                       selectedTickets.length > 0 &&
-                      selectedTickets.length < filteredTickets.length
+                      selectedTickets.length < sortedTickets.length
                     }
                     onChange={(e) => {
                       if (e.target.checked) {
                         setSelectedTickets(
-                          filteredTickets.map((t) => t.ticket_id),
+                          sortedTickets.map((t) => t.ticket_id),
                         );
                       } else {
                         setSelectedTickets([]);
@@ -800,32 +944,165 @@ const TicketsPage = () => {
                     sx={checkboxSx}
                   />
                 </TableCell>
-                <TableCell sx={{ ...headCellSx, width: "45%" }}>
-                  Subject
-                </TableCell>
-                <TableCell sx={{ ...headCellSx, width: 140 }}>Status</TableCell>
-                <TableCell sx={{ ...headCellSx, width: 100 }}>
-                  Priority
-                </TableCell>
-                <TableCell sx={{ ...headCellSx, width: 180 }}> Date</TableCell>
-                <TableCell sx={{ ...headCellSx, width: 90 }}>Due</TableCell>
-                <TableCell sx={{ ...headCellSx, width: 110 }}>Tech</TableCell>
-                <TableCell sx={{ ...headCellSx, width: 130 }}>
+                <TableCell
+                  sx={{
+                    ...headCellSx,
+                    width: "45%",
+                    cursor: "pointer",
+                    userSelect: "none",
+                  }}
+                  onClick={() => handleSortSelect("Subject")}
+                >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    Updated{" "}
-                    <KeyboardArrowDown
-                      sx={{ fontSize: 15, color: "var(--text-sub)" }}
-                    />
+                    Subject
+                    {sortBy === "Subject" && (
+                      sortOrder === "asc" ? (
+                        <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                      ) : (
+                        <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                      )
+                    )}
                   </Box>
                 </TableCell>
+                {columnVisibility.Status && (
+                  <TableCell
+                    sx={{
+                      ...headCellSx,
+                      width: 140,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                    onClick={() => handleSortSelect("Status")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      Status
+                      {sortBy === "Status" && (
+                        sortOrder === "asc" ? (
+                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        ) : (
+                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        )
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
+                {columnVisibility.Priority && (
+                  <TableCell
+                    sx={{
+                      ...headCellSx,
+                      width: 100,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                    onClick={() => handleSortSelect("Priority")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      Priority
+                      {sortBy === "Priority" && (
+                        sortOrder === "asc" ? (
+                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        ) : (
+                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        )
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
+                {columnVisibility.Date && (
+                  <TableCell
+                    sx={{
+                      ...headCellSx,
+                      width: 180,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                    onClick={() => handleSortSelect("Date")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      Date
+                      {sortBy === "Date" && (
+                        sortOrder === "asc" ? (
+                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        ) : (
+                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        )
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
+                {columnVisibility.Due && (
+                  <TableCell
+                    sx={{
+                      ...headCellSx,
+                      width: 90,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                    onClick={() => handleSortSelect("Due")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      Due
+                      {sortBy === "Due" && (
+                        sortOrder === "asc" ? (
+                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        ) : (
+                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        )
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
+                {columnVisibility.Tech && (
+                  <TableCell
+                    sx={{
+                      ...headCellSx,
+                      width: 110,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                    onClick={() => handleSortSelect("Tech")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      Tech
+                      {sortBy === "Tech" && (
+                        sortOrder === "asc" ? (
+                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        ) : (
+                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        )
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
+                {columnVisibility.Updated && (
+                  <TableCell
+                    sx={{
+                      ...headCellSx,
+                      width: 130,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                    onClick={() => handleSortSelect("Updated")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      Updated
+                      {sortBy === "Updated" && (
+                        sortOrder === "asc" ? (
+                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        ) : (
+                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        )
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
               </TableRow>
             </TableHead>
-
             <TableBody>
-              {filteredTickets.length === 0 ? (
+              {sortedTickets.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={2 + Object.values(columnVisibility).filter(Boolean).length}
                     align="center"
                     sx={{
                       py: 5,
@@ -839,7 +1116,7 @@ const TicketsPage = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredTickets.map((ticket, index) => {
+                sortedTickets.map((ticket, index) => {
                   const statusInfo = getStatusInfo(ticket.status_name);
                   const priorityInfo = getPriorityInfo(ticket.priority_name);
                   const updByTech = wasUpdatedByTech(ticket);
@@ -930,7 +1207,7 @@ const TicketsPage = () => {
                         </TableCell>
 
                         {/* Status */}
-                        <TableCell
+                        {columnVisibility.Status && <TableCell
                           sx={{
                             py: 1.8,
                             verticalAlign: "top",
@@ -981,10 +1258,10 @@ const TicketsPage = () => {
                               Upd by tech
                             </Typography>
                           )}
-                        </TableCell>
+                        </TableCell>}
 
                         {/* Priority */}
-                        <TableCell
+                        {columnVisibility.Priority && <TableCell
                           sx={{
                             py: 1.8,
                             verticalAlign: "top",
@@ -1014,24 +1291,26 @@ const TicketsPage = () => {
                               {priorityInfo.label}
                             </Typography>
                           </Box>
-                        </TableCell>
+                        </TableCell>}
 
-                        <TableCell
-  sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
->
-  {ticket.created_at
-    ? formatDateTime(ticket.created_at)
-    : "-"}
-    </TableCell>
-{/* Due Date */}
-<TableCell
-  sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
->
-  {ticket.due_date
-    ? new Date(ticket.due_date).toLocaleDateString("en-US")
-    : ""}
-</TableCell>
-                        <TableCell
+                        {columnVisibility.Date && <TableCell
+                          sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
+                        >
+                          {ticket.created_at
+                            ? formatDateTime(ticket.created_at)
+                            : "-"}
+                        </TableCell>}
+
+                        {/* Due Date */}
+                        {columnVisibility.Due && <TableCell
+                          sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
+                        >
+                          {ticket.due_date
+                            ? new Date(ticket.due_date).toLocaleDateString("en-US")
+                            : ""}
+                        </TableCell>}
+
+                        {columnVisibility.Tech && <TableCell
                           sx={{
                             ...bodyCellSx,
                             color: "var(--accent)",
@@ -1057,12 +1336,13 @@ const TicketsPage = () => {
                               Unassigned
                             </Box>
                           )}
-                        </TableCell>
-                        <TableCell
+                        </TableCell>}
+
+                        {columnVisibility.Updated && <TableCell
                           sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
                         >
                           {formatDateTime(ticket.update_timestamp)}
-                        </TableCell>
+                        </TableCell>}
                       </TableRow>
 
                       {/* ── Floating bulk action bar ── */}
@@ -1070,7 +1350,7 @@ const TicketsPage = () => {
                         selectedTickets.length > 0 && (
                           <TableRow>
                             <TableCell
-                              colSpan={8}
+                              colSpan={2 + Object.values(columnVisibility).filter(Boolean).length}
                               sx={{
                                 border: 0,
                                 py: 0,
