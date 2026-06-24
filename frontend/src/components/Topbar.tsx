@@ -121,7 +121,7 @@ const Topbar = () => {
       <Toolbar
         sx={{
           px: { xs: 2, md: 4 },
-          py: 0,
+          py: "28px",
           minHeight: "64px !important",
         }}
       >
@@ -454,7 +454,7 @@ const Topbar = () => {
         sx={{
           backgroundColor: "",
           display: "flex",
-          px: { xs: 0, md: 4 },
+          px: 4,
           
         }}
       >
@@ -513,7 +513,7 @@ const Topbar = () => {
                   fontWeight: 600,
                   fontSize: 15,
                   py: 1.45,
-                  px: 0,
+                  px: 1,
                   textTransform: "none",
                   borderRadius: 0,
                   borderBottom: isTabActive

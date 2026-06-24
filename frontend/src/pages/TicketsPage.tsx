@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { useNavigate, useSearchParams, useOutletContext } from "react-router-dom";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Card,
@@ -12,6 +13,7 @@ import {
   FormControl,
   MenuItem,
   Paper,
+  Popover,
   Select,
   Snackbar,
   Table,
@@ -22,8 +24,9 @@ import {
   TableRow,
   TextField,
   Typography,
+  IconButton,
 } from "@mui/material";
-import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
+import { KeyboardArrowDown, KeyboardArrowUp, MailOutlined, ContentCopy } from "@mui/icons-material";
 import {
   getTickets,
   updateTicketStatus,
@@ -33,7 +36,7 @@ import {
   updateTicketCategory,
   updateTicketDueDate,
 } from "../services/ticketService";
-import { getUsers } from "../services/userService";
+import { getUsers, getUserByCode, updateUser } from "../services/userService";
 import {
   getPriorities,
   getCategories,
@@ -102,6 +105,75 @@ const TicketsPage = () => {
   });
 
   const [activeBulkAction, setActiveBulkAction] = useState<BulkAction>(null);
+
+  // User popover states
+  const [userPopoverAnchor, setUserPopoverAnchor] = useState<HTMLElement | null>(null);
+  const [popoverAlign, setPopoverAlign] = useState<"left" | "right">("left");
+  const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number } | null>(null);
+  const [popoverUserCode, setPopoverUserCode] = useState<string | null>(null);
+  const [popoverUserDetail, setPopoverUserDetail] = useState<any | null>(null);
+  const [popoverUserLoading, setPopoverUserLoading] = useState(false);
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [editNotesText, setEditNotesText] = useState("");
+
+  const handleUserClick = async (
+    event: React.MouseEvent<HTMLElement>,
+    userCode: string,
+    align: "left" | "right" = "left"
+  ) => {
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = align === "left" ? rect.left : rect.right;
+    const y = rect.bottom;
+    setPopoverPosition({ top: y, left: x });
+    setUserPopoverAnchor(event.currentTarget);
+    setPopoverAlign(align);
+    setPopoverUserCode(userCode);
+    setPopoverUserLoading(true);
+    setIsEditingNotes(false);
+    setEditNotesText("");
+    try {
+      const data = await getUserByCode(userCode);
+      const u = data?.data ?? data;
+      setPopoverUserDetail(u);
+      setEditNotesText(u?.notes || "");
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+      setPopoverUserDetail(null);
+    } finally {
+      setPopoverUserLoading(false);
+    }
+  };
+
+  const handleUserPopoverClose = () => {
+    setUserPopoverAnchor(null);
+    setPopoverPosition(null);
+    setPopoverUserCode(null);
+    setPopoverUserDetail(null);
+    setIsEditingNotes(false);
+    setEditNotesText("");
+  };
+
+  const handleSaveNotes = async () => {
+    if (!popoverUserCode) return;
+    try {
+      await updateUser(popoverUserCode, { notes: editNotesText });
+      setPopoverUserDetail((prev: any) => prev ? { ...prev, notes: editNotesText } : null);
+      setIsEditingNotes(false);
+      setToast({
+        open: true,
+        severity: "success",
+        message: "Admin notes updated successfully",
+      });
+    } catch (error) {
+      console.error("Failed to update user notes:", error);
+      setToast({
+        open: true,
+        severity: "error",
+        message: "Failed to update admin notes",
+      });
+    }
+  };
 
   // Assign panel
   const [users, setUsers] = useState<any[]>([]);
@@ -778,7 +850,7 @@ const TicketsPage = () => {
           justifyContent: "center",
           alignItems: "center",
           minHeight: "60vh",
-          backgroundColor: "var(--bg-app)",
+          backgroundColor: "transparent",
         }}
       >
         <CircularProgress size={44} sx={{ color: "var(--accent)" }} />
@@ -789,12 +861,12 @@ const TicketsPage = () => {
   return (
     <Box
       sx={{
-        backgroundColor: "var(--bg-app)",
+        backgroundColor: "transparent",
         color: "var(--text)",
         minHeight: "calc(100vh - 255px)",
       }}
     >
-      {searchText && (
+      {/* {searchText && (
         <Typography
           sx={{
             mb: 2,
@@ -803,7 +875,7 @@ const TicketsPage = () => {
         >
           Search Results For: "{searchText}"
         </Typography>
-      )}
+      )} */}
 
       <Box
         sx={{
@@ -822,7 +894,7 @@ const TicketsPage = () => {
             backgroundColor: "var(--bg-card)",
             backgroundImage: "none",
             color: "var(--text)",
-            p: "8px 16px",
+            p: 0.5, // 4px padding
             display: "flex",
             flexDirection: "column",
           }}
@@ -842,8 +914,9 @@ const TicketsPage = () => {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  pl: cat.indent ? 1.5 : 0,
-                  py: 1.1,
+                  pl: cat.indent ? 2.5 : 1.5, // pl-5 (20px) for subcategory, px-3 (12px) for main category
+                  pr: 1.5, // pr-3 (12px)
+                  py: 1, // py-2 (8px)
                   borderRadius: "6px",
                   cursor: "pointer",
                   color: isSelected ? "var(--accent)" : "var(--text)",
@@ -860,15 +933,18 @@ const TicketsPage = () => {
                     sx={{
                       fontWeight:
                         cat.label === "All categories" || cat.isParent
-                          ? 700
+                          ? 600
                           : 400,
-                      fontSize: 15,
-                      lineHeight: 1.4,
+                      fontSize: 14,
+                      lineHeight: "20px",
                       color: "inherit",
                     }}
                   >
                     {cat.label}
                   </Typography>
+                </Box>
+                
+                <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
                   {cat.isParent &&
                     (isExpanded ? (
                       <KeyboardArrowUp
@@ -879,21 +955,21 @@ const TicketsPage = () => {
                         sx={{ fontSize: 17, color: "var(--text-sub)" }}
                       />
                     ))}
+                  <Chip
+                    label={getCategoryCount(cat.label)}
+                    size="small"
+                    sx={{
+                      height: 20,
+                      minWidth: 28,
+                      borderRadius: "999px",
+                      fontSize: 12,
+                      fontWeight: 500,
+                      backgroundColor: "rgba(0, 0, 0, 0.05)",
+                      color: "var(--text)",
+                      "& .MuiChip-label": { px: 1 },
+                    }}
+                  />
                 </Box>
-                <Chip
-                  label={getCategoryCount(cat.label)}
-                  size="small"
-                  sx={{
-                    height: 24,
-                    minWidth: 32,
-                    borderRadius: "999px",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    backgroundColor: "var(--accent-light)",
-                    color: "var(--accent-chip-text)",
-                    "& .MuiChip-label": { px: 1 },
-                  }}
-                />
               </Box>
             );
           })}
@@ -1145,6 +1221,9 @@ const TicketsPage = () => {
                           onClick={(e) => e.stopPropagation()}
                           sx={{
                             pl: 2,
+                            verticalAlign: "top",
+                            pt: 2.0,
+                            pb: 1.8,
                           }}
                         >
                           <Checkbox
@@ -1162,11 +1241,14 @@ const TicketsPage = () => {
                           <Typography
                             variant="body2"
                             sx={{
-                              fontWeight: 700,
+                              fontWeight: 500,
                               color: "var(--text-h)",
-                              fontSize: 15,
-                              lineHeight: 1.3,
+                              fontSize: "1rem",
+                              lineHeight: "1.5rem",
                               mb: 0.5,
+                              cursor: "pointer",
+                              transition: "color 0.15s ease",
+                              "&:hover": { color: "#3b82f6" },
                             }}
                           >
                             {ticket.subject}
@@ -1175,21 +1257,25 @@ const TicketsPage = () => {
                             sx={{
                               display: "flex",
                               flexWrap: "wrap",
-                              gap: "8px",
+                              alignItems: "center",
+                              gap: "16px",
                               fontSize: 13,
+                              mt: 0.5,
                             }}
                           >
                             <Box
                               component="span"
-                              sx={{ color: "var(--accent)", fontSize: 13 }}
+                              title="Click here for preview"
+                              sx={{
+                                color: "#3b82f6",
+                                fontSize: 13,
+                                display: "inline-block",
+                                cursor: "pointer",
+                                "&:hover": { textDecoration: "underline" },
+                              }}
+                              onClick={(e) => handleUserClick(e, ticket.raised_by_user_code, "left")}
                             >
                               {ticket.raised_by_user_code}
-                            </Box>
-                            <Box
-                              component="span"
-                              sx={{ color: "var(--accent)", fontSize: 13 }}
-                            >
-                              {ticket.department || "Quincecapital"}
                             </Box>
                             <Box
                               component="span"
@@ -1199,7 +1285,7 @@ const TicketsPage = () => {
                             </Box>
                             <Box
                               component="span"
-                              sx={{ color: "var(--text-sub)", fontSize: 13 }}
+                              sx={{ color: "var(--text-muted)", fontSize: 13 }}
                             >
                               #{ticket.ticket_no}
                             </Box>
@@ -1313,14 +1399,30 @@ const TicketsPage = () => {
                         {columnVisibility.Tech && <TableCell
                           sx={{
                             ...bodyCellSx,
-                            color: "var(--accent)",
                             backgroundColor: "inherit",
                           }}
                         >
                           {ticket.assigned_to_name ? (
-                            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0.5 }}>
                               {ticket.assigned_to_name.split(", ").map((name, i) => (
-                                <Box key={i} component="span" sx={{ whiteSpace: "nowrap" }}>
+                                <Box
+                                  key={i}
+                                  component="span"
+                                  title="Click here for preview"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (ticket.assigned_to_user_code) {
+                                      handleUserClick(e, ticket.assigned_to_user_code, "right");
+                                    }
+                                  }}
+                                  sx={{
+                                    display: "inline-block",
+                                    whiteSpace: "nowrap",
+                                    color: "#3b82f6",
+                                    cursor: "pointer",
+                                    "&:hover": { textDecoration: "underline" },
+                                  }}
+                                >
                                   {name}
                                 </Box>
                               ))}
@@ -1673,6 +1775,281 @@ const TicketsPage = () => {
           {toast.message}
         </Alert>
       </Snackbar>
+
+      <Popover
+        key={popoverAlign}
+        open={Boolean(userPopoverAnchor && popoverPosition)}
+        anchorReference="anchorPosition"
+        anchorPosition={popoverPosition || undefined}
+        onClose={handleUserPopoverClose}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: popoverAlign,
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: "24rem",
+              maxHeight: "min(480px, 85vh)",
+              overflowY: "auto",
+              borderRadius: "8px",
+              p: 2,
+              boxShadow: "1px 1px 5px -1px rgba(0, 0, 0, 0.06)",
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--bg-popover-glass) !important",
+              backdropFilter: "blur(12px)",
+              color: "var(--text)",
+              mt: 1,
+            },
+          },
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {popoverUserLoading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+            <CircularProgress size={28} sx={{ color: "var(--accent)" }} />
+          </Box>
+        ) : popoverUserDetail ? (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {/* Header Section */}
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              <Avatar
+                sx={{
+                  width: 48,
+                  height: 48,
+                  fontSize: 18,
+                  fontWeight: 600,
+                  backgroundColor: "rgba(107, 122, 114, 0.12)",
+                  color: "#4f5e55",
+                }}
+              >
+                {(((popoverUserDetail.first_name || "")[0] || "") + ((popoverUserDetail.last_name || "")[0] || "")).toUpperCase() || (popoverUserDetail.user_code || "U")[0].toUpperCase()}
+              </Avatar>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, flex: 1 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: 18, color: "#4f46e5", lineHeight: 1.2 }}>
+                  {popoverUserDetail.first_name || ""} {popoverUserDetail.last_name || ""}
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                  <MailOutlined sx={{ fontSize: 16, color: "var(--text-muted)" }} />
+                  <Typography sx={{ fontSize: 13.5, color: "var(--text-muted)" }}>
+                    {popoverUserDetail.email}
+                  </Typography>
+                  {popoverUserDetail.email && (
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        navigator.clipboard.writeText(popoverUserDetail.email);
+                        setToast({
+                          open: true,
+                          severity: "success",
+                          message: "Email address copied!",
+                        });
+                      }}
+                      sx={{
+                        border: "1px solid var(--border)",
+                        borderRadius: "6px",
+                        p: 0.4,
+                        color: "var(--text-sub)",
+                        backgroundColor: "rgba(0,0,0,0.02)",
+                        "&:hover": { backgroundColor: "rgba(0,0,0,0.05)" },
+                      }}
+                      title="Copy email address"
+                    >
+                      <ContentCopy sx={{ fontSize: 11 }} />
+                    </IconButton>
+                  )}
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Metadata row */}
+            <Box sx={{ display: "flex", gap: 3, alignItems: "center" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.6, color: "var(--text-muted)", fontSize: 13 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#71717a" }}>
+                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                  <line x1="9" y1="22" x2="9" y2="16"></line>
+                  <line x1="15" y1="22" x2="15" y2="16"></line>
+                  <line x1="9" y1="16" x2="15" y2="16"></line>
+                  <path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01M12 6h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01"></path>
+                </svg>
+                {popoverUserDetail.company_name || popoverUserDetail.company_code || "Quincecapital"}
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.6, color: "var(--text-muted)", fontSize: 13 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#71717a" }}>
+                  <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                  <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                  <line x1="12" y1="20" x2="12.01" y2="20" strokeWidth="3"></line>
+                </svg>
+                {popoverUserDetail.ip_address || "183.87.220.66"}
+              </Box>
+            </Box>
+
+            <Divider sx={{ borderColor: "var(--border)" }} />
+
+            {/* Other Notes */}
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <Typography sx={{ fontWeight: 600, fontSize: 13, color: "var(--text-secondary)" }}>
+                Other notes (from admin)
+              </Typography>
+
+              {isEditingNotes ? (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}>
+                  <TextField
+                    size="small"
+                    fullWidth
+                    multiline
+                    rows={2}
+                    value={editNotesText}
+                    onChange={(e) => setEditNotesText(e.target.value)}
+                    placeholder="Enter admin notes..."
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        fontSize: 13,
+                        color: "var(--text)",
+                        backgroundColor: "rgba(0,0,0,0.02)",
+                      }
+                    }}
+                  />
+                  <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                    <Button size="small" onClick={() => setIsEditingNotes(false)} sx={{ textTransform: "none" }}>
+                      Cancel
+                    </Button>
+                    <Button size="small" variant="contained" onClick={handleSaveNotes} sx={{ textTransform: "none", backgroundColor: "var(--accent)", color: "#fff" }}>
+                      Save
+                    </Button>
+                  </Box>
+                </Box>
+              ) : (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1, alignItems: "flex-start" }}>
+                  {popoverUserDetail.notes && (
+                    <Typography sx={{ fontSize: 13.5, color: "var(--text-muted)", mb: 0.5 }}>
+                      {popoverUserDetail.notes}
+                    </Typography>
+                  )}
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setIsEditingNotes(true);
+                      setEditNotesText(popoverUserDetail.notes || "");
+                    }}
+                    sx={{
+                      color: "#3b82f6",
+                      border: "1.5px solid #3b82f6",
+                      borderRadius: "6px",
+                      p: 0.6,
+                      "&:hover": { backgroundColor: "rgba(59, 130, 246, 0.05)" }
+                    }}
+                    title="Edit Notes"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </IconButton>
+                </Box>
+              )}
+            </Box>
+
+            <Divider sx={{ borderColor: "var(--border)" }} />
+
+            {/* Recent Ticket History */}
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <Typography sx={{ fontWeight: 600, fontSize: 13, color: "var(--text-secondary)", mb: 0.5 }}>
+                Recent ticket history
+              </Typography>
+              {tickets.filter(t => t.raised_by_user_code === popoverUserCode).length === 0 ? (
+                <Typography sx={{ fontSize: 13, color: "var(--text-sub)", fontStyle: "italic" }}>
+                  No recent tickets found.
+                </Typography>
+              ) : (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  {tickets
+                    .filter(t => t.raised_by_user_code === popoverUserCode)
+                    .slice(0, 5)
+                    .map(t => {
+                      const getHistoryStatusStyles = (statusName?: string) => {
+                        const norm = statusName?.toLowerCase() || "";
+                        if (norm.includes("new")) {
+                          return { bg: "rgba(211, 47, 47, 0.08)", color: "#d32f2f" };
+                        }
+                        if (norm.includes("closed")) {
+                          return { bg: "rgba(148, 163, 184, 0.12)", color: "#475569" };
+                        }
+                        if (norm.includes("tech")) {
+                          return { bg: "rgba(46, 125, 50, 0.08)", color: "#2e7d32" };
+                        }
+                        if (norm.includes("cust")) {
+                          return { bg: "rgba(237, 108, 2, 0.08)", color: "#ed6c02" };
+                        }
+                        return { bg: "rgba(99, 91, 255, 0.08)", color: "#635bff" };
+                      };
+                      const statusStyles = getHistoryStatusStyles(t.status_name);
+                      return (
+                        <Box
+                          key={t.ticket_id}
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: 1.5,
+                            backgroundColor: "var(--bg-row-alt)",
+                            borderRadius: "8px",
+                            px: 1.5,
+                            py: 1.1,
+                            border: "1px solid var(--border)",
+                          }}
+                        >
+                          <Typography
+                            noWrap
+                            sx={{
+                              fontSize: 13,
+                              color: "var(--text)",
+                              cursor: "pointer",
+                              fontWeight: 500,
+                              flex: 1,
+                              textOverflow: "ellipsis",
+                              overflow: "hidden",
+                              "&:hover": { textDecoration: "underline", color: "#3b82f6" }
+                            }}
+                            onClick={() => {
+                              handleUserPopoverClose();
+                              navigate(`/tickets/${t.ticket_id}`);
+                            }}
+                          >
+                            {t.subject}
+                          </Typography>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}>
+                            <Chip
+                              label={t.status_name || "New"}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                borderRadius: "6px",
+                                backgroundColor: statusStyles.bg,
+                                color: statusStyles.color,
+                                border: "none",
+                              }}
+                            />
+                            <Typography sx={{ fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                              {new Date(t.created_at || t.date || Date.now()).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" })}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                </Box>
+              )}
+            </Box>
+          </Box>
+        ) : (
+          <Typography sx={{ fontSize: 13, color: "var(--text-sub)", fontStyle: "italic" }}>
+            Failed to load user details.
+          </Typography>
+        )}
+      </Popover>
     </Box>
   );
 };
@@ -1687,11 +2064,12 @@ const headCellSx = {
 };
 
 const bodyCellSx = {
-  fontSize: 13,
-  color: "var(--text-muted)",
-  lineHeight: 1.35,
+  fontSize: "12px",
+  color: "#71717a",
+  lineHeight: "16px",
   verticalAlign: "top",
-  pt: 1.8,
+  py: 1.8,
+  whiteSpace: "nowrap",
 };
 
 const checkboxSx = {

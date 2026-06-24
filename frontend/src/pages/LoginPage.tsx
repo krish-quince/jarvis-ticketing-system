@@ -310,7 +310,7 @@ const LoginPage = () => {
                   fontSize: "11px",
                   fontWeight: 800,
                   letterSpacing: "0.5px",
-                  fontFamily: "'Poppins', sans-serif",
+                  fontFamily: "'InterVariable', sans-serif",
                 }}
               >
                 PRO
@@ -325,7 +325,7 @@ const LoginPage = () => {
               mb: 3,
               fontSize: { xs: "28px", md: "38px" },
               lineHeight: 1.3,
-              fontFamily: "'Poppins', sans-serif",
+              fontFamily: "'InterVariable', sans-serif",
               color: "#ffffff",
             }}
           >
@@ -437,7 +437,7 @@ const LoginPage = () => {
                   fontSize: "9.5px",
                   fontWeight: 800,
                   letterSpacing: "0.5px",
-                  fontFamily: "'Poppins', sans-serif",
+                  fontFamily: "'InterVariable', sans-serif",
                 }}
               >
                 PRO
@@ -453,7 +453,7 @@ const LoginPage = () => {
               fontWeight: 700,
               mb: 0.5,
               fontSize: "24px",
-              fontFamily: "'Poppins', sans-serif",
+              fontFamily: "'InterVariable', sans-serif",
             }}
           >
             Service Desk Pro
@@ -466,7 +466,7 @@ const LoginPage = () => {
               color: "#64748b",
               mb: 5,
               fontSize: "13px",
-              fontFamily: "'Poppins', sans-serif",
+              fontFamily: "'InterVariable', sans-serif",
             }}
           >
             {mode === "login"
@@ -866,7 +866,7 @@ const LoginPage = () => {
               sx={{
                 color: "#94a3b8",
                 fontSize: "10px",
-                fontFamily: "'Poppins', sans-serif",
+                fontFamily: "'InterVariable', sans-serif",
                 textTransform: "uppercase",
                 letterSpacing: 1,
               }}

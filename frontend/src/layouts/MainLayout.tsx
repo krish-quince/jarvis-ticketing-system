@@ -277,14 +277,10 @@ const MainLayout = () => {
                     key={pill.id}
                     onClick={() => navigate(`/tickets?filter=${pill.id}`)}
                     sx={{
-                      backgroundColor: isActive ? "#211b5a" : pillInactiveBg,
+                      backgroundColor: isActive ? "#211b5a" : "transparent",
                       color: isActive ? "#fff" : pillInactiveColor,
                       border: "1px solid",
-                      borderColor: isActive
-                        ? "#211b5a"
-                        : isDark
-                        ? "rgba(255,255,255,0.1)"
-                        : "rgba(33,27,90,0.12)",
+                      borderColor: isActive ? "#211b5a" : "transparent",
                       borderRadius: "999px",
                       textTransform: "none",
                       fontWeight: isActive ? 600 : 400,
@@ -302,7 +298,7 @@ const MainLayout = () => {
                         borderColor: isDark ? "rgba(255,255,255,0.2)" : "#211b5a",
                         "& .pill-count": {
                           backgroundColor: "#F4C63D",
-                          color: "#211b5a",
+                          color: "#fff",
                         },
                       },
                     }}
@@ -316,7 +312,7 @@ const MainLayout = () => {
                         px: 0.8,
                         borderRadius: "999px",
                         backgroundColor: isActive ? "#F4C63D" : pillCountInactiveBg,
-                        color: isActive ? "#211b5a" : pillCountInactiveColor,
+                        color: isActive ? "#fff" : pillCountInactiveColor,
                         fontSize: 12,
                         fontWeight: 700,
                         display: "flex",
@@ -721,7 +717,7 @@ const MainLayout = () => {
       <Box
         sx={{
           p: isTicketListRoute
-            ? { xs: 2, sm: "0 40px 40px" }
+            ? { xs: 2, sm: "0 32px 40px" }
             : { xs: 2, sm: 3, md: 4 },
           maxWidth: isTicketListRoute ? "none" : 1440,
           mx: "auto",

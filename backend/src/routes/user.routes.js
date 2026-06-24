@@ -4,7 +4,8 @@ import {
     createUser,
     getAllUsers,
     getAllUsersWithData,
-    updateUser
+    updateUser,
+    getUserByCodeDetail
 } from "../controllers/user.controller.js";
 
 import {
@@ -28,6 +29,12 @@ router.get(
     verifyToken,
     requireAdmin,
     getAllUsersWithData
+);
+
+router.get(
+    "/:userCode",
+    verifyToken,
+    getUserByCodeDetail
 );
 
 router.post(

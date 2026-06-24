@@ -1,3 +1,11 @@
+@font-face {
+  font-family: InterVariable;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(variable/InterVariable.ttf) format("truetype");
+}
+
 :root {
   --bg-app: #EFF6FF;
   --bg-card: #fff;
@@ -15,9 +23,10 @@
   --accent: #211b5a;
   --accent-light: #EAF2FF;
   --accent-chip-text: #211B5A;
+  --bg-popover-glass: rgba(255, 255, 255, 0.15);
 
-  --sans: 'Poppins', system-ui, Roboto, sans-serif;
-  --heading: 'Poppins', system-ui, Roboto, sans-serif;
+  --sans: 'InterVariable', system-ui, Roboto, sans-serif;
+  --heading: 'InterVariable', system-ui, Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 14px var(--sans);
@@ -48,6 +57,7 @@
   --accent: #b7afff;
   --accent-light: rgba(183, 175, 255, 0.1);
   --accent-chip-text: #b7afff;
+  --bg-popover-glass: rgba(29, 27, 38, 0.25);
 }
 
 .light-theme {
@@ -269,8 +279,18 @@ trix-editor:focus {
 
 .MuiMenuItem-root {
   color: var(--text) !important;
+  padding-top: 4px !important;
+  padding-bottom: 12px !important;
 }
 
 .MuiMenuItem-root:hover {
   background: var(--bg-row-hover) !important;
+}
+
+strong, b, th {
+  font-weight: 600 !important;
+}
+
+.font-semibold {
+  font-weight: 600 !important;
 }

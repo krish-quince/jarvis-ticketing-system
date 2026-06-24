@@ -311,3 +311,34 @@ export const createUser = async (req, res) => {
     });
   }
 };
+
+export const getUserByCodeDetail = async (req, res) => {
+    try {
+        const { userCode } = req.params;
+        const query = `
+            SELECT u.user_code, u.first_name, u.last_name, u.email, r.role_id, r.role_name, c.company_name, c.company_code, d.department_name, u.is_active
+            FROM users u
+            INNER JOIN roles r ON r.role_id = u.role_id
+            LEFT JOIN companies c ON c.company_code = u.company_code
+            LEFT JOIN departments d ON d.department_id = u.department_id
+            WHERE u.user_code = $1
+        `;
+        const result = await pool.query(query, [userCode]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            data: result.rows[0],
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
