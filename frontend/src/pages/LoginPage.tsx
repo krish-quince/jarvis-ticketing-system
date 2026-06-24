@@ -23,7 +23,7 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import CheckIcon from "@mui/icons-material/Check";
 import SecurityIcon from "@mui/icons-material/Security";
 
-import jarvisLogo from "../assets/logos/q-Jarvis-logo.jpg";
+import servicedeskLogo from "../assets/logos/servicedesk-logo.png";
 import { login, register } from "../services/authService";
 
 const COMPANIES = [
@@ -294,7 +294,7 @@ const LoginPage = () => {
               fontFamily: "'Poppins', sans-serif",
             }}
           >
-            Quince Jarvis
+            ServiceDesk
           </Typography>
 
           <Typography
@@ -373,8 +373,8 @@ const LoginPage = () => {
           {/* Logo container */}
           <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
             <img
-              src={jarvisLogo}
-              alt="Jarvis Logo"
+              src={servicedeskLogo}
+              alt="ServiceDesk Logo"
               style={{ height: 60, objectFit: "contain" }}
             />
           </Box>

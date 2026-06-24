@@ -24,6 +24,7 @@ import {
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getCompanySettings } from "../services/masterService";
+import servicedeskLogo from "../assets/logos/servicedesk-logo.png";
 
 const BACKEND_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace("/api", "");
 
@@ -145,7 +146,13 @@ const Topbar = () => {
             }
           }}
         >
-          {companyInfo?.logo_url ? (
+          {isSuperAdmin ? (
+            <Avatar
+              src={servicedeskLogo}
+              variant="rounded"
+              sx={{ width: 32, height: 32, border: "1px solid rgba(255,255,255,0.2)", bgcolor: "#fff" }}
+            />
+          ) : companyInfo?.logo_url ? (
             <Avatar
               src={getLogoUrl(companyInfo.logo_url)}
               variant="rounded"
@@ -169,7 +176,7 @@ const Topbar = () => {
               whiteSpace: "nowrap",
             }}
           >
-            {companyInfo?.helpdesk_title || companyInfo?.company_name || "Jarvis Helpdesk"}
+            {isSuperAdmin ? "ServiceDesk" : (companyInfo?.helpdesk_title || companyInfo?.company_name || "Jarvis Helpdesk")}
           </Typography>
         </Box>
 
