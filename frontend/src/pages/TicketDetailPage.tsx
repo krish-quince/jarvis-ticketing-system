@@ -296,6 +296,23 @@ const TicketDetailPage = () => {
       const ticketData = await getTicketById(ticketId);
       setTicket(ticketData);
 
+      // Track recently viewed tickets in localStorage
+      try {
+        const recentlyViewed = JSON.parse(localStorage.getItem("recentlyViewed") || "[]");
+        const filtered = recentlyViewed.filter((t: any) => t.ticket_id !== ticketData.ticket_id);
+        const newItem = {
+          ticket_id: ticketData.ticket_id,
+          ticket_no: ticketData.ticket_no,
+          subject: ticketData.subject,
+          category_name: ticketData.category_name || "General",
+        };
+        const updated = [newItem, ...filtered].slice(0, 5);
+        localStorage.setItem("recentlyViewed", JSON.stringify(updated));
+        window.dispatchEvent(new Event("recently-viewed-updated"));
+      } catch (err) {
+        console.warn("Failed to update recently viewed tickets:", err);
+      }
+
       try {
         const [commentsData, historyData] = await Promise.all([
           getComments(ticketId),

@@ -12,6 +12,7 @@ import {
   Snackbar,
   Alert,
   useTheme,
+  Tooltip,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -113,6 +114,25 @@ const Topbar = () => {
     message: "",
     severity: "success" as "success" | "error",
   });
+
+  const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
+
+  const loadRecentlyViewed = () => {
+    try {
+      const items = JSON.parse(localStorage.getItem("recentlyViewed") || "[]");
+      setRecentlyViewed(items);
+    } catch {
+      setRecentlyViewed([]);
+    }
+  };
+
+  useEffect(() => {
+    loadRecentlyViewed();
+    window.addEventListener("recently-viewed-updated", loadRecentlyViewed);
+    return () => {
+      window.removeEventListener("recently-viewed-updated", loadRecentlyViewed);
+    };
+  }, []);
 
   return (
     <AppBar
@@ -405,19 +425,38 @@ const Topbar = () => {
               >
                 Recently viewed tickets
               </Typography>
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <Avatar
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    backgroundColor: "#3b36db",
-                    color: "#fff",
-                  }}
-                >
-                  C
-                </Avatar>
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                {recentlyViewed.length > 0 ? (
+                  recentlyViewed.map((t: any) => (
+                    <Tooltip key={t.ticket_id} title={`${t.ticket_no || ""}: ${t.subject || ""}`} arrow>
+                      <Avatar
+                        onClick={() => {
+                          handleCloseMenu();
+                          navigate(`/tickets/${t.ticket_id}`);
+                        }}
+                        sx={{
+                          width: 28,
+                          height: 28,
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          backgroundColor: "#3b36db",
+                          color: "#fff",
+                          cursor: "pointer",
+                          transition: "transform 0.15s ease",
+                          "&:hover": {
+                            transform: "scale(1.1)",
+                          },
+                        }}
+                      >
+                        {(t.category_name || "C")[0].toUpperCase()}
+                      </Avatar>
+                    </Tooltip>
+                  ))
+                ) : (
+                  <Typography variant="body2" sx={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)", fontSize: 13, fontStyle: "italic" }}>
+                    No recently viewed tickets
+                  </Typography>
+                )}
               </Box>
             </Box>
 
