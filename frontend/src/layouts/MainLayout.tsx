@@ -1,4 +1,16 @@
-import { Box, Button } from "@mui/material";
+import {
+  Box,
+  Button,
+  Popover,
+  Checkbox,
+  FormControlLabel,
+  MenuItem,
+  TextField,
+  Select,
+  FormControl,
+  InputLabel,
+  Typography,
+} from "@mui/material";
 import {
   Outlet,
   useNavigate,
@@ -17,6 +29,12 @@ import {
 import Topbar from "../components/Topbar";
 import { getTickets } from "../services/ticketService";
 import { useThemeMode } from "../hooks/useThemeMode";
+import { getUsers } from "../services/userService";
+import {
+  getPriorities,
+  getStatuses,
+  getDepartments,
+} from "../services/masterService";
 
 const MainLayout = () => {
   const navigate = useNavigate();
@@ -66,15 +84,15 @@ const MainLayout = () => {
   const activePill = searchParams.get("filter") || "all";
   const isTicketListRoute = location.pathname === "/tickets";
 
-  // Dark mode palette — matches the dark bg visible in the screenshot
+  // Dark mode palette
   const darkBg = "#0f1117";
   const darkCard = "#161b27";
   const darkBorder = "rgba(255,255,255,0.08)";
   const darkText = "rgba(255,255,255,0.88)";
   const darkSubtext = "rgba(255,255,255,0.45)";
 
-  const lightBg = "#eff6ff";
-  const lightCard = "#eff6ff";
+  const lightBg = "#f8fafc";
+  const lightCard = "#ffffff";
   const lightBorder = "rgba(0,0,0,0.08)";
   const lightText = "#111827";
 
@@ -88,6 +106,118 @@ const MainLayout = () => {
   const pillInactiveColor = isDark ? darkText : "#374151";
   const pillCountInactiveBg = isDark ? "rgba(255,255,255,0.1)" : "rgba(33,27,90,0.1)";
   const pillCountInactiveColor = isDark ? darkText : "#374151";
+
+  // --- Feature 1: Columns Visibility State ---
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({
+    Priority: true,
+    Status: true,
+    Date: true,
+    Due: true,
+    Tech: true,
+    Updated: true,
+  });
+
+  // --- Feature 2: Sort By State ---
+  const [sortBy, setSortBy] = useState<string>("Updated");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // --- Feature 3: Filter State ---
+  const [filters, setFilters] = useState<any>({
+    date: "",
+    dueInDays: "",
+    updated: "",
+    status: "",
+    priority: "",
+    from: "",
+    company: "",
+    department: "",
+    tech: "",
+    subscribedOnly: false,
+  });
+
+  const [tempFilters, setTempFilters] = useState<any>({ ...filters });
+
+  // Options for filter form
+  const [filterOptions, setFilterOptions] = useState<{
+    statuses: any[];
+    priorities: any[];
+    departments: any[];
+    technicians: any[];
+  }>({
+    statuses: [],
+    priorities: [],
+    departments: [],
+    technicians: [],
+  });
+
+  const loadFilterOptions = async () => {
+    try {
+      const [statusesData, prioritiesData, departmentsData, usersData] = await Promise.all([
+        getStatuses().catch(() => []),
+        getPriorities().catch(() => []),
+        getDepartments().catch(() => []),
+        getUsers().catch(() => []),
+      ]);
+
+      setFilterOptions({
+        statuses: statusesData || [],
+        priorities: prioritiesData || [],
+        departments: departmentsData || [],
+        technicians: usersData || [],
+      });
+    } catch (e) {
+      console.error("Error loading filter options:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser.company_code) {
+      loadFilterOptions();
+    }
+  }, [currentUser.company_code]);
+
+  // Popover Anchor Elements
+  const [columnsAnchor, setColumnsAnchor] = useState<null | HTMLElement>(null);
+  const [sortAnchor, setSortAnchor] = useState<null | HTMLElement>(null);
+  const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
+
+  const handleToggleColumn = (col: string) => {
+    setColumnVisibility((prev) => ({
+      ...prev,
+      [col]: !prev[col],
+    }));
+  };
+
+  const handleSortSelect = (opt: string) => {
+    if (sortBy === opt) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(opt);
+      setSortOrder("asc");
+    }
+  };
+
+  const handleApplyFilters = () => {
+    setFilters(tempFilters);
+    setFilterAnchor(null);
+  };
+
+  const isColumnsOpen = Boolean(columnsAnchor);
+  const isSortOpen = Boolean(sortAnchor);
+  const isFilterOpen = Boolean(filterAnchor);
+
+  const sortOptions = [
+    "Ticket number",
+    "Subject",
+    "From",
+    "Company",
+    "Priority",
+    "Status",
+    "Date",
+    "Due",
+    "Tech",
+    "Updated",
+  ];
 
   return (
     <Box
@@ -202,7 +332,7 @@ const MainLayout = () => {
               })}
             </Box>
 
-            {/* Columns / Sort / Filter */}
+            {/* Columns / Sort / Filter Buttons */}
             <Box
               sx={{
                 display: "flex",
@@ -210,30 +340,414 @@ const MainLayout = () => {
                 minWidth: "max-content",
               }}
             >
-              {[
-                { label: "Columns", icon: ViewColumn },
-                { label: "Sort by", icon: Sort },
-                { label: "Filter",  icon: FilterList },
-              ].map(({ label, icon: Icon }) => (
-                <Button
-                  key={label}
-                  startIcon={<Icon sx={{ fontSize: "20px !important" }} />}
-                  sx={{
-                    color: isDark ? darkSubtext : "#6b7280",
-                    textTransform: "none",
-                    fontWeight: 400,
-                    fontSize: 14,
-                    px: 0,
-                    minWidth: "auto",
-                    "&:hover": {
-                      backgroundColor: "transparent",
-                      color: isDark ? "#fff" : "#211b5a",
+              <Button
+                startIcon={<ViewColumn sx={{ fontSize: "20px !important" }} />}
+                onClick={(e) => setColumnsAnchor(e.currentTarget)}
+                sx={{
+                  color: isDark ? darkSubtext : "#6b7280",
+                  textTransform: "none",
+                  fontWeight: 400,
+                  fontSize: 14,
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                    color: isDark ? "#fff" : "#211b5a",
+                  },
+                }}
+              >
+                Columns
+              </Button>
+
+              <Button
+                startIcon={<Sort sx={{ fontSize: "20px !important" }} />}
+                onClick={(e) => setSortAnchor(e.currentTarget)}
+                sx={{
+                  color: isDark ? darkSubtext : "#6b7280",
+                  textTransform: "none",
+                  fontWeight: 400,
+                  fontSize: 14,
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                    color: isDark ? "#fff" : "#211b5a",
+                  },
+                }}
+              >
+                Sort by
+              </Button>
+
+              <Button
+                startIcon={<FilterList sx={{ fontSize: "20px !important" }} />}
+                onClick={(e) => setFilterAnchor(e.currentTarget)}
+                sx={{
+                  color: isDark ? darkSubtext : "#6b7280",
+                  textTransform: "none",
+                  fontWeight: 400,
+                  fontSize: 14,
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                    color: isDark ? "#fff" : "#211b5a",
+                  },
+                }}
+              >
+                Filter
+              </Button>
+
+              {/* Column Visibility Popover */}
+              <Popover
+                open={isColumnsOpen}
+                anchorEl={columnsAnchor}
+                onClose={() => setColumnsAnchor(null)}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      p: 2,
+                      width: 180,
+                      backgroundColor: cardBg,
+                      border: `1px solid ${border}`,
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                      borderRadius: "12px",
+                      color: text,
                     },
-                  }}
-                >
-                  {label}
-                </Button>
-              ))}
+                  },
+                }}
+              >
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  {Object.keys(columnVisibility).map((col) => (
+                    <FormControlLabel
+                      key={col}
+                      control={
+                        <Checkbox
+                          size="small"
+                          checked={columnVisibility[col]}
+                          onChange={() => handleToggleColumn(col)}
+                          sx={{
+                            color: "var(--accent)",
+                            "&.Mui-checked": { color: "#211B5A" },
+                          }}
+                        />
+                      }
+                      label={
+                        <Typography variant="body2" sx={{ color: text }}>
+                          {col}
+                        </Typography>
+                      }
+                    />
+                  ))}
+                </Box>
+              </Popover>
+
+              {/* Sort By Popover */}
+              <Popover
+                open={isSortOpen}
+                anchorEl={sortAnchor}
+                onClose={() => setSortAnchor(null)}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      py: 1,
+                      width: 220,
+                      backgroundColor: cardBg,
+                      border: `1px solid ${border}`,
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                      borderRadius: "12px",
+                      color: text,
+                    },
+                  },
+                }}
+              >
+                {sortOptions.map((opt) => {
+                  const isActive = sortBy === opt;
+                  return (
+                    <MenuItem
+                      key={opt}
+                      onClick={() => handleSortSelect(opt)}
+                      sx={{
+                        fontSize: 14,
+                        py: 1.2,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        backgroundColor: isActive
+                          ? isDark
+                            ? "rgba(124,108,255,0.15) !important"
+                            : "rgba(33,27,90,0.08) !important"
+                          : "transparent",
+                        color: isActive ? "#211b5a" : text,
+                        fontWeight: isActive ? 600 : 400,
+                        "&:hover": {
+                          backgroundColor: isDark
+                            ? "rgba(255,255,255,0.05)"
+                            : "rgba(0,0,0,0.04)",
+                        },
+                      }}
+                    >
+                      {opt}
+                      {isActive && (
+                        <Typography sx={{ fontWeight: 700 }}>
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </Typography>
+                      )}
+                    </MenuItem>
+                  );
+                })}
+              </Popover>
+
+              {/* Filter Popover */}
+              <Popover
+                open={isFilterOpen}
+                anchorEl={filterAnchor}
+                onClose={() => setFilterAnchor(null)}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      p: 3,
+                      width: 320,
+                      maxHeight: "85vh",
+                      overflowY: "auto",
+                      backgroundColor: cardBg,
+                      border: `1px solid ${border}`,
+                      boxShadow: "0 12px 40px rgba(0,0,0,0.15)",
+                      borderRadius: "16px",
+                      color: text,
+                    },
+                  },
+                }}
+              >
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {/* Date Filter */}
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="filter-date-label">Date</InputLabel>
+                    <Select
+                      labelId="filter-date-label"
+                      value={tempFilters.date}
+                      label="Date"
+                      onChange={(e) =>
+                        setTempFilters((prev: any) => ({ ...prev, date: e.target.value }))
+                      }
+                      sx={{ borderRadius: "8px" }}
+                    >
+                      <MenuItem value="">Any time</MenuItem>
+                      <MenuItem value="Today">Today</MenuItem>
+                      <MenuItem value="Last 7 days">Last 7 days</MenuItem>
+                      <MenuItem value="Last 30 days">Last 30 days</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  {/* Due In Filter */}
+                  <TextField
+                    fullWidth
+                    label="Due in (days)"
+                    placeholder="Due in"
+                    size="small"
+                    type="number"
+                    value={tempFilters.dueInDays}
+                    onChange={(e) =>
+                      setTempFilters((prev: any) => ({
+                        ...prev,
+                        dueInDays: e.target.value,
+                      }))
+                    }
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: "8px" },
+                    }}
+                  />
+
+                  {/* Updated Filter */}
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="filter-updated-label">Updated</InputLabel>
+                    <Select
+                      labelId="filter-updated-label"
+                      value={tempFilters.updated}
+                      label="Updated"
+                      onChange={(e) =>
+                        setTempFilters((prev: any) => ({ ...prev, updated: e.target.value }))
+                      }
+                      sx={{ borderRadius: "8px" }}
+                    >
+                      <MenuItem value="">Any time</MenuItem>
+                      <MenuItem value="Today">Today</MenuItem>
+                      <MenuItem value="Last 7 days">Last 7 days</MenuItem>
+                      <MenuItem value="Last 30 days">Last 30 days</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  {/* Status Filter */}
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="filter-status-label">Status</InputLabel>
+                    <Select
+                      labelId="filter-status-label"
+                      value={tempFilters.status}
+                      label="Status"
+                      onChange={(e) =>
+                        setTempFilters((prev: any) => ({
+                          ...prev,
+                          status: e.target.value,
+                        }))
+                      }
+                      sx={{ borderRadius: "8px" }}
+                    >
+                      <MenuItem value="">Status</MenuItem>
+                      {filterOptions.statuses.map((s) => (
+                        <MenuItem key={s.status_id} value={s.status_name}>
+                          {s.status_name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* Priority Filter */}
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="filter-priority-label">Priority</InputLabel>
+                    <Select
+                      labelId="filter-priority-label"
+                      value={tempFilters.priority}
+                      label="Priority"
+                      onChange={(e) =>
+                        setTempFilters((prev: any) => ({
+                          ...prev,
+                          priority: e.target.value,
+                        }))
+                      }
+                      sx={{ borderRadius: "8px" }}
+                    >
+                      <MenuItem value="">Priority</MenuItem>
+                      {filterOptions.priorities.map((p) => (
+                        <MenuItem key={p.priority_id} value={p.priority_name}>
+                          {p.priority_name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* From Filter */}
+                  <TextField
+                    fullWidth
+                    label="From"
+                    placeholder="Email or username"
+                    size="small"
+                    value={tempFilters.from}
+                    onChange={(e) =>
+                      setTempFilters((prev: any) => ({ ...prev, from: e.target.value }))
+                    }
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: "8px" },
+                    }}
+                  />
+
+                  {/* Company Filter */}
+                  <TextField
+                    fullWidth
+                    label="Company"
+                    placeholder="Company name"
+                    size="small"
+                    value={tempFilters.company}
+                    onChange={(e) =>
+                      setTempFilters((prev: any) => ({
+                        ...prev,
+                        company: e.target.value,
+                      }))
+                    }
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: "8px" },
+                    }}
+                  />
+
+                  {/* Department Filter */}
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="filter-dept-label">Department</InputLabel>
+                    <Select
+                      labelId="filter-dept-label"
+                      value={tempFilters.department}
+                      label="Department"
+                      onChange={(e) =>
+                        setTempFilters((prev: any) => ({
+                          ...prev,
+                          department: e.target.value,
+                        }))
+                      }
+                      sx={{ borderRadius: "8px" }}
+                    >
+                      <MenuItem value="">Select Department</MenuItem>
+                      {filterOptions.departments.map((d) => (
+                        <MenuItem key={d.department_id} value={d.department_name}>
+                          {d.department_name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* Tech Filter */}
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="filter-tech-label">Tech</InputLabel>
+                    <Select
+                      labelId="filter-tech-label"
+                      value={tempFilters.tech}
+                      label="Tech"
+                      onChange={(e) =>
+                        setTempFilters((prev: any) => ({ ...prev, tech: e.target.value }))
+                      }
+                      sx={{ borderRadius: "8px" }}
+                    >
+                      <MenuItem value="">Tech</MenuItem>
+                      {filterOptions.technicians.map((u) => (
+                        <MenuItem key={u.user_code} value={u.user_code}>
+                          {u.first_name} {u.last_name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* Subscribed Only Checkbox */}
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={tempFilters.subscribedOnly}
+                        onChange={(e) =>
+                          setTempFilters((prev: any) => ({
+                            ...prev,
+                            subscribedOnly: e.target.checked,
+                          }))
+                        }
+                        sx={{
+                          color: "var(--accent)",
+                          "&.Mui-checked": { color: "#211B5A" },
+                        }}
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" sx={{ color: text }}>
+                        Only tickets I'm subscribed to
+                      </Typography>
+                    }
+                  />
+
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={handleApplyFilters}
+                    sx={{
+                      backgroundColor: "#211b5a",
+                      color: "#fff",
+                      borderRadius: "8px",
+                      py: 1.2,
+                      fontWeight: 600,
+                      textTransform: "none",
+                      "&:hover": { backgroundColor: "#15103c" },
+                    }}
+                  >
+                    Apply
+                  </Button>
+                </Box>
+              </Popover>
             </Box>
           </Box>
         </Box>
@@ -251,7 +765,14 @@ const MainLayout = () => {
           flex: 1,
         }}
       >
-        <Outlet />
+        <Outlet
+          context={{
+            columnVisibility,
+            sortBy,
+            sortOrder,
+            filters,
+          }}
+        />
       </Box>
 
       {/* Footer */}
