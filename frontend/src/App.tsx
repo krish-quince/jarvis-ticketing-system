@@ -23,6 +23,7 @@ import GeneralSettingsPage from "./pages/GeneralSettingsPage";
 import MainLayout from "./layouts/MainLayout";
 import UsersPage from "./pages/UserPage";
 import AddUserPage from "./pages/AddUserPage";
+import TimeSpentPage from "./pages/TimeSpentPage";
 
 // Route guard for authenticated users
 const ProtectedRoute = () => {
@@ -79,6 +80,7 @@ function App() {
               <Route path="/tickets" element={<TicketsPage />} />
               <Route path="/tickets/new" element={<NewTicketPage />} />
               <Route path="/tickets/:id" element={<TicketDetailPage />} />
+              <Route path="/tickets/:id/time-spent" element={<TimeSpentPage />} />
 
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/users" element={<UsersPage />} />

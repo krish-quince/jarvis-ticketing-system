@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -28,6 +28,9 @@ import {
   CheckCircleOutlined as CloseIcon,
   MoreHoriz as MoreIcon,
   AccessTime as AccessTimeIcon,
+  PlayArrow as PlayArrowIcon,
+  Pause as PauseIcon,
+  OpenInNew as OpenInNewIcon,
   Check as CheckIcon,
   Close as CancelIcon,
   LockOutlined as LockIcon,
@@ -49,6 +52,11 @@ import {
   createComment,
 } from "../services/ticketService";
 import { getUsers } from "../services/userService";
+import {
+  startTimeTracking,
+  stopTimeTracking,
+  getTotalTime,
+} from "../services/timeTrackingService";
 import {
   getCategories,
   getPriorities,
@@ -123,6 +131,15 @@ const TicketDetailPage = () => {
   // More actions menu anchor
   const [moreAnchor, setMoreAnchor] = useState<null | HTMLElement>(null);
 
+  // Timer state
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [currentEntryId, setCurrentEntryId] = useState<number | null>(null);
+  const [totalTimeSeconds, setTotalTimeSeconds] = useState(0);
+  const timerSecondsRef = useRef(0);
+  const currentEntryIdRef = useRef<number | null>(null);
+  const timerStoppedRef = useRef(false);
+
   // Toast feedback state
   const [toast, setToast] = useState({
     open: false,
@@ -166,6 +183,118 @@ const TicketDetailPage = () => {
   useEffect(() => {
     fetchData();
   }, [id]);
+
+  // ── Timer: auto-start on mount, auto-stop on unmount ──
+  const stopCurrentTimer = useCallback(async () => {
+    const entryId = currentEntryIdRef.current;
+    const seconds = timerSecondsRef.current;
+    if (entryId && !timerStoppedRef.current) {
+      timerStoppedRef.current = true;
+      try {
+        await stopTimeTracking(ticketId, entryId, seconds);
+      } catch (err) {
+        console.warn("Failed to stop timer:", err);
+      }
+    }
+  }, [ticketId]);
+
+  // Start timer after ticket data is loaded
+  useEffect(() => {
+    if (!ticket) return;
+
+    let cancelled = false;
+
+    const initTimer = async () => {
+      try {
+        // Get total time already spent
+        const totalSecs = await getTotalTime(ticketId);
+        if (!cancelled) setTotalTimeSeconds(totalSecs);
+
+        // Start a new session
+        const entry = await startTimeTracking(ticketId, ticket.status_name);
+        if (!cancelled && entry) {
+          setCurrentEntryId(entry.entry_id);
+          currentEntryIdRef.current = entry.entry_id;
+          timerStoppedRef.current = false;
+          setTimerSeconds(0);
+          timerSecondsRef.current = 0;
+          setTimerRunning(true);
+        }
+      } catch (err) {
+        console.warn("Failed to start timer:", err);
+      }
+    };
+
+    initTimer();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ticket?.ticket_id]);
+
+  // Tick the timer every second
+  useEffect(() => {
+    if (!timerRunning) return;
+    const interval = setInterval(() => {
+      setTimerSeconds((prev) => {
+        const next = prev + 1;
+        timerSecondsRef.current = next;
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timerRunning]);
+
+  // Stop timer on unmount / navigation away
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const entryId = currentEntryIdRef.current;
+      const seconds = timerSecondsRef.current;
+      if (entryId && !timerStoppedRef.current) {
+        timerStoppedRef.current = true;
+        // Use sendBeacon for reliability on tab close
+        const token = localStorage.getItem("token");
+        const url = `${
+          import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+        }/tickets/${ticketId}/time-tracking/${entryId}/stop`;
+        const body = JSON.stringify({ time_spent_seconds: seconds });
+        const blob = new Blob([body], { type: "application/json" });
+
+        // Try sendBeacon first, fall back to sync XHR
+        if (navigator.sendBeacon) {
+          // sendBeacon doesn't support custom headers, use fetch keepalive instead
+          fetch(url, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body,
+            keepalive: true,
+          }).catch(() => {});
+        }
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      stopCurrentTimer();
+    };
+  }, [ticketId, stopCurrentTimer]);
+
+  // Helper: format seconds to HH:MM:SS
+  const formatTime = (totalSecs: number) => {
+    const h = Math.floor(totalSecs / 3600);
+    const m = Math.floor((totalSecs % 3600) / 60);
+    const s = totalSecs % 60;
+    return [
+      h.toString().padStart(2, "0"),
+      m.toString().padStart(2, "0"),
+      s.toString().padStart(2, "0"),
+    ].join(":");
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -2500,7 +2629,7 @@ const TicketDetailPage = () => {
                 </Typography>
               </Box>
 
-              {/* Time spent */}
+              {/* Time spent — live timer */}
               <Box
                 sx={{
                   display: "flex",
@@ -2524,22 +2653,45 @@ const TicketDetailPage = () => {
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 1,
+                    gap: 0.5,
                     flex: 1,
                   }}
                 >
+                  {timerRunning && (
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        backgroundColor: "#4caf50",
+                        animation: "pulse 1.5s ease-in-out infinite",
+                        "@keyframes pulse": {
+                          "0%, 100%": { opacity: 1 },
+                          "50%": { opacity: 0.4 },
+                        },
+                      }}
+                    />
+                  )}
                   <Typography
                     variant="body2"
-                    sx={{ fontWeight: 600, color: "#211b5a" }}
+                    sx={{
+                      fontWeight: 600,
+                      color: timerRunning ? "#211b5a" : "var(--text-secondary)",
+                      fontFamily: "'Roboto Mono', monospace",
+                      fontSize: 13,
+                    }}
                   >
-                    00:00:03
+                    {formatTime(totalTimeSeconds + timerSeconds)}
                   </Typography>
-                  <IconButton
-                    size="small"
-                    sx={{ p: 0, color: "var(--text-secondary)" }}
-                  >
-                    <AccessTimeIcon sx={{ fontSize: 15 }} />
-                  </IconButton>
+                  <Tooltip title="View time spent details">
+                    <IconButton
+                      size="small"
+                      sx={{ p: 0, color: "var(--text-secondary)", ml: 0.5 }}
+                      onClick={() => navigate(`/tickets/${ticketId}/time-spent`)}
+                    >
+                      <AccessTimeIcon sx={{ fontSize: 15 }} />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
               </Box>
 

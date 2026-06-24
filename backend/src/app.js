@@ -14,6 +14,7 @@ import { verifyToken } from "./middleware/auth.middleware.js";
 import ticketRoutes from "./routes/ticket.routes.js";
 import commentRoutes from "./routes/comment.routes.js";
 import historyRoutes from "./routes/history.routes.js";
+import timeTrackingRoutes from "./routes/timeTracking.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import masterRoutes from "./routes/master.routes.js";
@@ -44,6 +45,7 @@ app.use("/api/tickets", commentRoutes);
 
 app.use("/api/tickets", historyRoutes);
 
+app.use("/api/tickets", timeTrackingRoutes);
 app.use("/api/users", userRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);

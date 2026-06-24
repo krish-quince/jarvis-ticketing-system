@@ -294,7 +294,7 @@ const LoginPage = () => {
               fontFamily: "'Poppins', sans-serif",
             }}
           >
-            Quince Jarvis
+            ServiceDesk Pro
           </Typography>
 
           <Typography
