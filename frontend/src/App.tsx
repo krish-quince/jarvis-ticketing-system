@@ -4,6 +4,7 @@ import {
   Route,
   Navigate,
   Outlet,
+  useLocation,
 } from "react-router-dom";
 
 import LoginPage from "./pages/LoginPage";
@@ -26,9 +27,21 @@ import AddUserPage from "./pages/AddUserPage";
 // Route guard for authenticated users
 const ProtectedRoute = () => {
   const token = localStorage.getItem("token");
+  const location = useLocation();
+
   if (!token) {
     return <Navigate to="/" replace />;
   }
+
+  try {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (Number(user.role_id) === 4 && !location.pathname.startsWith("/admin")) {
+      return <Navigate to="/admin" replace />;
+    }
+  } catch (e) {
+    // ignore
+  }
+
   return <Outlet />;
 };
 
@@ -41,8 +54,9 @@ const GuestRoute = () => {
       if (Number(user.role_id) === 4) {
         return <Navigate to="/admin" replace />;
       }
+      return <Navigate to="/tickets" replace />;
     } catch {
-      // ignore
+      return <Navigate to="/tickets" replace />;
     }
   }
   return <Outlet />;

@@ -137,7 +137,11 @@ const Topbar = () => {
             if (companyInfo?.title_link) {
               window.open(companyInfo.title_link, "_blank", "noopener,noreferrer");
             } else {
-              navigate("/tickets");
+              if (isSuperAdmin) {
+                navigate("/admin");
+              } else {
+                navigate("/tickets");
+              }
             }
           }}
         >

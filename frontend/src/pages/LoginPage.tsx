@@ -130,7 +130,11 @@ const LoginPage = () => {
       const data: any = await login(userCode.trim(), password);
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      navigate("/tickets");
+      if (Number(data.user.role_id) === 4) {
+        navigate("/admin");
+      } else {
+        navigate("/tickets");
+      }
     } catch (error) {
       console.error(error);
       setToast({
