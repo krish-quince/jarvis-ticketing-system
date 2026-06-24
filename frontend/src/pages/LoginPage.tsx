@@ -230,6 +230,8 @@ const LoginPage = () => {
     },
     "& .MuiInputLabel-root.Mui-focused": {
       color: "#211B5A",
+      // paddingTop: "12px",
+
     },
   };
 
@@ -462,7 +464,7 @@ const LoginPage = () => {
             align="center"
             sx={{
               color: "#64748b",
-              mb: 2,
+              mb: 5,
               fontSize: "13px",
               fontFamily: "'Poppins', sans-serif",
             }}
@@ -473,7 +475,7 @@ const LoginPage = () => {
           </Typography>
 
           {mode === "login" ? (
-            <Box component="form" noValidate sx={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <Box component="form" noValidate sx={{ display: "flex", flexDirection: "column", pt: 1 }}>
               <TextField
                 fullWidth
                 size="small"
@@ -675,7 +677,7 @@ const LoginPage = () => {
               </Box>
             </Box>
           ) : (
-            <Box component="form" noValidate sx={{ display: "flex", flexDirection: "column", overflowY: "auto", pr: 0.5, maxH: "55vh" }}>
+            <Box component="form" noValidate sx={{ display: "flex", flexDirection: "column", overflowY: "auto", pr: 0.5, maxH: "55vh", pt: 1 }}>
               <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
                 <TextField
                   fullWidth
