@@ -466,27 +466,33 @@ const MainLayout = () => {
                       onClick={() => handleSortSelect(opt)}
                       sx={{
                         fontSize: 14,
-                        py: 1.2,
+                        py: 1,
+                        px: 2,
+                        mx: 1,
+                        my: 0.5,
+                        borderRadius: "8px",
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
                         backgroundColor: isActive
-                          ? isDark
-                            ? "rgba(124,108,255,0.15) !important"
-                            : "rgba(33,27,90,0.08) !important"
+                          ? "#3f51b5 !important"
                           : "transparent",
-                        color: isActive ? "#211b5a" : text,
+                        color: isActive ? "#ffffff !important" : text,
                         fontWeight: isActive ? 600 : 400,
                         "&:hover": {
-                          backgroundColor: isDark
+                          backgroundColor: isActive
+                            ? "#3f51b5 !important"
+                            : isDark
                             ? "rgba(255,255,255,0.05)"
                             : "rgba(0,0,0,0.04)",
                         },
                       }}
                     >
-                      {opt}
+                      <Typography sx={{ fontSize: 14, fontWeight: isActive ? 600 : 400, color: "inherit" }}>
+                        {opt}
+                      </Typography>
                       {isActive && (
-                        <Typography sx={{ fontWeight: 700 }}>
+                        <Typography sx={{ fontWeight: 700, color: "#ffffff" }}>
                           {sortOrder === "asc" ? "↑" : "↓"}
                         </Typography>
                       )}
@@ -729,6 +735,7 @@ const MainLayout = () => {
             columnVisibility,
             sortBy,
             sortOrder,
+            handleSortSelect,
             filters,
           }}
         />

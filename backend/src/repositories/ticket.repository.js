@@ -98,8 +98,26 @@ export const getAllTickets = async (
   search = "",
   page = 1,
   limit = 25,
+  sortBy = "Updated",
+  sortOrder = "desc",
 ) => {
   const offset = (page - 1) * limit;
+
+  const allowedSortFields = {
+    "Ticket number": "CAST(substring(t.ticket_no FROM '\\d+') AS INTEGER)",
+    "Subject": "LOWER(t.subject)",
+    "From": "LOWER(t.raised_by_user_code)",
+    "Company": "LOWER(t.company_code)",
+    "Priority": "p.priority_value",
+    "Status": "LOWER(s.status_name)",
+    "Date": "t.created_at",
+    "Due": "t.due_date",
+    "Tech": "LOWER(COALESCE((SELECT string_agg(u.first_name || ' ' || u.last_name, ', ') FROM ReturnTable(t.assigned_to_user_code, '|') rt JOIN users u ON u.user_code = rt.Value), ''))",
+    "Updated": "t.update_timestamp"
+  };
+
+  const orderField = allowedSortFields[sortBy] || "t.update_timestamp";
+  const orderDirection = sortOrder?.toLowerCase() === "asc" ? "ASC" : "DESC";
 
   let query = `
     SELECT
@@ -169,7 +187,7 @@ export const getAllTickets = async (
   }
 
   query += `
-    ORDER BY t.ticket_id DESC
+    ORDER BY ${orderField} ${orderDirection}, t.ticket_id DESC
     LIMIT $${params.length + 1}
     OFFSET $${params.length + 2}
   `;

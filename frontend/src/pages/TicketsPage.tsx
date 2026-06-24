@@ -84,7 +84,7 @@ type BulkAction = "assign" | "priority" | "category" | "due" | null;
 
 const TicketsPage = () => {
   const navigate = useNavigate();
-  const { columnVisibility, sortBy, sortOrder, filters } = useOutletContext<any>();
+  const { columnVisibility, sortBy, sortOrder, handleSortSelect, filters } = useOutletContext<any>();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsedParents, setCollapsedParents] = useState<Set<string>>(
@@ -195,7 +195,7 @@ const TicketsPage = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const ticketsData = await getTickets(searchText);
+      const ticketsData = await getTickets(searchText, sortBy, sortOrder);
       setTickets(ticketsData || []);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -211,14 +211,13 @@ const TicketsPage = () => {
     // canBulkAssign; this just makes sure the dropdown isn't empty when it
     // IS shown. Backend must still gate the actual update.
     loadUsers();
-    fetchData();
     loadPriorities();
     loadCategories();
   }, []);
 
   useEffect(() => {
     fetchData();
-  }, [searchText]);
+  }, [searchText, sortBy, sortOrder]);
 
   const buildCategoryTree = (): CategoryTreeItem[] => {
     const tree: CategoryTreeItem[] = [
@@ -945,24 +944,158 @@ const TicketsPage = () => {
                     sx={checkboxSx}
                   />
                 </TableCell>
-                <TableCell sx={{ ...headCellSx, width: "45%" }}>
-                  Subject
-                </TableCell>
-                {columnVisibility.Status && <TableCell sx={{ ...headCellSx, width: 140 }}>Status</TableCell>}
-                {columnVisibility.Priority && <TableCell sx={{ ...headCellSx, width: 100 }}>
-                  Priority
-                </TableCell>}
-                {columnVisibility.Date && <TableCell sx={{ ...headCellSx, width: 180 }}> Date</TableCell>}
-                {columnVisibility.Due && <TableCell sx={{ ...headCellSx, width: 90 }}>Due</TableCell>}
-                {columnVisibility.Tech && <TableCell sx={{ ...headCellSx, width: 110 }}>Tech</TableCell>}
-                {columnVisibility.Updated && <TableCell sx={{ ...headCellSx, width: 130 }}>
+                <TableCell
+                  sx={{
+                    ...headCellSx,
+                    width: "45%",
+                    cursor: "pointer",
+                    userSelect: "none",
+                  }}
+                  onClick={() => handleSortSelect("Subject")}
+                >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    Updated{" "}
-                    <KeyboardArrowDown
-                      sx={{ fontSize: 15, color: "var(--text-sub)" }}
-                    />
+                    Subject
+                    {sortBy === "Subject" && (
+                      sortOrder === "asc" ? (
+                        <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                      ) : (
+                        <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                      )
+                    )}
                   </Box>
-                </TableCell>}
+                </TableCell>
+                {columnVisibility.Status && (
+                  <TableCell
+                    sx={{
+                      ...headCellSx,
+                      width: 140,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                    onClick={() => handleSortSelect("Status")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      Status
+                      {sortBy === "Status" && (
+                        sortOrder === "asc" ? (
+                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        ) : (
+                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        )
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
+                {columnVisibility.Priority && (
+                  <TableCell
+                    sx={{
+                      ...headCellSx,
+                      width: 100,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                    onClick={() => handleSortSelect("Priority")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      Priority
+                      {sortBy === "Priority" && (
+                        sortOrder === "asc" ? (
+                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        ) : (
+                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        )
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
+                {columnVisibility.Date && (
+                  <TableCell
+                    sx={{
+                      ...headCellSx,
+                      width: 180,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                    onClick={() => handleSortSelect("Date")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      Date
+                      {sortBy === "Date" && (
+                        sortOrder === "asc" ? (
+                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        ) : (
+                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        )
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
+                {columnVisibility.Due && (
+                  <TableCell
+                    sx={{
+                      ...headCellSx,
+                      width: 90,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                    onClick={() => handleSortSelect("Due")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      Due
+                      {sortBy === "Due" && (
+                        sortOrder === "asc" ? (
+                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        ) : (
+                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        )
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
+                {columnVisibility.Tech && (
+                  <TableCell
+                    sx={{
+                      ...headCellSx,
+                      width: 110,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                    onClick={() => handleSortSelect("Tech")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      Tech
+                      {sortBy === "Tech" && (
+                        sortOrder === "asc" ? (
+                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        ) : (
+                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        )
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
+                {columnVisibility.Updated && (
+                  <TableCell
+                    sx={{
+                      ...headCellSx,
+                      width: 130,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                    onClick={() => handleSortSelect("Updated")}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      Updated
+                      {sortBy === "Updated" && (
+                        sortOrder === "asc" ? (
+                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        ) : (
+                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
+                        )
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
               </TableRow>
             </TableHead>
             <TableBody>

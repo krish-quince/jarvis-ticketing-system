@@ -20,7 +20,6 @@ import {
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import CheckIcon from "@mui/icons-material/Check";
 import SecurityIcon from "@mui/icons-material/Security";
 
 import servicedeskLogo from "../assets/logos/servicedesk-logo.png";
@@ -245,112 +244,157 @@ const LoginPage = () => {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        height: "100vh",
+        width: "100vw",
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "linear-gradient(135deg, #0f1235 0%, #151944 50%, #211B5A 100%)",
-        p: 2,
+        overflow: "hidden",
+        backgroundColor: "#ffffff",
       }}
     >
+      {/* Main Split Section */}
       <Box
         sx={{
-          width: "1100px",
-          maxWidth: "95%",
-          background: "#ffffff",
-          borderRadius: "20px",
-          overflow: "hidden",
+          width: "100%",
           display: "flex",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+          height: "100vh",
+          overflow: "hidden",
           "@media (max-width:900px)": {
             flexDirection: "column",
+            overflowY: "auto",
           },
         }}
       >
-        {/* Left Panel: Brand info */}
+        {/* Left Panel: Brand info with Statistics & Services */}
         <Box
           sx={{
-            width: "45%",
-            background: "linear-gradient(135deg, #151944 0%, #211B5A 100%)",
+            width: "50%",
+            backgroundColor: "#211B5A",
             color: "#ffffff",
-            p: 6,
+            p: { xs: 3, md: 5 },
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            alignItems: "center",
-            textAlign: "center",
+            alignItems: "flex-start",
+            overflow: "hidden",
             "@media (max-width:900px)": {
               width: "100%",
               p: 4,
             },
           }}
         >
+          {/* Main Logo (No background) */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              mb: 3,
+            }}
+          >
+            <Box sx={{ position: "relative", display: "inline-flex" }}>
+              <img
+                src={`${servicedeskLogo}?v=3`}
+                alt="Service Desk Pro Logo"
+                style={{
+                  height: 110,
+                  objectFit: "contain",
+                }}
+              />
+              <Typography
+                sx={{
+                  position: "absolute",
+                  bottom: "10px",
+                  right: "-32px",
+                  color: "#e2b857", // Matching gold/bronze color from the logo
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  letterSpacing: "0.5px",
+                  fontFamily: "'Poppins', sans-serif",
+                }}
+              >
+                PRO
+              </Typography>
+            </Box>
+          </Box>
+
           <Typography
             variant="h3"
             sx={{
               fontWeight: 700,
-              mb: 2,
-              color: "#F4C63D",
-              fontFamily: "'Poppins', sans-serif",
-            }}
-          >
-            ServiceDesk
-          </Typography>
-
-          <Typography
-            variant="body1"
-            sx={{
-              opacity: 0.9,
-              lineHeight: 1.8,
-              mb: 4,
-              maxWidth: "380px",
+              mb: 3,
+              fontSize: { xs: "28px", md: "38px" },
+              lineHeight: 1.3,
               fontFamily: "'Poppins', sans-serif",
               color: "#ffffff",
             }}
           >
-            Enterprise Helpdesk & Service Management Platform for IT, HR,
-            Operations, Finance and Business Support Teams.
+            Service Desk Pro
           </Typography>
 
+          {/* Stats Grid */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 3,
+              width: "100%",
+              mb: 4,
+            }}
+          >
+            <Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: "#ffffff", fontSize: { xs: "22px", md: "28px" } }}>
+                99.9%
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.2, fontSize: "13px" }}>
+                Uptime guarantee
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: "#ffffff", fontSize: { xs: "22px", md: "28px" } }}>
+                10+
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.2, fontSize: "13px" }}>
+                Departments supported
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Product Pills */}
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 600,
+              letterSpacing: 1.5,
+              color: "rgba(255, 255, 255, 0.7)",
+              mb: 1.5,
+              textTransform: "uppercase",
+            }}
+          >
+            Our Core Services
+          </Typography>
           <Box
             sx={{
               display: "flex",
-              flexDirection: "column",
-              gap: 2.5,
-              alignItems: "center",
-              width: "100%",
-              maxWidth: "320px",
+              flexWrap: "wrap",
+              gap: 1,
             }}
           >
             {[
-              "Incident & Ticket Management",
-              "SLA & Escalation Tracking",
-              "Asset Management",
-              "Knowledge Base",
-              "Workflow Automation",
-              "Audit Logs & Security",
-            ].map((text, i) => (
+              "Ticket Management System",
+            ].map((pill) => (
               <Box
-                key={i}
+                key={pill}
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
+                  border: "1px solid rgba(255, 255, 255, 0.4)",
+                  borderRadius: "20px",
+                  px: 1.8,
+                  py: 0.5,
+                  fontSize: "11px",
+                  fontWeight: 500,
                   color: "#ffffff",
+                  backgroundColor: "rgba(255, 255, 255, 0.05)",
                 }}
               >
-                <CheckIcon sx={{ color: "#F4C63D", fontSize: 20 }} />
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 500,
-                    fontFamily: "'Poppins', sans-serif",
-                    textAlign: "left",
-                    color: "#ffffff",
-                  }}
-                >
-                  {text}
-                </Typography>
+                {pill}
               </Box>
             ))}
           </Box>
@@ -359,11 +403,12 @@ const LoginPage = () => {
         {/* Right Panel: Login / Registration Form */}
         <Box
           sx={{
-            width: "55%",
-            p: 6,
+            width: "50%",
+            p: { xs: 3, md: 5 },
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
+            overflow: "hidden",
             "@media (max-width:900px)": {
               width: "100%",
               p: 4,
@@ -371,25 +416,45 @@ const LoginPage = () => {
           }}
         >
           {/* Logo container */}
-          <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-            <img
-              src={servicedeskLogo}
-              alt="ServiceDesk Logo"
-              style={{ height: 60, objectFit: "contain" }}
-            />
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+            <Box sx={{ position: "relative", display: "inline-flex" }}>
+              <img
+                src={`${servicedeskLogo}?v=3`}
+                alt="Service Desk Pro Logo"
+                style={{
+                  height: 95,
+                  objectFit: "contain",
+                }}
+              />
+              <Typography
+                sx={{
+                  position: "absolute",
+                  bottom: "8px",
+                  right: "-26px",
+                  color: "#e2b857", // Matching gold/bronze color from the logo
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  letterSpacing: "0.5px",
+                  fontFamily: "'Poppins', sans-serif",
+                }}
+              >
+                PRO
+              </Typography>
+            </Box>
           </Box>
 
           <Typography
-            variant="h5"
+            variant="h4"
             align="center"
             sx={{
               color: "#211B5A",
               fontWeight: 700,
-              mb: 1,
+              mb: 0.5,
+              fontSize: "24px",
               fontFamily: "'Poppins', sans-serif",
             }}
           >
-            {mode === "login" ? "Welcome Back" : "Create New Account"}
+            Service Desk Pro
           </Typography>
 
           <Typography
@@ -397,30 +462,33 @@ const LoginPage = () => {
             align="center"
             sx={{
               color: "#64748b",
-              mb: 4,
+              mb: 2,
+              fontSize: "13px",
               fontFamily: "'Poppins', sans-serif",
             }}
           >
             {mode === "login"
-              ? "Sign in securely to access your dashboard"
+              ? "Welcome back! Sign in securely to access your dashboard"
               : "Register to get started with Jarvis Helpdesk"}
           </Typography>
 
           {mode === "login" ? (
-            <Box component="form" noValidate>
+            <Box component="form" noValidate sx={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
               <TextField
                 fullWidth
+                size="small"
                 label="User Code or Email Address"
                 placeholder="Enter your User Code or Email"
                 value={userCode}
                 onChange={(e) => setUserCode(e.target.value)}
                 error={!!errors.userCode}
                 helperText={errors.userCode}
-                sx={{ mb: 2.5, ...inputSx }}
+                sx={{ mb: 1.5, ...inputSx }}
               />
 
               <TextField
                 fullWidth
+                size="small"
                 label="Password"
                 placeholder="Enter Password"
                 type={showPassword ? "text" : "password"}
@@ -428,13 +496,13 @@ const LoginPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 error={!!errors.loginPassword}
                 helperText={errors.loginPassword}
-                sx={{ mb: 2, ...inputSx }}
+                sx={{ mb: 1.5, ...inputSx }}
                 slotProps={{
                   input: {
                     endAdornment: (
                       <InputAdornment position="end">
-                        <IconButton onClick={handleTogglePassword} edge="end">
-                          {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                        <IconButton onClick={handleTogglePassword} edge="end" size="small">
+                          {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
                         </IconButton>
                       </InputAdornment>
                     ),
@@ -447,13 +515,13 @@ const LoginPage = () => {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  mb: 3,
+                  mb: 1.8,
                 }}
               >
                 <FormControlLabel
                   control={<Checkbox size="small" sx={{ color: "#211B5A", "&.Mui-checked": { color: "#211B5A" } }} />}
                   label={
-                    <Typography variant="body2" sx={{ color: "#475569" }}>
+                    <Typography variant="body2" sx={{ color: "#475569", fontSize: "13px" }}>
                       Remember Me
                     </Typography>
                   }
@@ -462,7 +530,7 @@ const LoginPage = () => {
                   href="#"
                   underline="none"
                   sx={{
-                    fontSize: "14px",
+                    fontSize: "13px",
                     color: "#211B5A",
                     fontWeight: 500,
                     "&:hover": { color: "#151944" },
@@ -472,50 +540,50 @@ const LoginPage = () => {
                 </Link>
               </Box>
 
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={handleLogin}
-                sx={{
-                  backgroundColor: "#211B5A",
-                  color: "#ffffff",
-                  borderRadius: "10px",
-                  fontWeight: 600,
-                  textTransform: "none",
-                  py: 1.8,
-                  fontSize: "15px",
-                  boxShadow: "0 4px 12px rgba(33, 27, 90, 0.2)",
-                  "&:hover": { backgroundColor: "#151944" },
-                  mb: 2,
-                }}
-              >
-                Sign In
-              </Button>
+              <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={handleLogin}
+                  sx={{
+                    backgroundColor: "#211B5A",
+                    color: "#ffffff",
+                    borderRadius: "10px",
+                    fontWeight: 600,
+                    textTransform: "none",
+                    py: 1.2,
+                    fontSize: "14px",
+                    boxShadow: "0 4px 12px rgba(33, 27, 90, 0.2)",
+                    "&:hover": { backgroundColor: "#151944" },
+                  }}
+                >
+                  Sign In
+                </Button>
 
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={() => {
-                  setMode("register");
-                  setErrors({});
-                }}
-                sx={{
-                  borderRadius: "10px",
-                  color: "#211B5A",
-                  borderColor: "#211B5A",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  py: 1.8,
-                  fontSize: "15px",
-                  "&:hover": {
-                    borderColor: "#151944",
-                    backgroundColor: "rgba(33, 27, 90, 0.05)",
-                  },
-                  mb: 4,
-                }}
-              >
-                Register
-              </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => {
+                    setMode("register");
+                    setErrors({});
+                  }}
+                  sx={{
+                    borderRadius: "10px",
+                    color: "#211B5A",
+                    borderColor: "#211B5A",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    py: 1.2,
+                    fontSize: "14px",
+                    "&:hover": {
+                      borderColor: "#151944",
+                      backgroundColor: "rgba(33, 27, 90, 0.05)",
+                    },
+                  }}
+                >
+                  Register
+                </Button>
+              </Box>
 
               <Box
                 sx={{
@@ -523,7 +591,8 @@ const LoginPage = () => {
                   alignItems: "center",
                   textAlign: "center",
                   color: "#94a3b8",
-                  mb: 3,
+                  fontSize: "12px",
+                  mb: 1.5,
                   "&::before, &::after": {
                     content: '""',
                     flex: 1,
@@ -536,106 +605,81 @@ const LoginPage = () => {
                 OR
               </Box>
 
-              <Button
-                fullWidth
-                variant="outlined"
-                sx={{
-                  borderRadius: "10px",
-                  borderColor: "#dbe3ef",
-                  color: "#334155",
-                  textTransform: "none",
-                  py: 1.5,
-                  fontWeight: 500,
-                  "&:hover": {
-                    borderColor: "#cbd5e1",
-                    backgroundColor: "#f8fafc",
-                  },
-                  mb: 2,
-                }}
-              >
-                <MicrosoftIcon /> Sign in with Microsoft 365
-              </Button>
+              <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  sx={{
+                    borderRadius: "10px",
+                    borderColor: "#dbe3ef",
+                    color: "#334155",
+                    textTransform: "none",
+                    py: 1,
+                    fontSize: "12.5px",
+                    fontWeight: 500,
+                    "&:hover": {
+                      borderColor: "#cbd5e1",
+                      backgroundColor: "#f8fafc",
+                    },
+                  }}
+                >
+                  <MicrosoftIcon /> Microsoft 365
+                </Button>
 
-              <Button
-                fullWidth
-                variant="outlined"
-                sx={{
-                  borderRadius: "10px",
-                  borderColor: "#dbe3ef",
-                  color: "#334155",
-                  textTransform: "none",
-                  py: 1.5,
-                  fontWeight: 500,
-                  "&:hover": {
-                    borderColor: "#cbd5e1",
-                    backgroundColor: "#f8fafc",
-                  },
-                  mb: 4,
-                }}
-              >
-                <GoogleIcon /> Sign in with Google Workspace
-              </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  sx={{
+                    borderRadius: "10px",
+                    borderColor: "#dbe3ef",
+                    color: "#334155",
+                    textTransform: "none",
+                    py: 1,
+                    fontSize: "12.5px",
+                    fontWeight: 500,
+                    "&:hover": {
+                      borderColor: "#cbd5e1",
+                      backgroundColor: "#f8fafc",
+                    },
+                  }}
+                >
+                  <GoogleIcon /> Google Workspace
+                </Button>
+              </Box>
 
               {/* MFA security note */}
               <Box
                 sx={{
                   background: "#f8fafc",
                   border: "1px solid #e2e8f0",
-                  borderRadius: "12px",
-                  p: 2.5,
+                  borderRadius: "10px",
+                  p: 1.5,
                   display: "flex",
                   flexDirection: "column",
-                  gap: 1,
+                  gap: 0.5,
+                  mb: 1.5,
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <SecurityIcon sx={{ color: "#211B5A", fontSize: 20 }} />
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                  <SecurityIcon sx={{ color: "#211B5A", fontSize: 16 }} />
                   <Typography
                     variant="subtitle2"
-                    sx={{ color: "#1e293b", fontWeight: 600 }}
+                    sx={{ color: "#1e293b", fontWeight: 600, fontSize: "12.5px" }}
                   >
                     Multi-Factor Authentication Enabled
                   </Typography>
                 </Box>
-                <Typography variant="body2" sx={{ color: "#64748b", fontSize: "13px" }}>
-                  After successful login, users will be prompted to verify their
-                  identity using a secure authenticator application.
+                <Typography variant="body2" sx={{ color: "#64748b", fontSize: "11.5px", lineHeight: 1.4 }}>
+                  Identity verification via secure authenticator app is required post-login.
                 </Typography>
-                <Box sx={{ display: "flex", gap: 1.5, mt: 1 }}>
-                  <Box
-                    sx={{
-                      bgcolor: "#e0e7ff",
-                      color: "#1e40af",
-                      px: 1.8,
-                      py: 0.5,
-                      borderRadius: "20px",
-                      fontSize: "12px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Microsoft Authenticator
-                  </Box>
-                  <Box
-                    sx={{
-                      bgcolor: "#e0e7ff",
-                      color: "#1e40af",
-                      px: 1.8,
-                      py: 0.5,
-                      borderRadius: "20px",
-                      fontSize: "12px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Google Authenticator
-                  </Box>
-                </Box>
               </Box>
             </Box>
           ) : (
-            <Box component="form" noValidate>
-              <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+            <Box component="form" noValidate sx={{ display: "flex", flexDirection: "column", overflowY: "auto", pr: 0.5, maxH: "55vh" }}>
+              <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
                 <TextField
                   fullWidth
+                  size="small"
                   label="First Name"
                   placeholder="First Name"
                   value={regFirstName}
@@ -646,6 +690,7 @@ const LoginPage = () => {
                 />
                 <TextField
                   fullWidth
+                  size="small"
                   label="Last Name"
                   placeholder="Last Name"
                   value={regLastName}
@@ -658,16 +703,17 @@ const LoginPage = () => {
 
               <TextField
                 fullWidth
+                size="small"
                 label="Email Address"
                 placeholder="name@company.com"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
                 error={!!errors.email}
                 helperText={errors.email}
-                sx={{ mb: 2, ...inputSx }}
+                sx={{ mb: 1.5, ...inputSx }}
               />
 
-              <FormControl fullWidth error={!!errors.company} sx={{ mb: 2 }}>
+              <FormControl fullWidth size="small" error={!!errors.company} sx={{ mb: 1.5 }}>
                 <InputLabel id="reg-company-label">Company</InputLabel>
                 <Select
                   labelId="reg-company-label"
@@ -688,7 +734,7 @@ const LoginPage = () => {
                 {errors.company && <FormHelperText>{errors.company}</FormHelperText>}
               </FormControl>
 
-              <FormControl fullWidth error={!!errors.department} sx={{ mb: 2 }}>
+              <FormControl fullWidth size="small" error={!!errors.department} sx={{ mb: 1.5 }}>
                 <InputLabel id="reg-department-label">Department</InputLabel>
                 <Select
                   labelId="reg-department-label"
@@ -711,6 +757,7 @@ const LoginPage = () => {
 
               <TextField
                 fullWidth
+                size="small"
                 label="Password"
                 placeholder="Password"
                 type={showPassword ? "text" : "password"}
@@ -718,13 +765,13 @@ const LoginPage = () => {
                 onChange={(e) => setRegPassword(e.target.value)}
                 error={!!errors.password}
                 helperText={errors.password}
-                sx={{ mb: 2, ...inputSx }}
+                sx={{ mb: 1.5, ...inputSx }}
                 slotProps={{
                   input: {
                     endAdornment: (
                       <InputAdornment position="end">
-                        <IconButton onClick={handleTogglePassword} edge="end">
-                          {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                        <IconButton onClick={handleTogglePassword} edge="end" size="small">
+                          {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
                         </IconButton>
                       </InputAdornment>
                     ),
@@ -734,6 +781,7 @@ const LoginPage = () => {
 
               <TextField
                 fullWidth
+                size="small"
                 label="Confirm Password"
                 placeholder="Confirm Password"
                 type={showPassword ? "text" : "password"}
@@ -741,13 +789,13 @@ const LoginPage = () => {
                 onChange={(e) => setRegConfirmPassword(e.target.value)}
                 error={!!errors.confirmPassword}
                 helperText={errors.confirmPassword}
-                sx={{ mb: 3, ...inputSx }}
+                sx={{ mb: 2, ...inputSx }}
                 slotProps={{
                   input: {
                     endAdornment: (
                       <InputAdornment position="end">
-                        <IconButton onClick={handleTogglePassword} edge="end">
-                          {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                        <IconButton onClick={handleTogglePassword} edge="end" size="small">
+                          {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
                         </IconButton>
                       </InputAdornment>
                     ),
@@ -755,63 +803,80 @@ const LoginPage = () => {
                 }}
               />
 
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={handleRegister}
-                sx={{
-                  backgroundColor: "#211B5A",
-                  color: "#ffffff",
-                  borderRadius: "10px",
-                  fontWeight: 600,
-                  textTransform: "none",
-                  py: 1.8,
-                  fontSize: "15px",
-                  boxShadow: "0 4px 12px rgba(33, 27, 90, 0.2)",
-                  "&:hover": { backgroundColor: "#151944" },
-                  mb: 2,
-                }}
-              >
-                Submit Registration
-              </Button>
+              <Box sx={{ display: "flex", gap: 1.5 }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={handleRegister}
+                  sx={{
+                    backgroundColor: "#211B5A",
+                    color: "#ffffff",
+                    borderRadius: "10px",
+                    fontWeight: 600,
+                    textTransform: "none",
+                    py: 1.2,
+                    fontSize: "14px",
+                    boxShadow: "0 4px 12px rgba(33, 27, 90, 0.2)",
+                    "&:hover": { backgroundColor: "#151944" },
+                  }}
+                >
+                  Submit
+                </Button>
 
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={() => {
-                  setMode("login");
-                  setErrors({});
-                }}
-                sx={{
-                  borderRadius: "10px",
-                  color: "#211B5A",
-                  borderColor: "#211B5A",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  py: 1.8,
-                  fontSize: "15px",
-                  "&:hover": {
-                    borderColor: "#151944",
-                    backgroundColor: "rgba(33, 27, 90, 0.05)",
-                  },
-                }}
-              >
-                Cancel
-              </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => {
+                    setMode("login");
+                    setErrors({});
+                  }}
+                  sx={{
+                    borderRadius: "10px",
+                    color: "#211B5A",
+                    borderColor: "#211B5A",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    py: 1.2,
+                    fontSize: "14px",
+                    "&:hover": {
+                      borderColor: "#151944",
+                      backgroundColor: "rgba(33, 27, 90, 0.05)",
+                    },
+                  }}
+                >
+                  Cancel
+                </Button>
+              </Box>
             </Box>
           )}
 
-          <Typography
-            align="center"
+          <Box
             sx={{
-              mt: 4,
-              color: "#94a3b8",
-              fontSize: "12px",
-              fontFamily: "'Poppins', sans-serif",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 0.5,
+              mt: 1.5,
             }}
           >
-            © 2026 Quince Jarvis | Secure Access • SSO • 2FA Enabled
-          </Typography>
+            <Typography
+              align="center"
+              sx={{
+                color: "#94a3b8",
+                fontSize: "10px",
+                fontFamily: "'Poppins', sans-serif",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
+              Powered By
+            </Typography>
+            <img
+              src={`${servicedeskLogo}?v=3`}
+              alt="Service Desk Pro"
+              style={{ height: 16, opacity: 0.6, objectFit: "contain" }}
+            />
+          </Box>
         </Box>
       </Box>
 

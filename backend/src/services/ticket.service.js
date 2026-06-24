@@ -230,13 +230,15 @@ export const createTicket = async (ticketData, user, files = []) => {
   }
 };
 
-export const getAllTickets = async (companyCode, user, search, page, limit) => {
+export const getAllTickets = async (companyCode, user, search, page, limit, sortBy, sortOrder) => {
   return await ticketRepository.getAllTickets(
     companyCode,
     user,
     search,
     page,
     limit,
+    sortBy,
+    sortOrder,
   );
 };
 

@@ -147,37 +147,41 @@ const Topbar = () => {
           }}
         >
           {isSuperAdmin ? (
-            <Avatar
+            <img
               src={servicedeskLogo}
-              variant="rounded"
-              sx={{ width: 32, height: 32, border: "1px solid rgba(255,255,255,0.2)", bgcolor: "#fff" }}
-            />
-          ) : companyInfo?.logo_url ? (
-            <Avatar
-              src={getLogoUrl(companyInfo.logo_url)}
-              variant="rounded"
-              sx={{ width: 32, height: 32, border: "1px solid rgba(255,255,255,0.2)" }}
+              alt="ServiceDesk Logo"
+              style={{ height: 32, objectFit: "contain" }}
             />
           ) : (
-            <Avatar
-              variant="rounded"
-              sx={{ width: 32, height: 32, backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 14, fontWeight: 700 }}
-            >
-              {user.company_code ? user.company_code.substring(0, 2).toUpperCase() : "JH"}
-            </Avatar>
+            <>
+              {companyInfo?.logo_url ? (
+                <Avatar
+                  src={getLogoUrl(companyInfo.logo_url)}
+                  variant="rounded"
+                  sx={{ width: 32, height: 32, border: "1px solid rgba(255,255,255,0.2)" }}
+                />
+              ) : (
+                <Avatar
+                  variant="rounded"
+                  sx={{ width: 32, height: 32, backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 14, fontWeight: 700 }}
+                >
+                  {user.company_code ? user.company_code.substring(0, 2).toUpperCase() : "JH"}
+                </Avatar>
+              )}
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: "#fff",
+                  lineHeight: 1.05,
+                  fontSize: { xs: 16, md: 20 },
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {companyInfo?.helpdesk_title || companyInfo?.company_name || "Jarvis Helpdesk"}
+              </Typography>
+            </>
           )}
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              color: "#fff",
-              lineHeight: 1.05,
-              fontSize: { xs: 16, md: 20 },
-              whiteSpace: "nowrap",
-            }}
-          >
-            {isSuperAdmin ? "ServiceDesk" : (companyInfo?.helpdesk_title || companyInfo?.company_name || "Jarvis Helpdesk")}
-          </Typography>
         </Box>
 
         {/* ── Zone 2: Search (center, expands to fill space) ── */}
