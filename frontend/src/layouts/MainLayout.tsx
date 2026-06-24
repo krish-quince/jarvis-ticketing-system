@@ -10,6 +10,7 @@ import {
   FormControl,
   InputLabel,
   Typography,
+  MenuList,
 } from "@mui/material";
 import {
   Outlet,
@@ -22,9 +23,9 @@ import {
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
   Contrast as AutoModeIcon,
-  FilterList,
-  Sort,
   ViewColumn,
+  ImportExport,
+  Tune,
 } from "@mui/icons-material";
 import Topbar from "../components/Topbar";
 import { getTickets } from "../services/ticketService";
@@ -340,13 +341,25 @@ const MainLayout = () => {
                 startIcon={<ViewColumn sx={{ fontSize: "20px !important" }} />}
                 onClick={(e) => setColumnsAnchor(e.currentTarget)}
                 sx={{
-                  color: isDark ? darkSubtext : "#6b7280",
+                  color: isColumnsOpen
+                    ? (isDark ? "#ffffff" : "#211b5a")
+                    : (isDark ? "rgba(255, 255, 255, 0.54)" : "rgba(0, 0, 0, 0.54)"),
+                  backgroundColor: isColumnsOpen
+                    ? (isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(33, 27, 90, 0.06)")
+                    : "transparent",
                   textTransform: "none",
                   fontWeight: 400,
                   fontSize: 14,
+                  m: "2px",
+                  p: "8px 12px",
+                  minWidth: 0,
+                  borderRadius: "6px",
+                  transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "transparent",
-                    color: isDark ? "#fff" : "#211b5a",
+                    color: isDark ? "#ffffff" : "#211b5a",
+                    backgroundColor: isDark
+                      ? "rgba(255, 255, 255, 0.08)"
+                      : "rgba(0, 0, 0, 0.04)",
                   },
                 }}
               >
@@ -354,16 +367,28 @@ const MainLayout = () => {
               </Button>
 
               <Button
-                startIcon={<Sort sx={{ fontSize: "20px !important" }} />}
+                startIcon={<ImportExport sx={{ fontSize: "20px !important" }} />}
                 onClick={(e) => setSortAnchor(e.currentTarget)}
                 sx={{
-                  color: isDark ? darkSubtext : "#6b7280",
+                  color: isSortOpen
+                    ? (isDark ? "#ffffff" : "#211b5a")
+                    : (isDark ? "rgba(255, 255, 255, 0.54)" : "rgba(0, 0, 0, 0.54)"),
+                  backgroundColor: isSortOpen
+                    ? (isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(33, 27, 90, 0.06)")
+                    : "transparent",
                   textTransform: "none",
                   fontWeight: 400,
                   fontSize: 14,
+                  m: "2px",
+                  p: "8px 12px",
+                  minWidth: 0,
+                  borderRadius: "6px",
+                  transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "transparent",
-                    color: isDark ? "#fff" : "#211b5a",
+                    color: isDark ? "#ffffff" : "#211b5a",
+                    backgroundColor: isDark
+                      ? "rgba(255, 255, 255, 0.08)"
+                      : "rgba(0, 0, 0, 0.04)",
                   },
                 }}
               >
@@ -371,16 +396,28 @@ const MainLayout = () => {
               </Button>
 
               <Button
-                startIcon={<FilterList sx={{ fontSize: "20px !important" }} />}
+                startIcon={<Tune sx={{ fontSize: "20px !important" }} />}
                 onClick={(e) => setFilterAnchor(e.currentTarget)}
                 sx={{
-                  color: isDark ? darkSubtext : "#6b7280",
+                  color: isFilterOpen
+                    ? (isDark ? "#ffffff" : "#211b5a")
+                    : (isDark ? "rgba(255, 255, 255, 0.54)" : "rgba(0, 0, 0, 0.54)"),
+                  backgroundColor: isFilterOpen
+                    ? (isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(33, 27, 90, 0.06)")
+                    : "transparent",
                   textTransform: "none",
                   fontWeight: 400,
                   fontSize: 14,
+                  m: "2px",
+                  p: "8px 12px",
+                  minWidth: 0,
+                  borderRadius: "6px",
+                  transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "transparent",
-                    color: isDark ? "#fff" : "#211b5a",
+                    color: isDark ? "#ffffff" : "#211b5a",
+                    backgroundColor: isDark
+                      ? "rgba(255, 255, 255, 0.08)"
+                      : "rgba(0, 0, 0, 0.04)",
                   },
                 }}
               >
@@ -397,18 +434,22 @@ const MainLayout = () => {
                 slotProps={{
                   paper: {
                     sx: {
-                      p: 2,
-                      width: 180,
-                      backgroundColor: cardBg,
+                      p: 0,
+                      width: 130,
+                      backgroundColor: isDark
+                        ? "rgba(22, 27, 39, 0.6)"
+                        : "rgba(255, 255, 255, 0.6)",
+                      backdropFilter: "blur(8px)",
                       border: `1px solid ${border}`,
-                      boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-                      borderRadius: "12px",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                      borderRadius: "8px",
                       color: text,
+                      overflow: "hidden",
                     },
                   },
                 }}
               >
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <Box sx={{ display: "flex", flexDirection: "column", p: "4px", gap: "2px" }}>
                   {Object.keys(columnVisibility).map((col) => (
                     <FormControlLabel
                       key={col}
@@ -418,16 +459,31 @@ const MainLayout = () => {
                           checked={columnVisibility[col]}
                           onChange={() => handleToggleColumn(col)}
                           sx={{
+                            p: "4px",
                             color: "var(--accent)",
                             "&.Mui-checked": { color: "#211B5A" },
                           }}
                         />
                       }
                       label={
-                        <Typography variant="body2" sx={{ color: text }}>
+                        <Typography variant="body2" sx={{ fontSize: 13, color: text, ml: 0.5 }}>
                           {col}
                         </Typography>
                       }
+                      sx={{
+                        m: 0,
+                        px: "6px",
+                        py: "3px",
+                        borderRadius: "4px",
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        "&:hover": {
+                          backgroundColor: isDark
+                            ? "rgba(255,255,255,0.05)"
+                            : "rgba(0,0,0,0.04)",
+                        },
+                      }}
                     />
                   ))}
                 </Box>
@@ -443,58 +499,67 @@ const MainLayout = () => {
                 slotProps={{
                   paper: {
                     sx: {
-                      py: 1,
-                      width: 220,
-                      backgroundColor: cardBg,
+                      py: 0,
+                      width: 190,
+                      backgroundColor: isDark
+                        ? "rgba(22, 27, 39, 0.6)"
+                        : "rgba(255, 255, 255, 0.6)",
+                      backdropFilter: "blur(8px)",
                       border: `1px solid ${border}`,
-                      boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-                      borderRadius: "12px",
+                      borderRadius: "8px",
                       color: text,
+                      overflow: "hidden",
                     },
                   },
                 }}
               >
-                {sortOptions.map((opt) => {
-                  const isActive = sortBy === opt;
-                  return (
-                    <MenuItem
-                      key={opt}
-                      onClick={() => handleSortSelect(opt)}
-                      sx={{
-                        fontSize: 14,
-                        py: 1,
-                        px: 2,
-                        mx: 1,
-                        my: 0.5,
-                        borderRadius: "8px",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        backgroundColor: isActive
-                          ? "#3f51b5 !important"
-                          : "transparent",
-                        color: isActive ? "#ffffff !important" : text,
-                        fontWeight: isActive ? 600 : 400,
-                        "&:hover": {
+                <MenuList sx={{ pt: "2px", pb: 0, px: 0 }}>
+                  {sortOptions.map((opt) => {
+                    const isActive = sortBy === opt;
+                    return (
+                      <MenuItem
+                        key={opt}
+                        onClick={() => handleSortSelect(opt)}
+                        sx={{
+                          fontSize: 14,
+                          py: "8px",
+                          px: "12px",
+                          mx: "2px",
+                          mb: "2px",
+                          borderRadius: "4px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
                           backgroundColor: isActive
-                            ? "#3f51b5 !important"
+                            ? "#3531b2 !important"
+                            : "transparent",
+                          color: isActive
+                            ? "#ffffff !important"
                             : isDark
-                            ? "rgba(255,255,255,0.05)"
-                            : "rgba(0,0,0,0.04)",
-                        },
-                      }}
-                    >
-                      <Typography sx={{ fontSize: 14, fontWeight: isActive ? 600 : 400, color: "inherit" }}>
-                        {opt}
-                      </Typography>
-                      {isActive && (
-                        <Typography sx={{ fontWeight: 700, color: "#ffffff" }}>
-                          {sortOrder === "asc" ? "↑" : "↓"}
+                            ? "#d1d5db"
+                            : "#374151",
+                          fontWeight: isActive ? 500 : 400,
+                          "&:hover": {
+                            backgroundColor: isActive
+                              ? "#3531b2 !important"
+                              : isDark
+                              ? "rgba(255,255,255,0.05)"
+                              : "rgba(0,0,0,0.04)",
+                          },
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 14, fontWeight: isActive ? 500 : 400, color: "inherit" }}>
+                          {opt}
                         </Typography>
-                      )}
-                    </MenuItem>
-                  );
-                })}
+                        {isActive && (
+                          <Typography sx={{ fontWeight: 600, color: "#ffffff" }}>
+                            {sortOrder === "asc" ? "↑" : "↓"}
+                          </Typography>
+                        )}
+                      </MenuItem>
+                    );
+                  })}
+                </MenuList>
               </Popover>
 
               {/* Filter Popover */}
@@ -511,9 +576,12 @@ const MainLayout = () => {
                       width: 320,
                       maxHeight: "85vh",
                       overflowY: "auto",
-                      backgroundColor: cardBg,
+                      backgroundColor: isDark
+                        ? "rgba(22, 27, 39, 0.6)"
+                        : "rgba(255, 255, 255, 0.6)",
+                      backdropFilter: "blur(8px)",
                       border: `1px solid ${border}`,
-                      boxShadow: "0 12px 40px rgba(0,0,0,0.15)",
+                      boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
                       borderRadius: "16px",
                       color: text,
                     },

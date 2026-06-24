@@ -28,9 +28,6 @@ import {
   CheckCircleOutlined as CloseIcon,
   MoreHoriz as MoreIcon,
   AccessTime as AccessTimeIcon,
-  PlayArrow as PlayArrowIcon,
-  Pause as PauseIcon,
-  OpenInNew as OpenInNewIcon,
   Check as CheckIcon,
   Close as CancelIcon,
   LockOutlined as LockIcon,
@@ -134,7 +131,6 @@ const TicketDetailPage = () => {
   // Timer state
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
-  const [currentEntryId, setCurrentEntryId] = useState<number | null>(null);
   const [totalTimeSeconds, setTotalTimeSeconds] = useState(0);
   const timerSecondsRef = useRef(0);
   const currentEntryIdRef = useRef<number | null>(null);
@@ -213,7 +209,6 @@ const TicketDetailPage = () => {
         // Start a new session
         const entry = await startTimeTracking(ticketId, ticket.status_name);
         if (!cancelled && entry) {
-          setCurrentEntryId(entry.entry_id);
           currentEntryIdRef.current = entry.entry_id;
           timerStoppedRef.current = false;
           setTimerSeconds(0);
@@ -258,10 +253,9 @@ const TicketDetailPage = () => {
           import.meta.env.VITE_API_URL || "http://localhost:5000/api"
         }/tickets/${ticketId}/time-tracking/${entryId}/stop`;
         const body = JSON.stringify({ time_spent_seconds: seconds });
-        const blob = new Blob([body], { type: "application/json" });
 
         // Try sendBeacon first, fall back to sync XHR
-        if (navigator.sendBeacon) {
+        if (typeof navigator.sendBeacon === "function") {
           // sendBeacon doesn't support custom headers, use fetch keepalive instead
           fetch(url, {
             method: "PATCH",

@@ -144,7 +144,7 @@ const TimeSpentPage = () => {
           sx={{ cursor: "pointer" }}
           onClick={() => navigate(`/tickets/${ticketId}`)}
         >
-          Ticket
+          Ticket {ticket?.ticket_no ? `#${ticket.ticket_no}` : ""}
         </Link>
         <Typography color="text.primary" sx={{ fontWeight: 600 }}>
           Time spent
