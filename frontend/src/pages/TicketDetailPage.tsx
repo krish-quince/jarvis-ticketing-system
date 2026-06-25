@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -20,6 +20,8 @@ import {
   Switch,
   Dialog,
   Tooltip,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material/Select";
 import {
@@ -40,6 +42,8 @@ import {
   CloudDownloadOutlined as CloudDownloadIcon,
   ImportExport as SortIcon,
   DeleteOutlined as DeleteIcon,
+  SearchOutlined as SearchIcon,
+  PersonOutlined as PersonIcon,
 } from "@mui/icons-material";
 import RichTextEditor from "../components/RichTextEditor";
 import {
@@ -136,6 +140,8 @@ const TicketDetailPage = () => {
   const [selectedAssigneeValue, setSelectedAssigneeValue] = useState<string[]>([]);
   const [editingAllocated, setEditingAllocated] = useState(false);
   const [selectedAllocatedValue, setSelectedAllocatedValue] = useState<string[]>([]);
+  const [assigneeSearch, setAssigneeSearch] = useState("");
+  const [allocatedSearch, setAllocatedSearch] = useState("");
 
   const [replyHtml, setReplyHtml] = useState("");
   const [replyComposerOpen, setReplyComposerOpen] = useState(false);
@@ -828,6 +834,7 @@ const TicketDetailPage = () => {
   const handleAssigneeEditCancel = () => {
     setEditingAssignee(false);
     setSelectedAssigneeValue([]);
+    setAssigneeSearch("");
   };
 
 
@@ -857,6 +864,7 @@ const TicketDetailPage = () => {
   const handleAllocatedEditCancel = () => {
     setEditingAllocated(false);
     setSelectedAllocatedValue([]);
+    setAllocatedSearch("");
   };
 
   const handleAllocatedSave = async () => {
@@ -2828,113 +2836,12 @@ const TicketDetailPage = () => {
                 </Typography>
               </Box>
 
-              {/* Assigned to */}
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  py: 1,
-                  minHeight: 40,
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "var(--text-secondary)",
-                    width: 110,
-                    flexShrink: 0,
-                  }}
-                >
-                  Assigned to:
-                </Typography>
-                {editingAssignee ? (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.75,
-                      flex: 1,
-                      minWidth: 0,
-                    }}
-                  >
-                    <Select
-                      size="small"
-                      value={selectedAssigneeValue[0] || ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSelectedAssigneeValue(val ? [val] : []);
-                      }}
-                      displayEmpty
-                      disabled={updatingMetadata}
-                      sx={inlineEditControlSx}
-                      MenuProps={inlineMenuProps}
-                      renderValue={(selected) => {
-                        if (!selected) {
-                          return <span style={{ color: "var(--text-secondary)" }}>Select assignee</span>;
-                        }
-                        const u = users.find((user) => user.user_code === selected);
-                        return u ? `${u.first_name} ${u.last_name}` : selected;
-                      }}
-                    >
-                      <MenuItem value="">
-                        <em>Unassigned</em>
-                      </MenuItem>
-                      {users.map((u) => (
-                        <MenuItem key={u.user_code} value={u.user_code}>
-                          {u.first_name} {u.last_name} ({u.user_code})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    <IconButton
-                      size="small"
-                      onClick={handleAssigneeSave}
-                      disabled={updatingMetadata}
-                      sx={inlineSaveButtonSx}
-                    >
-                      <CheckIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={handleAssigneeEditCancel}
-                      disabled={updatingMetadata}
-                      sx={inlineCancelButtonSx}
-                    >
-                      <CancelIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
-                  </Box>
-                ) : (
-                  <>
-                    <Typography
-                      variant="body2"
-                      onClick={handleAssigneeEditStart}
-                      sx={{
-                        fontWeight: 600,
-                        color: "var(--text-h)",
-                        flex: 1,
-                        cursor: canEditRightCard ? "pointer" : "default",
-                      }}
-                    >
-                      {ticket.assigned_to_name || "Unassigned"}
-                    </Typography>
-                    {canEditRightCard && (
-                      <IconButton
-                        size="small"
-                        onClick={handleAssigneeEditStart}
-                        sx={{ color: "var(--text-secondary)", p: 0.5 }}
-                      >
-                        <MoreIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
-                    )}
-                  </>
-                )}
-              </Box>
 
-              {/* Allocated to */}
+              {/* Allocated to — choose from all users */}
               <Box
                 sx={{
                   display: "flex",
-                  alignItems: "center",
+                  alignItems: editingAllocated ? "flex-start" : "center",
                   justifyContent: "space-between",
                   py: 1,
                   minHeight: 40,
@@ -2951,61 +2858,142 @@ const TicketDetailPage = () => {
                   Allocated to:
                 </Typography>
                 {editingAllocated ? (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.75,
-                      flex: 1,
-                      minWidth: 0,
-                    }}
-                  >
-                    <Select
-                      multiple
-                      size="small"
-                      value={selectedAllocatedValue}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSelectedAllocatedValue(typeof val === "string" ? val.split(",") : (val as string[]));
+                  <Box sx={{ flex: 1, minWidth: 0, position: "relative" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                      <TextField
+                        size="small"
+                        autoFocus
+                        placeholder="Search users..."
+                        value={allocatedSearch}
+                        onChange={(e) => setAllocatedSearch(e.target.value)}
+                        disabled={updatingMetadata}
+                        slotProps={{
+                          input: {
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <SearchIcon sx={{ fontSize: 16, color: "var(--text-secondary)" }} />
+                              </InputAdornment>
+                            ),
+                          },
+                        }}
+                        sx={{
+                          flex: 1,
+                          "& .MuiInputBase-root": { height: 34, fontSize: 13 },
+                        }}
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={handleAllocatedSave}
+                        disabled={updatingMetadata}
+                        sx={inlineSaveButtonSx}
+                      >
+                        <CheckIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={handleAllocatedEditCancel}
+                        disabled={updatingMetadata}
+                        sx={inlineCancelButtonSx}
+                      >
+                        <CancelIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Box>
+                    {/* Selected user chips */}
+                    {selectedAllocatedValue.length > 0 && (
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.5 }}>
+                        {selectedAllocatedValue.map(code => {
+                          const u = users.find(usr => usr.user_code === code);
+                          const nm = u ? `${u.first_name || ""} ${u.last_name || ""}`.trim() : code;
+                          return (
+                            <Chip
+                              key={code}
+                              size="small"
+                              avatar={<Avatar sx={{ bgcolor: "#4f46d8", color: "#fff", fontSize: 11 }}>{(nm[0] || "U").toUpperCase()}</Avatar>}
+                              label={nm}
+                              onDelete={() => setSelectedAllocatedValue(prev => prev.filter(c => c !== code))}
+                              sx={{ fontSize: 12, height: 26 }}
+                            />
+                          );
+                        })}
+                      </Box>
+                    )}
+                    {/* User list dropdown — all users selectable */}
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 40,
+                        mt: 0.5,
+                        backgroundColor: "#fff",
+                        border: "1px solid var(--border)",
+                        borderRadius: "8px",
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                        maxHeight: 220,
+                        overflowY: "auto",
+                        zIndex: 1300,
                       }}
-                      displayEmpty
-                      disabled={updatingMetadata}
-                      sx={inlineEditControlSx}
-                      MenuProps={inlineMenuProps}
-                      renderValue={(selected) => {
-                        if (!selected || selected.length === 0) {
-                          return <span style={{ color: "var(--text-secondary)" }}>Select collaborators</span>;
-                        }
-                        return selected
-                          .map((code) => {
-                            const u = users.find((user) => user.user_code === code);
-                            return u ? `${u.first_name} ${u.last_name}` : code;
-                          })
-                          .join(", ");
-                      }}
                     >
-                      {users.map((u) => (
-                        <MenuItem key={u.user_code} value={u.user_code}>
-                          {u.first_name} {u.last_name} ({u.user_code})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    <IconButton
-                      size="small"
-                      onClick={handleAllocatedSave}
-                      disabled={updatingMetadata}
-                      sx={inlineSaveButtonSx}
-                    >
-                      <CheckIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={handleAllocatedEditCancel}
-                      disabled={updatingMetadata}
-                      sx={inlineCancelButtonSx}
-                    >
-                      <CancelIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
+                      {users
+                        .filter(u => {
+                          if (!allocatedSearch.trim()) return true;
+                          const q = allocatedSearch.toLowerCase();
+                          return (
+                            (u.first_name || "").toLowerCase().includes(q) ||
+                            (u.last_name || "").toLowerCase().includes(q) ||
+                            (u.user_code || "").toLowerCase().includes(q)
+                          );
+                        })
+                        .map((u) => {
+                          const name = `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.user_code;
+                          const initials = name.split(/\s+/).slice(0,2).map((p: string) => p[0]?.toUpperCase() || "").join("");
+                          const isSelected = selectedAllocatedValue.includes(u.user_code);
+                          return (
+                            <Box
+                              key={u.user_code}
+                              onClick={() => {
+                                setSelectedAllocatedValue(prev =>
+                                  isSelected ? prev.filter(c => c !== u.user_code) : [...prev, u.user_code]
+                                );
+                              }}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                px: 1.5,
+                                py: 0.75,
+                                cursor: "pointer",
+                                backgroundColor: isSelected ? "#f0f0ff" : "transparent",
+                                "&:hover": { backgroundColor: isSelected ? "#e8e8ff" : "#f8f8f8" },
+                                borderBottom: "1px solid #f5f5f5",
+                              }}
+                            >
+                              <Avatar sx={{ width: 26, height: 26, fontSize: 11, bgcolor: isSelected ? "#4f46d8" : "#e2e8f0", color: isSelected ? "#fff" : "#555" }}>
+                                {initials}
+                              </Avatar>
+                              <Box sx={{ minWidth: 0, flex: 1 }}>
+                                <Typography sx={{ fontSize: 13, fontWeight: 500, color: "var(--text-h)", lineHeight: 1.2 }}>{name}</Typography>
+                                <Typography sx={{ fontSize: 11, color: "var(--text-secondary)" }}>{u.user_code}</Typography>
+                              </Box>
+                              {isSelected && <CheckIcon sx={{ fontSize: 14, color: "#4f46d8" }} />}
+                            </Box>
+                          );
+                        })
+                      }
+                      {users.filter(u => {
+                        if (!allocatedSearch.trim()) return true;
+                        const q = allocatedSearch.toLowerCase();
+                        return (
+                          (u.first_name || "").toLowerCase().includes(q) ||
+                          (u.last_name || "").toLowerCase().includes(q) ||
+                          (u.user_code || "").toLowerCase().includes(q)
+                        );
+                      }).length === 0 && (
+                        <Box sx={{ px: 1.5, py: 1.5, textAlign: "center", color: "var(--text-secondary)", fontSize: 13 }}>
+                          No users found
+                        </Box>
+                      )}
+                    </Box>
                   </Box>
                 ) : (
                   <>
@@ -3035,6 +3023,219 @@ const TicketDetailPage = () => {
               </Box>
 
 
+              {/* Assigned to */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: editingAssignee ? "flex-start" : "center",
+                  justifyContent: "space-between",
+                  py: 1,
+                  minHeight: 40,
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "var(--text-secondary)",
+                    width: 110,
+                    flexShrink: 0,
+                  }}
+                >
+                  Assigned to:
+                </Typography>
+                {editingAssignee ? (
+                  <Box sx={{ flex: 1, minWidth: 0, position: "relative" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                      <TextField
+                        size="small"
+                        autoFocus
+                        placeholder="Search users..."
+                        value={assigneeSearch}
+                        onChange={(e) => setAssigneeSearch(e.target.value)}
+                        disabled={updatingMetadata}
+                        slotProps={{
+                          input: {
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <SearchIcon sx={{ fontSize: 16, color: "var(--text-secondary)" }} />
+                              </InputAdornment>
+                            ),
+                          },
+                        }}
+                        sx={{
+                          flex: 1,
+                          "& .MuiInputBase-root": { height: 34, fontSize: 13 },
+                        }}
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={handleAssigneeSave}
+                        disabled={updatingMetadata || selectedAssigneeValue.length === 0}
+                        sx={inlineSaveButtonSx}
+                      >
+                        <CheckIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={handleAssigneeEditCancel}
+                        disabled={updatingMetadata}
+                        sx={inlineCancelButtonSx}
+                      >
+                        <CancelIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Box>
+                    {/* Selected user chip */}
+                    {selectedAssigneeValue[0] && (() => {
+                      const sel = users.find(u => u.user_code === selectedAssigneeValue[0]);
+                      const selName = sel ? `${sel.first_name} ${sel.last_name}`.trim() : selectedAssigneeValue[0];
+                      return (
+                        <Box sx={{ mt: 0.5 }}>
+                          <Chip
+                            size="small"
+                            avatar={<Avatar sx={{ bgcolor: "#4f46d8", color: "#fff", fontSize: 11 }}>{(selName[0] || "U").toUpperCase()}</Avatar>}
+                            label={selName}
+                            onDelete={() => setSelectedAssigneeValue([])}
+                            sx={{ fontSize: 12, height: 26 }}
+                          />
+                        </Box>
+                      );
+                    })()}
+                    {/* User list dropdown */}
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 40,
+                        mt: 0.5,
+                        backgroundColor: "#fff",
+                        border: "1px solid var(--border)",
+                        borderRadius: "8px",
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                        maxHeight: 220,
+                        overflowY: "auto",
+                        zIndex: 1300,
+                      }}
+                    >
+                      {/* Unassigned option */}
+                      <Box
+                        onClick={() => { setSelectedAssigneeValue([]); }}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          px: 1.5,
+                          py: 0.75,
+                          cursor: "pointer",
+                          fontSize: 13,
+                          color: "var(--text-secondary)",
+                          fontStyle: "italic",
+                          "&:hover": { backgroundColor: "#f5f5ff" },
+                          borderBottom: "1px solid var(--border)",
+                        }}
+                      >
+                        Unassigned
+                      </Box>
+                      {(() => {
+                        // Only show users who are in the saved allocated list
+                        const allocatedCodes = (ticket.allocated_to_user_code || "")
+                          .split("|").map((c: string) => c.trim()).filter(Boolean);
+                        const eligibleUsers = users.filter(u => allocatedCodes.includes(u.user_code));
+                        const filteredUsers = eligibleUsers.filter(u => {
+                          if (!assigneeSearch.trim()) return true;
+                          const q = assigneeSearch.toLowerCase();
+                          return (
+                            (u.first_name || "").toLowerCase().includes(q) ||
+                            (u.last_name || "").toLowerCase().includes(q) ||
+                            (u.user_code || "").toLowerCase().includes(q)
+                          );
+                        });
+                        if (filteredUsers.length === 0) {
+                          return (
+                            <Box sx={{ px: 1.5, py: 1.5, textAlign: "center", color: "var(--text-secondary)", fontSize: 13 }}>
+                              {assigneeSearch.trim() ? "No matching users" : "No allocated users — allocate users first"}
+                            </Box>
+                          );
+                        }
+                        return filteredUsers.map((u) => {
+                          const name = `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.user_code;
+                          const initials = name.split(/\s+/).slice(0,2).map((p: string) => p[0]?.toUpperCase() || "").join("");
+                          const isSelected = selectedAssigneeValue[0] === u.user_code;
+                          return (
+                            <Box
+                              key={u.user_code}
+                              onClick={() => setSelectedAssigneeValue(isSelected ? [] : [u.user_code])}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                px: 1.5,
+                                py: 0.75,
+                                cursor: "pointer",
+                                backgroundColor: isSelected ? "#f0f0ff" : "transparent",
+                                "&:hover": { backgroundColor: isSelected ? "#e8e8ff" : "#f8f8f8" },
+                                borderBottom: "1px solid #f5f5f5",
+                              }}
+                            >
+                              <Avatar sx={{ width: 26, height: 26, fontSize: 11, bgcolor: isSelected ? "#4f46d8" : "#e2e8f0", color: isSelected ? "#fff" : "#555" }}>
+                                {initials}
+                              </Avatar>
+                              <Box sx={{ minWidth: 0 }}>
+                                <Typography sx={{ fontSize: 13, fontWeight: 500, color: "var(--text-h)", lineHeight: 1.2 }}>{name}</Typography>
+                                <Typography sx={{ fontSize: 11, color: "var(--text-secondary)" }}>{u.user_code}</Typography>
+                              </Box>
+                              {isSelected && <CheckIcon sx={{ fontSize: 14, color: "#4f46d8", ml: "auto" }} />}
+                            </Box>
+                          );
+                        });
+                      })()}
+                    </Box>
+                  </Box>
+                ) : (
+                  <>
+                    <Typography
+                      variant="body2"
+                      onClick={() => {
+                        const allocatedCodes = (ticket.allocated_to_user_code || "")
+                          .split("|").map((c: string) => c.trim()).filter(Boolean);
+                        if (!canEditRightCard || allocatedCodes.length === 0) return;
+                        handleAssigneeEditStart();
+                      }}
+                      sx={{
+                        fontWeight: 600,
+                        color: "var(--text-h)",
+                        flex: 1,
+                        cursor: canEditRightCard && (ticket.allocated_to_user_code || "").trim() ? "pointer" : "default",
+                      }}
+                    >
+                      {ticket.assigned_to_name || "Unassigned"}
+                    </Typography>
+                    {canEditRightCard && (() => {
+                      const allocatedCodes = (ticket.allocated_to_user_code || "")
+                        .split("|").map((c: string) => c.trim()).filter(Boolean);
+                      const hasAllocated = allocatedCodes.length > 0;
+                      return (
+                        <Tooltip title={hasAllocated ? "" : "Allocate users first before assigning"} arrow>
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={handleAssigneeEditStart}
+                              disabled={!hasAllocated}
+                              sx={{
+                                color: "var(--text-secondary)",
+                                p: 0.5,
+                                "&.Mui-disabled": { opacity: 0.35 },
+                              }}
+                            >
+                              <MoreIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      );
+                    })()}
+                  </>
+                )}
+              </Box>
 
               {/* Date */}
               <Box
