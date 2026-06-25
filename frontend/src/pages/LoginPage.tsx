@@ -543,7 +543,7 @@ const LoginPage = () => {
                     variant="contained"
                     onClick={handleLogin}
                     sx={{
-                      backgroundColor: "#2563EB",
+                      backgroundColor: "#211B5A",
                       color: "#ffffff",
                       borderRadius: "10px",
                       fontWeight: 700,
@@ -557,7 +557,7 @@ const LoginPage = () => {
                     Sign In
                   </Button>
 
-                  <Button
+                  {/* <Button
                     fullWidth
                     variant="outlined"
                     onClick={() => {
@@ -579,7 +579,7 @@ const LoginPage = () => {
                     }}
                   >
                     Register
-                  </Button>
+                  </Button> */}
                 </Box>
 
                 <Box
