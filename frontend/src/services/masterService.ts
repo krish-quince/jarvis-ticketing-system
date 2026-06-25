@@ -182,13 +182,18 @@ export const getAssignableUsersForTicket = async ({
   return unwrapData(response.data);
 };
 
-export const getCompanySettings = async () => {
-  const response = await API.get("/master/company-settings");
+export const getCompanySettings = async (companyCode?: string) => {
+  const response = await API.get("/master/company-settings", {
+    params: companyCode ? { companyCode } : undefined,
+  });
   return unwrapData(response.data);
 };
 
-export const updateCompanySettings = async (formData: FormData) => {
-  const response = await API.patch("/master/company-settings", formData, {
+export const updateCompanySettings = async (formData: FormData, companyCode?: string) => {
+  const url = companyCode
+    ? `/master/company-settings?companyCode=${encodeURIComponent(companyCode)}`
+    : "/master/company-settings";
+  const response = await API.patch(url, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },

@@ -1,6 +1,11 @@
 import * as service from "../services/master.service.js";
+import { isSuperAdmin } from "../middleware/role.middleware.js";
 
 const getTargetCompanyCode = (req) => {
+  if (isSuperAdmin(req.user)) {
+    // Super admin can target any company via query param or body
+    return req.query.companyCode || req.body.companyCode || req.user.companyCode;
+  }
   return req.user.companyCode;
 };
 
@@ -101,7 +106,7 @@ export const getRoles = async (
 
 export const getDepartments = async (req, res) => {
   try {
-    const data = await service.getDepartments(req.user.companyCode);
+    const data = await service.getDepartments(getTargetCompanyCode(req));
     return res.status(200).json({
       success: true,
       data,
@@ -579,7 +584,7 @@ export const createDepartment = async (req, res) => {
   try {
     const data = await service.createDepartment({
       ...req.body,
-      company_code: req.user.companyCode,
+      company_code: getTargetCompanyCode(req),
     });
     return res.status(201).json({
       success: true,
@@ -599,7 +604,7 @@ export const updateDepartment = async (req, res) => {
     const data = await service.updateDepartment(
       req.params.departmentId,
       req.body,
-      req.user.companyCode
+      getTargetCompanyCode(req)
     );
     return sendAdminMasterResponse(res, data, "Department not found");
   } catch (error) {
@@ -615,7 +620,7 @@ export const deleteDepartment = async (req, res) => {
   try {
     const data = await service.deleteDepartment(
       req.params.departmentId,
-      req.user.companyCode
+      getTargetCompanyCode(req)
     );
     return sendAdminMasterResponse(res, data, "Department not found");
   } catch (error) {
@@ -629,7 +634,13 @@ export const deleteDepartment = async (req, res) => {
 
 export const getCompanySettings = async (req, res) => {
   try {
-    const companyCode = req.user.companyCode;
+    const companyCode = getTargetCompanyCode(req);
+    if (!companyCode) {
+      return res.status(400).json({
+        success: false,
+        message: "Company code is required.",
+      });
+    }
     const settings = await service.getCompanySettings(companyCode);
     if (!settings) {
       return res.status(404).json({
@@ -652,7 +663,13 @@ export const getCompanySettings = async (req, res) => {
 
 export const updateCompanySettings = async (req, res) => {
   try {
-    const companyCode = req.user.companyCode;
+    const companyCode = getTargetCompanyCode(req);
+    if (!companyCode) {
+      return res.status(400).json({
+        success: false,
+        message: "Company code is required.",
+      });
+    }
     const payload = {};
     
     if (req.files) {

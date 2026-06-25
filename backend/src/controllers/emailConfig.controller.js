@@ -1,8 +1,19 @@
 import * as repository from "../repositories/emailConfig.repository.js";
+import { isSuperAdmin } from "../middleware/role.middleware.js";
+
+const getTargetCompanyCode = (req) => {
+  if (isSuperAdmin(req.user)) {
+    return req.query.companyCode || req.body.companyCode || req.user.companyCode;
+  }
+  return req.user.companyCode;
+};
 
 export const getEmailConfigs = async (req, res) => {
   try {
-    const companyCode = req.user.companyCode;
+    const companyCode = getTargetCompanyCode(req);
+    if (!companyCode) {
+      return res.status(400).json({ success: false, message: "Company code is required." });
+    }
     const configs = await repository.getEmailConfigs(companyCode);
     return res.status(200).json({
       success: true,
@@ -19,7 +30,10 @@ export const getEmailConfigs = async (req, res) => {
 
 export const createEmailConfig = async (req, res) => {
   try {
-    const companyCode = req.user.companyCode;
+    const companyCode = getTargetCompanyCode(req);
+    if (!companyCode) {
+      return res.status(400).json({ success: false, message: "Company code is required." });
+    }
     const {
       config_name, smtp_host, smtp_port, smtp_user, smtp_pass,
       email_from_name, welcome_subject, welcome_template,
@@ -60,7 +74,10 @@ export const createEmailConfig = async (req, res) => {
 
 export const updateEmailConfig = async (req, res) => {
   try {
-    const companyCode = req.user.companyCode;
+    const companyCode = getTargetCompanyCode(req);
+    if (!companyCode) {
+      return res.status(400).json({ success: false, message: "Company code is required." });
+    }
     const { id } = req.params;
     const data = req.body;
 
@@ -87,7 +104,10 @@ export const updateEmailConfig = async (req, res) => {
 
 export const activateEmailConfig = async (req, res) => {
   try {
-    const companyCode = req.user.companyCode;
+    const companyCode = getTargetCompanyCode(req);
+    if (!companyCode) {
+      return res.status(400).json({ success: false, message: "Company code is required." });
+    }
     const { id } = req.params;
 
     const activated = await repository.activateEmailConfig(Number(id), companyCode);
@@ -113,7 +133,10 @@ export const activateEmailConfig = async (req, res) => {
 
 export const deleteEmailConfig = async (req, res) => {
   try {
-    const companyCode = req.user.companyCode;
+    const companyCode = getTargetCompanyCode(req);
+    if (!companyCode) {
+      return res.status(400).json({ success: false, message: "Company code is required." });
+    }
     const { id } = req.params;
 
     const deleted = await repository.deleteEmailConfig(Number(id), companyCode);

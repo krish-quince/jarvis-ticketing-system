@@ -121,6 +121,7 @@ export const getAllTickets = async (
   let query = `
     SELECT
       t.*,
+      COALESCE(u_raised.first_name || ' ' || u_raised.last_name, t.raised_by_user_code) AS raised_by_name,
       (
         SELECT string_agg(u.first_name || ' ' || u.last_name, ', ')
         FROM ReturnTable(t.assigned_to_user_code, '|') rt
@@ -154,6 +155,8 @@ export const getAllTickets = async (
         '[]'::json
       ) AS tags
     FROM tickets t
+    LEFT JOIN users u_raised
+      ON u_raised.user_code = t.raised_by_user_code
     LEFT JOIN ticket_statuses s
       ON s.status_id = t.status_id
     LEFT JOIN ticket_categories c
@@ -217,7 +220,7 @@ export const getAllTickets = async (
   }
 
   query += `
-    ORDER BY ${orderField} ${orderDirection}, t.ticket_id DESC
+    ORDER BY t.is_pinned DESC, ${orderField} ${orderDirection}, t.ticket_id DESC
     LIMIT $${params.length + 1}
     OFFSET $${params.length + 2}
   `;
@@ -231,6 +234,7 @@ export const getTicketById = async (ticketId, companyCode) => {
   let query = `
     SELECT
         t.*,
+        COALESCE(u_raised.first_name || ' ' || u_raised.last_name, t.raised_by_user_code) AS raised_by_name,
         c.category_name,
         sc.subcategory_name,
         p.priority_name,
@@ -307,6 +311,9 @@ export const getTicketById = async (ticketId, companyCode) => {
         ) AS tags
 
         FROM tickets t
+
+        LEFT JOIN users u_raised
+            ON u_raised.user_code = t.raised_by_user_code
 
         LEFT JOIN ticket_categories c
             ON c.category_id = t.category_id
@@ -568,11 +575,56 @@ export const getSubCategoryById = async (subCategoryId, companyCode) => {
 
 export const deleteTicket = async (ticketId, companyCode, client = null) => {
   const db = client || pool;
-  const result = await db.query(
-    `DELETE FROM tickets WHERE ticket_id = $1 AND company_code = $2 RETURNING *`,
-    [ticketId, companyCode],
-  );
-  return result.rows[0];
+  const useLocalTransaction = !client;
+  let tx = db;
+
+  if (useLocalTransaction) {
+    const conn = await pool.connect();
+    try {
+      await conn.query("BEGIN");
+      
+      await conn.query("DELETE FROM ticket_attachments WHERE ticket_id = $1", [ticketId]);
+      await conn.query(`
+        DELETE FROM comment_attachments 
+        WHERE comment_id IN (SELECT comment_id FROM ticket_comments WHERE ticket_id = $1)
+      `, [ticketId]);
+      await conn.query("DELETE FROM ticket_comments WHERE ticket_id = $1", [ticketId]);
+      await conn.query("DELETE FROM ticket_history WHERE ticket_id = $1", [ticketId]);
+      await conn.query("DELETE FROM ticket_tags WHERE ticket_id = $1", [ticketId]);
+      await conn.query("DELETE FROM ticket_freeform_tags WHERE ticket_id = $1", [ticketId]);
+      await conn.query("DELETE FROM ticket_time_entries WHERE ticket_id = $1", [ticketId]);
+      
+      const result = await conn.query(
+        "DELETE FROM tickets WHERE ticket_id = $1 AND company_code = $2 RETURNING *",
+        [ticketId, companyCode]
+      );
+      
+      await conn.query("COMMIT");
+      return result.rows[0];
+    } catch (err) {
+      await conn.query("ROLLBACK");
+      throw err;
+    } finally {
+      conn.release();
+    }
+  } else {
+    await tx.query("DELETE FROM ticket_attachments WHERE ticket_id = $1", [ticketId]);
+    await tx.query(`
+      DELETE FROM comment_attachments 
+      WHERE comment_id IN (SELECT comment_id FROM ticket_comments WHERE ticket_id = $1)
+    `, [ticketId]);
+    await tx.query("DELETE FROM ticket_comments WHERE ticket_id = $1", [ticketId]);
+    await tx.query("DELETE FROM ticket_history WHERE ticket_id = $1", [ticketId]);
+    await tx.query("DELETE FROM ticket_tags WHERE ticket_id = $1", [ticketId]);
+    await tx.query("DELETE FROM ticket_freeform_tags WHERE ticket_id = $1", [ticketId]);
+    await tx.query("DELETE FROM ticket_time_entries WHERE ticket_id = $1", [ticketId]);
+    
+    const result = await tx.query(
+      "DELETE FROM tickets WHERE ticket_id = $1 AND company_code = $2 RETURNING *",
+      [ticketId, companyCode]
+    );
+    return result.rows[0];
+  }
 };
 
 export const updateTicketDetails = async (
@@ -626,5 +678,18 @@ export const deleteAttachment = async (type, attachmentId) => {
     throw new Error("Invalid attachment type");
   }
   const result = await pool.query(query, [attachmentId]);
+  return result.rows[0];
+};
+
+export const updateTicketPin = async (ticketId, isPinned, companyCode) => {
+  const result = await pool.query(
+    `
+      UPDATE tickets
+      SET is_pinned = $1
+      WHERE ticket_id = $2 AND company_code = $3
+      RETURNING *
+    `,
+    [isPinned, ticketId, companyCode]
+  );
   return result.rows[0];
 };

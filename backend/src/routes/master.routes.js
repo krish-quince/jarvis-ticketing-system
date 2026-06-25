@@ -79,7 +79,7 @@ router.patch("/companies/:companyCode", verifyToken, requireSuperAdmin, uploadLo
 router.delete("/companies/:companyCode", verifyToken, requireSuperAdmin, deleteCompany);
 router.post("/companies/:companyCode/restore", verifyToken, requireSuperAdmin, restoreCompany);
 
-router.get("/company-settings", ...adminOnly, getCompanySettings);
+router.get("/company-settings", verifyToken, getCompanySettings);
 router.patch("/company-settings", ...adminOnly, uploadLogoAndFavicon, updateCompanySettings);
 
 export default router;

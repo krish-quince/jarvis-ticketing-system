@@ -14,7 +14,6 @@ import {
   Menu,
   MenuItem,
   Select,
-  ListSubheader,
   Avatar,
   Chip,
   Switch,
@@ -22,12 +21,13 @@ import {
   Tooltip,
   TextField,
   InputAdornment,
+  Popover,
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material/Select";
 import {
   Reply as ReplyIcon,
   Input as TakeoverIcon,
-  CheckCircleOutlined as CloseIcon,
+  Close as CloseIcon,
   MoreHoriz as MoreIcon,
   AccessTime as AccessTimeIcon,
   Check as CheckIcon,
@@ -43,7 +43,8 @@ import {
   ImportExport as SortIcon,
   DeleteOutlined as DeleteIcon,
   SearchOutlined as SearchIcon,
-  PersonOutlined as PersonIcon,
+  PushPin,
+  KeyboardArrowDown,
 } from "@mui/icons-material";
 import RichTextEditor from "../components/RichTextEditor";
 import {
@@ -58,13 +59,14 @@ import {
   updateTicketPriority,
   updateTicketCategory,
   assignTicket,
-  allocateTicket,
   takeoverTicket,
   getComments,
   getTicketHistory,
   createComment,
   deleteAttachment,
   reopenTicket,
+  updateTicketDueDate,
+  toggleTicketPin,
 } from "../services/ticketService";
 import { getUsers } from "../services/userService";
 import {
@@ -137,12 +139,12 @@ const TicketDetailPage = () => {
   const [selectedPriorityValue, setSelectedPriorityValue] = useState("");
   const [editingCategory, setEditingCategory] = useState(false);
   const [selectedCategoryValue, setSelectedCategoryValue] = useState("");
+  const [categoryAnchorEl, setCategoryAnchorEl] = useState<null | HTMLElement>(null);
+  const [editingDue, setEditingDue] = useState(false);
+  const [selectedDueDate, setSelectedDueDate] = useState("");
   const [editingAssignee, setEditingAssignee] = useState(false);
   const [selectedAssigneeValue, setSelectedAssigneeValue] = useState<string[]>([]);
-  const [editingAllocated, setEditingAllocated] = useState(false);
-  const [selectedAllocatedValue, setSelectedAllocatedValue] = useState<string[]>([]);
   const [assigneeSearch, setAssigneeSearch] = useState("");
-  const [allocatedSearch, setAllocatedSearch] = useState("");
 
   const [replyHtml, setReplyHtml] = useState("");
   const [replyComposerOpen, setReplyComposerOpen] = useState(false);
@@ -521,6 +523,14 @@ const TicketDetailPage = () => {
     setReplyComposerOpen(true);
   };
 
+  const getClosedStatusId = () => {
+    const options = statusOptions.length > 0 ? statusOptions : fallbackStatusOptions;
+    const closedStatus = options.find(
+      (s: any) => s.is_closed_status === true || s.status_name?.toLowerCase() === "closed"
+    );
+    return closedStatus ? closedStatus.status_id : 3;
+  };
+
   const handlePostComment = async ({
     resolveTicket = false,
   }: { resolveTicket?: boolean } = {}) => {
@@ -538,7 +548,8 @@ const TicketDetailPage = () => {
         replyAttachments,
       );
       if (resolveTicket) {
-        await updateTicketStatus(ticketId, 5);
+        const closedId = getClosedStatusId();
+        await updateTicketStatus(ticketId, closedId);
       }
 
       await fetchData();
@@ -573,7 +584,8 @@ const TicketDetailPage = () => {
   const handleCloseTicket = async () => {
     try {
       setUpdatingMetadata(true);
-      await updateTicketStatus(ticketId, 5); // 5 is 'Closed'
+      const closedId = getClosedStatusId();
+      await updateTicketStatus(ticketId, closedId);
       setToast({
         open: true,
         message: "Ticket closed successfully",
@@ -709,8 +721,10 @@ const TicketDetailPage = () => {
     if (!canManageTicketMetadata()) return;
 
     setSelectedCategoryValue(
-      ticket.category_id && ticket.subcategory_id
-        ? `${ticket.category_id}:${ticket.subcategory_id}`
+      ticket.category_id
+        ? ticket.subcategory_id
+          ? `${ticket.category_id}:${ticket.subcategory_id}`
+          : `${ticket.category_id}:`
         : "",
     );
     setEditingCategory(true);
@@ -722,16 +736,14 @@ const TicketDetailPage = () => {
     setSelectedCategoryValue("");
   };
 
-  const handleCategoryChange = (event: SelectChangeEvent<string>) => {
-    setSelectedCategoryValue(event.target.value);
-  };
+
 
   const handleCategorySave = async () => {
     if (!selectedCategoryValue) return;
 
-    const [categoryId, subCategoryId] = selectedCategoryValue
-      .split(":")
-      .map(Number);
+    const parts = selectedCategoryValue.split(":");
+    const categoryId = Number(parts[0]);
+    const subCategoryId = parts[1] ? Number(parts[1]) : null;
 
     try {
       setUpdatingMetadata(true);
@@ -749,6 +761,49 @@ const TicketDetailPage = () => {
       setToast({
         open: true,
         message: error.response?.data?.message || "Failed to update category",
+        severity: "error",
+      });
+    } finally {
+      setUpdatingMetadata(false);
+    }
+  };
+
+  const handleDueEditStart = () => {
+    if (!canManageTicketMetadata()) return;
+    if (ticket.due_date) {
+      const d = new Date(ticket.due_date);
+      const tzOffset = d.getTimezoneOffset() * 60000;
+      const localISOTime = (new Date(d.getTime() - tzOffset)).toISOString().slice(0, 16);
+      setSelectedDueDate(localISOTime);
+    } else {
+      setSelectedDueDate("");
+    }
+    setEditingDue(true);
+  };
+
+  const handleDueEditCancel = () => {
+    setEditingDue(false);
+    setSelectedDueDate("");
+  };
+
+  const handleDueSave = async () => {
+    try {
+      setUpdatingMetadata(true);
+      const formattedDate = selectedDueDate ? new Date(selectedDueDate).toISOString() : null;
+      await updateTicketDueDate(ticketId, formattedDate);
+      setToast({
+        open: true,
+        message: "Due date updated successfully",
+        severity: "success",
+      });
+      await fetchData();
+      setEditingDue(false);
+      setSelectedDueDate("");
+    } catch (error: any) {
+      console.error(error);
+      setToast({
+        open: true,
+        message: error.response?.data?.message || "Failed to update due date",
         severity: "error",
       });
     } finally {
@@ -871,54 +926,6 @@ const TicketDetailPage = () => {
   const handleAssigneeSave = async () => {
     if (selectedAssigneeValue.length === 0) return;
     await handleAssigneeChange(selectedAssigneeValue[0]);
-  };
-
-  const handleAllocatedEditStart = async () => {
-    if (!canManageTicketMetadata()) return;
-    const currentAllocated = ticket.allocated_to_user_code
-      ? ticket.allocated_to_user_code.split("|").map((c: string) => c.trim()).filter(Boolean)
-      : [];
-    setSelectedAllocatedValue(currentAllocated);
-    setEditingAllocated(true);
-    if (users.length === 0) {
-      try {
-        const usersData = await getUsers();
-        setUsers(usersData);
-      } catch (error) {
-        console.error("Failed to load users:", error);
-      }
-    }
-  };
-
-  const handleAllocatedEditCancel = () => {
-    setEditingAllocated(false);
-    setSelectedAllocatedValue([]);
-    setAllocatedSearch("");
-  };
-
-  const handleAllocatedSave = async () => {
-    try {
-      setUpdatingMetadata(true);
-      const allocatedString = selectedAllocatedValue.join("|") || "";
-      await allocateTicket(ticketId, allocatedString);
-      setToast({
-        open: true,
-        message: "Allocated users updated successfully",
-        severity: "success",
-      });
-      await fetchData();
-      setEditingAllocated(false);
-      setSelectedAllocatedValue([]);
-    } catch (error: any) {
-      console.error(error);
-      setToast({
-        open: true,
-        message: error.response?.data?.message || "Failed to update allocations",
-        severity: "error",
-      });
-    } finally {
-      setUpdatingMetadata(false);
-    }
   };
 
 
@@ -1076,6 +1083,20 @@ const TicketDetailPage = () => {
       );
 
     return subcategory?.subcategory_name || String(subCategoryId);
+  };
+  const getSelectedCategoryLabel = () => {
+    if (!selectedCategoryValue) return "Select category";
+    const parts = selectedCategoryValue.split(":");
+    const catId = Number(parts[0]);
+    const subId = parts[1] ? Number(parts[1]) : null;
+
+    const cat = categoryGroups.find((g) => g.category_id === catId);
+    if (!cat) return "Select category";
+    if (subId) {
+      const sub = cat.subcategories.find((s) => s.subcategory_id === subId);
+      return sub ? sub.subcategory_name : cat.category_name;
+    }
+    return cat.category_name;
   };
   const getStatusName = (statusId?: string) => {
     if (!statusId) return "";
@@ -1499,7 +1520,7 @@ const TicketDetailPage = () => {
                 {!isClosed && (
                   <Button
                     variant="outlined"
-                    startIcon={<CloseIcon />}
+                    startIcon={<CloseIcon sx={{ color: "var(--text)" }} />}
                     onClick={handleCloseTicket}
                     disabled={updatingMetadata}
                     sx={{
@@ -1508,10 +1529,14 @@ const TicketDetailPage = () => {
                       fontWeight: 600,
                       color: "var(--text)",
                       borderColor: "var(--border)",
-                      backgroundColor: "var(--bg-card)",
+                      padding: "5px 16px",
+                      "& .MuiButton-startIcon": {
+                        marginRight: "4px",
+                      },
                       "&:hover": {
-                        borderColor: "#DC3545",
-                        backgroundColor: "rgba(220, 53, 69, 0.05)",
+                        borderRadius: "6px",
+                        borderColor: "var(--border)",
+                        opacity: 0.85,
                       },
                     }}
                   >
@@ -1592,6 +1617,29 @@ const TicketDetailPage = () => {
                   >
                     Manage Subscribers
                   </MenuItem>
+                  <MenuItem
+                    onClick={async () => {
+                      setMoreAnchor(null);
+                      try {
+                        await toggleTicketPin(ticket.ticket_id, !ticket.is_pinned);
+                        setToast({
+                          open: true,
+                          message: ticket.is_pinned ? "Ticket unpinned" : "Ticket pinned",
+                          severity: "success",
+                        });
+                        await fetchData();
+                      } catch (err) {
+                        console.error(err);
+                        setToast({
+                          open: true,
+                          message: "Failed to toggle ticket pin",
+                          severity: "error",
+                        });
+                      }
+                    }}
+                  >
+                    {ticket.is_pinned ? "Unpin Ticket" : "Pin Ticket"}
+                  </MenuItem>
                   {isAdminOrDev && (
                     <MenuItem
                       onClick={() => {
@@ -1611,12 +1659,17 @@ const TicketDetailPage = () => {
                 </Menu>
               </Box>
             </Box>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 700, color: "var(--text-h)", fontSize: "28px" }}
-            >
-              {ticket.subject}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              {ticket.is_pinned && (
+                <PushPin sx={{ fontSize: 24, color: "#635BFF", transform: "rotate(45deg)" }} />
+              )}
+              <Typography
+                variant="h4"
+                sx={{ fontWeight: 700, color: "var(--text-h)", fontSize: "28px" }}
+              >
+                {ticket.subject}
+              </Typography>
+            </Box>
 
             <Box
               sx={{
@@ -2534,93 +2587,6 @@ const TicketDetailPage = () => {
 
             {/* Sidebar properties fields in table layout structure */}
             <Box sx={{ display: "flex", flexDirection: "column" }}>
-              {/* Freeform Tags */}
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  py: 1,
-                  minHeight: 40,
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "var(--text-secondary)",
-                    width: 110,
-                    flexShrink: 0,
-                    pt: "8px",
-                  }}
-                >
-                  Tags:
-                </Typography>
-                <Box sx={{ flex: 1 }}>
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: freeformTags.length ? 1 : 0 }}>
-                    {freeformTags.map((tag) => (
-                      <Box
-                        key={tag.id}
-                        sx={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 0.5,
-                          px: 1.2,
-                          py: 0.35,
-                          borderRadius: "999px",
-                          border: "1px solid rgba(99,102,241,0.35)",
-                          backgroundColor: "rgba(99,102,241,0.08)",
-                          fontSize: 12,
-                          fontWeight: 500,
-                          color: "#6366f1",
-                          userSelect: "none",
-                        }}
-                      >
-                        {tag.tag_message}
-                        {!isClosed && (
-                          <Box
-                            component="span"
-                            onClick={() => handleDeleteFreeformTag(tag.id)}
-                            sx={{
-                              cursor: "pointer",
-                              ml: 0.3,
-                              opacity: 0.6,
-                              lineHeight: 1,
-                              fontSize: 14,
-                              "&:hover": { opacity: 1 },
-                            }}
-                          >
-                            ×
-                          </Box>
-                        )}
-                      </Box>
-                    ))}
-                  </Box>
-                  {!isClosed && (
-                    <Box
-                      component="input"
-                      placeholder="Type a tag and press Enter…"
-                      value={tagInput}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTagInput(e.target.value)}
-                      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleAddFreeformTag();
-                        }
-                      }}
-                      sx={{
-                        width: "100%",
-                        border: "none",
-                        outline: "none",
-                        background: "transparent",
-                        fontSize: 13,
-                        color: "var(--text)",
-                        py: 0.5,
-                        "&::placeholder": { color: "var(--text-secondary)", opacity: 0.7 },
-                      }}
-                    />
-                  )}
-                </Box>
-              </Box>
 
               {/* Priority */}
               <Box
@@ -2758,40 +2724,187 @@ const TicketDetailPage = () => {
                       minWidth: 0,
                     }}
                   >
-                    <Select
-                      size="small"
-                      value={selectedCategoryValue}
-                      onChange={handleCategoryChange}
-                      displayEmpty
-                      disabled={loadingCategories || updatingMetadata}
-                      sx={inlineEditControlSx}
-                      MenuProps={inlineMenuProps}
+                    <Box
+                      onClick={(e) => {
+                        if (!loadingCategories && !updatingMetadata) {
+                          setCategoryAnchorEl(e.currentTarget);
+                        }
+                      }}
+                      sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        height: 34,
+                        fontSize: 14,
+                        backgroundColor: "var(--bg-card)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "4px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        px: 1.5,
+                        cursor: "pointer",
+                        color: selectedCategoryValue ? "var(--text)" : "var(--text-sub)",
+                        "&:hover": {
+                          borderColor: "var(--accent)",
+                        },
+                      }}
                     >
-                      <MenuItem value="" disabled>
+                      <Typography
+                        variant="body2"
+                        noWrap
+                        sx={{
+                          textOverflow: "ellipsis",
+                          overflow: "hidden",
+                          fontSize: 14,
+                        }}
+                      >
                         {loadingCategories
                           ? "Loading categories..."
-                          : "Select category"}
-                      </MenuItem>
-                      {categoryGroups.flatMap((category) => [
-                        <ListSubheader key={`category-${category.category_id}`}>
-                          {category.category_name}
-                        </ListSubheader>,
-                        ...category.subcategories.map((subcategory) => (
-                          <MenuItem
-                            key={`${category.category_id}:${subcategory.subcategory_id}`}
-                            value={`${category.category_id}:${subcategory.subcategory_id}`}
-                            sx={{ pl: 3 }}
-                          >
-                            {subcategory.subcategory_name}
-                          </MenuItem>
-                        )),
-                      ])}
-                    </Select>
+                          : getSelectedCategoryLabel()}
+                      </Typography>
+                      <KeyboardArrowDown sx={{ fontSize: 18, color: "var(--text-secondary)" }} />
+                    </Box>
+
+                    <Popover
+                      open={Boolean(categoryAnchorEl)}
+                      anchorEl={categoryAnchorEl}
+                      onClose={() => setCategoryAnchorEl(null)}
+                      anchorOrigin={{
+                        vertical: "bottom",
+                        horizontal: "left",
+                      }}
+                      transformOrigin={{
+                        vertical: "top",
+                        horizontal: "left",
+                      }}
+                      slotProps={{
+                        paper: {
+                          sx: {
+                            width: categoryAnchorEl ? categoryAnchorEl.clientWidth : 250,
+                            maxHeight: 280,
+                            overflowY: "auto",
+                            mt: 0.5,
+                            border: "1px solid var(--border)",
+                            boxShadow: "var(--shadow)",
+                            backgroundColor: "var(--bg-card)",
+                            backgroundImage: "none",
+                            display: "flex",
+                            flexDirection: "column",
+                            borderRadius: "8px",
+                            "&::-webkit-scrollbar": {
+                              width: "14px",
+                            },
+                            "&::-webkit-scrollbar-track": {
+                              backgroundColor: "var(--bg-row-alt)",
+                              borderLeft: "1px solid var(--border)",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                              backgroundColor: "var(--border)",
+                              borderRadius: "0px",
+                              border: "3px solid var(--bg-row-alt)",
+                              "&:hover": {
+                                backgroundColor: "var(--text-secondary)",
+                              },
+                            },
+                          },
+                        },
+                      }}
+                    >
+                      <Box sx={{ py: 0.5 }}>
+                        <Box
+                          sx={{
+                            px: 2,
+                            py: 1,
+                            color: "var(--text-secondary)",
+                            fontSize: 13,
+                            borderBottom: "1px solid var(--border)",
+                            mb: 0.5,
+                            userSelect: "none",
+                          }}
+                        >
+                          Select category
+                        </Box>
+                        {categoryGroups.map((category) => {
+                          const hasSub = category.subcategories && category.subcategories.length > 0;
+                          return (
+                            <Box key={category.category_id}>
+                              <Box
+                                onClick={() => {
+                                  if (!hasSub) {
+                                    setSelectedCategoryValue(`${category.category_id}:`);
+                                    setCategoryAnchorEl(null);
+                                  }
+                                }}
+                                sx={{
+                                  px: 2,
+                                  py: 0.85,
+                                  fontWeight: 600,
+                                  fontSize: 13.5,
+                                  color: hasSub ? "var(--text-secondary)" : "var(--text-h)",
+                                  cursor: hasSub ? "default" : "pointer",
+                                  userSelect: "none",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  "&:hover": {
+                                    backgroundColor: hasSub ? "transparent" : "var(--bg-row-hover)",
+                                  },
+                                }}
+                              >
+                                {category.category_name}
+                              </Box>
+
+                              {category.subcategories &&
+                                category.subcategories.map((sub) => {
+                                  const isSelected =
+                                    selectedCategoryValue === `${category.category_id}:${sub.subcategory_id}`;
+                                  return (
+                                    <Box
+                                      key={sub.subcategory_id}
+                                      onClick={() => {
+                                        setSelectedCategoryValue(`${category.category_id}:${sub.subcategory_id}`);
+                                        setCategoryAnchorEl(null);
+                                      }}
+                                      sx={{
+                                        pl: 3.5,
+                                        pr: 2,
+                                        py: 0.75,
+                                        fontSize: 13.5,
+                                        color: isSelected ? "#635BFF" : "var(--text)",
+                                        fontWeight: isSelected ? 600 : 500,
+                                        cursor: "pointer",
+                                        userSelect: "none",
+                                        backgroundColor: isSelected ? "rgba(99, 91, 255, 0.08)" : "transparent",
+                                        "&:hover": {
+                                          backgroundColor: "var(--bg-row-hover)",
+                                        },
+                                      }}
+                                    >
+                                      {sub.subcategory_name}
+                                    </Box>
+                                  );
+                                })}
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    </Popover>
+
                     <IconButton
                       size="small"
                       onClick={handleCategorySave}
                       disabled={!selectedCategoryValue || updatingMetadata}
-                      sx={inlineSaveButtonSx}
+                      sx={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: "6px",
+                        color: "#fff",
+                        backgroundColor: "#9a8ffa",
+                        "&:hover": { backgroundColor: "#8275f5" },
+                        "&.Mui-disabled": {
+                          color: "rgba(255,255,255,0.65)",
+                          backgroundColor: "rgba(154,143,250,0.45)",
+                        },
+                      }}
                     >
                       <CheckIcon sx={{ fontSize: 18 }} />
                     </IconButton>
@@ -2799,7 +2912,15 @@ const TicketDetailPage = () => {
                       size="small"
                       onClick={handleCategoryEditCancel}
                       disabled={updatingMetadata}
-                      sx={inlineCancelButtonSx}
+                      sx={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: "6px",
+                        border: "1px solid #d1d5db",
+                        backgroundColor: "#fff",
+                        color: "#4b5563",
+                        "&:hover": { backgroundColor: "#f9fafb" },
+                      }}
                     >
                       <CancelIcon sx={{ fontSize: 18 }} />
                     </IconButton>
@@ -3157,20 +3278,104 @@ const TicketDetailPage = () => {
                 >
                   Due:
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 600, color: "var(--text-h)", flex: 1 }}
-                >
-                  {ticket.due_date
-                    ? new Date(ticket.due_date).toLocaleString("en-US", {
-                      month: "numeric",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })
-                    : ""}
-                </Typography>
+                {editingDue ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.75,
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    <TextField
+                      type="datetime-local"
+                      size="small"
+                      value={selectedDueDate}
+                      onChange={(e) => setSelectedDueDate(e.target.value)}
+                      disabled={updatingMetadata}
+                      sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        "& .MuiInputBase-root": {
+                          height: 34,
+                          fontSize: 14,
+                          backgroundColor: "var(--bg-card)",
+                        },
+                      }}
+                      slotProps={{
+                        inputLabel: { shrink: true },
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={handleDueSave}
+                      disabled={updatingMetadata}
+                      sx={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: "6px",
+                        color: "#fff",
+                        backgroundColor: "#9a8ffa",
+                        "&:hover": { backgroundColor: "#8275f5" },
+                        "&.Mui-disabled": {
+                          color: "rgba(255,255,255,0.65)",
+                          backgroundColor: "rgba(154,143,250,0.45)",
+                        },
+                      }}
+                    >
+                      <CheckIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={handleDueEditCancel}
+                      disabled={updatingMetadata}
+                      sx={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: "6px",
+                        border: "1px solid #d1d5db",
+                        backgroundColor: "#fff",
+                        color: "#4b5563",
+                        "&:hover": { backgroundColor: "#f9fafb" },
+                      }}
+                    >
+                      <CancelIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <>
+                    <Typography
+                      variant="body2"
+                      onClick={handleDueEditStart}
+                      sx={{
+                        fontWeight: 600,
+                        color: "var(--text-h)",
+                        flex: 1,
+                        cursor: canEditRightCard ? "pointer" : "default",
+                      }}
+                    >
+                      {ticket.due_date
+                        ? new Date(ticket.due_date).toLocaleString("en-US", {
+                            month: "numeric",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })
+                        : ""}
+                    </Typography>
+                    {canEditRightCard && (
+                      <IconButton
+                        size="small"
+                        onClick={handleDueEditStart}
+                        sx={{ color: "var(--text-secondary)", p: 0.5 }}
+                      >
+                        <MoreIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    )}
+                  </>
+                )}
               </Box>
 
               {/* Time spent — live timer */}
@@ -3355,6 +3560,101 @@ const TicketDetailPage = () => {
                 >
                   This ticket is not recurring
                 </Typography>
+              </Box>
+
+              {/* Freeform Tags - Styled Inline */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  py: 1,
+                  minHeight: 40,
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "var(--text-secondary)",
+                    width: 110,
+                    flexShrink: 0,
+                  }}
+                >
+                  Tags:
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    gap: 0.75,
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  {freeformTags.map((tag) => (
+                    <Box
+                      key={tag.id}
+                      sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                        px: 1.2,
+                        py: 0.25,
+                        borderRadius: "16px",
+                        border: "1px solid rgba(99,91,255,0.25)",
+                        backgroundColor: "rgba(99,91,255,0.06)",
+                        color: "#635bff",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        userSelect: "none",
+                      }}
+                    >
+                      {tag.tag_message}
+                      {!isClosed && (
+                        <Box
+                          component="span"
+                          onClick={() => handleDeleteFreeformTag(tag.id)}
+                          sx={{
+                            cursor: "pointer",
+                            ml: 0.3,
+                            opacity: 0.6,
+                            lineHeight: 1,
+                            fontSize: 14,
+                            "&:hover": { opacity: 1 },
+                          }}
+                        >
+                          ×
+                        </Box>
+                      )}
+                    </Box>
+                  ))}
+                  {!isClosed && (
+                    <Box
+                      component="input"
+                      placeholder="type a tag..."
+                      value={tagInput}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTagInput(e.target.value)}
+                      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddFreeformTag();
+                        }
+                      }}
+                      sx={{
+                        border: "none",
+                        outline: "none",
+                        background: "transparent",
+                        fontSize: 13,
+                        color: "var(--text)",
+                        py: 0.5,
+                        flex: 1,
+                        minWidth: 100,
+                        "&::placeholder": { color: "var(--text-secondary)", opacity: 0.7 },
+                      }}
+                    />
+                  )}
+                </Box>
               </Box>
             </Box>
           </Card>

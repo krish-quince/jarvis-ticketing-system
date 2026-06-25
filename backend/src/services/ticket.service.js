@@ -1059,3 +1059,15 @@ export const reopenTicket = async (ticketId, user) => {
     client.release();
   }
 };
+
+export const toggleTicketPin = async (ticketId, isPinned, companyCode) => {
+  return await ticketRepository.updateTicketPin(ticketId, isPinned, companyCode);
+};
+
+export const deleteTicket = async (ticketId, companyCode) => {
+  const result = await ticketRepository.deleteTicket(ticketId, companyCode);
+  if (!result) {
+    throw new Error("Ticket not found.");
+  }
+  return result;
+};

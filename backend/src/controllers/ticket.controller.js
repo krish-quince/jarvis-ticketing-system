@@ -357,3 +357,44 @@ export const reopenTicket = async (req, res) => {
         return sendTicketError(res, error);
     }
 };
+
+export const toggleTicketPin = async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const { is_pinned } = req.body;
+        const ticket = await ticketService.toggleTicketPin(
+            Number(ticketId),
+            is_pinned,
+            req.user.companyCode
+        );
+        return res.status(200).json({
+            success: true,
+            message: `Ticket ${is_pinned ? "pinned" : "unpinned"} successfully`,
+            data: ticket,
+        });
+    } catch (error) {
+        console.error("toggleTicketPin controller error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Server error",
+        });
+    }
+};
+
+export const deleteTicket = async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const ticket = await ticketService.deleteTicket(
+            Number(ticketId),
+            req.user.companyCode
+        );
+        return res.status(200).json({
+            success: true,
+            message: "Ticket deleted successfully",
+            data: ticket,
+        });
+    } catch (error) {
+        console.error("deleteTicket controller error:", error);
+        return sendTicketError(res, error);
+    }
+};

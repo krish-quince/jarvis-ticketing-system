@@ -124,7 +124,7 @@ export const takeoverTicket = async (
 
 export const updateTicketDueDate = async (
   id: number,
-  dueDate: string
+  dueDate: string | null
 ) => {
   const response = await API.patch(
     `/tickets/${id}/due-date`,
@@ -139,7 +139,7 @@ export const updateTicketDueDate = async (
 export const updateTicketCategory = async (
   id: number,
   categoryId: number,
-  subCategoryId: number
+  subCategoryId: number | null
 ) => {
   const response = await API.patch(
     `/tickets/${id}/category`,
@@ -173,5 +173,12 @@ export const deleteAttachment = async (type: string, attachmentId: number) => {
 
 export const reopenTicket = async (id: number) => {
   const response = await API.patch(`/tickets/${id}/reopen`);
+  return response.data;
+};
+
+export const toggleTicketPin = async (id: number, isPinned: boolean) => {
+  const response = await API.patch(`/tickets/${id}/pin`, {
+    is_pinned: isPinned,
+  });
   return response.data;
 };

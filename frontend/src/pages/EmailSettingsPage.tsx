@@ -24,6 +24,7 @@ import {
   InfoOutlined,
   Delete,
   CheckCircle,
+  Business,
 } from "@mui/icons-material";
 import {
   getEmailConfigs,
@@ -32,6 +33,7 @@ import {
   activateEmailConfig,
   deleteEmailConfig,
 } from "../services/emailConfigService";
+import { getCompanies } from "../services/masterService";
 
 interface EmailConfig {
   id: number;
@@ -55,10 +57,19 @@ const EmailSettingsPage = () => {
   const navigate = useNavigate();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const currentUser = (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}"); } catch { return {}; }
+  })();
+  const isSuperAdmin = Number(currentUser.role_id) === 4;
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  // Super Admin: company selector
+  const [companies, setCompanies] = useState<{ company_code: string; company_name: string }[]>([]);
+  const [selectedCompanyCode, setSelectedCompanyCode] = useState<string>("");
 
   const [configs, setConfigs] = useState<EmailConfig[]>([]);
   const [selectedConfigId, setSelectedConfigId] = useState<number | "new">("new");
@@ -96,14 +107,34 @@ const EmailSettingsPage = () => {
   ];
 
   useEffect(() => {
-    loadAllConfigs();
+    if (isSuperAdmin) {
+      getCompanies()
+        .then((data: any[]) => {
+          const active = (data || []).filter((c: any) => !c.is_deleted);
+          setCompanies(active);
+          if (active.length > 0) {
+            setSelectedCompanyCode(active[0].company_code);
+          }
+        })
+        .catch(console.error);
+    } else {
+      loadAllConfigs();
+    }
   }, []);
+
+  // When super admin selects a different company, reload configs
+  useEffect(() => {
+    if (isSuperAdmin && selectedCompanyCode) {
+      loadAllConfigs();
+    }
+  }, [selectedCompanyCode]);
 
   const loadAllConfigs = async (selectIdAfterLoad?: number) => {
     try {
       setLoading(true);
       setError("");
-      const data = await getEmailConfigs();
+      const targetCode = isSuperAdmin ? selectedCompanyCode : undefined;
+      const data = await getEmailConfigs(targetCode);
       setConfigs(data);
 
       if (data.length > 0) {
@@ -223,12 +254,13 @@ const EmailSettingsPage = () => {
         payload.smtp_pass = smtpPass;
       }
 
+      const targetCode = isSuperAdmin ? selectedCompanyCode : undefined;
       if (selectedConfigId === "new") {
-        const created = await createEmailConfig(payload);
+        const created = await createEmailConfig(payload, targetCode);
         setSuccessMsg("Configuration created successfully.");
         await loadAllConfigs(created.id);
       } else {
-        await updateEmailConfig(Number(selectedConfigId), payload);
+        await updateEmailConfig(Number(selectedConfigId), payload, targetCode);
         setSuccessMsg("Configuration saved successfully.");
         await loadAllConfigs(Number(selectedConfigId));
       }
@@ -244,7 +276,7 @@ const EmailSettingsPage = () => {
     try {
       setSaving(true);
       setError("");
-      await activateEmailConfig(Number(selectedConfigId));
+      await activateEmailConfig(Number(selectedConfigId), isSuperAdmin ? selectedCompanyCode : undefined);
       setSuccessMsg("Configuration set as Active successfully.");
       await loadAllConfigs(Number(selectedConfigId));
     } catch (err: any) {
@@ -269,7 +301,7 @@ const EmailSettingsPage = () => {
     try {
       setSaving(true);
       setError("");
-      await deleteEmailConfig(Number(selectedConfigId));
+      await deleteEmailConfig(Number(selectedConfigId), isSuperAdmin ? selectedCompanyCode : undefined);
       setSuccessMsg("Configuration deleted successfully.");
       await loadAllConfigs();
     } catch (err: any) {
@@ -308,6 +340,50 @@ const EmailSettingsPage = () => {
           Email settings
         </Typography>
       </Box>
+
+      {/* Super Admin: Company Selector */}
+      {isSuperAdmin && (
+        <Paper
+          elevation={0}
+          sx={{
+            border: "1px solid var(--border)",
+            borderRadius: "8px",
+            p: 2.5,
+            mb: 3,
+            backgroundColor: "#fff",
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <Business sx={{ color: "#2E24AA", flexShrink: 0 }} />
+          <Box sx={{ flexGrow: 1, maxWidth: 420 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 600, color: "var(--text-h)", mb: 1 }}>
+              Select Company to Configure
+            </Typography>
+            <FormControl fullWidth size="small">
+              <InputLabel id="company-email-select-label">Company</InputLabel>
+              <Select
+                labelId="company-email-select-label"
+                value={selectedCompanyCode}
+                label="Company"
+                onChange={(e) => setSelectedCompanyCode(e.target.value)}
+              >
+                {companies.map((c) => (
+                  <MenuItem key={c.company_code} value={c.company_code}>
+                    {c.company_name} ({c.company_code})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+          {selectedCompanyCode && (
+            <Typography sx={{ fontSize: 12, color: "var(--text-sub)" }}>
+              Editing email settings for <strong>{companies.find(c => c.company_code === selectedCompanyCode)?.company_name}</strong>
+            </Typography>
+          )}
+        </Paper>
+      )}
 
       {/* Header and Save changes button */}
       <Box sx={{ mb: 3, display: "flex", alignItems: "center", justifyContent: "space-between" }}>

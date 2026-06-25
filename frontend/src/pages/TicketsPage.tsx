@@ -27,7 +27,7 @@ import {
   IconButton,
   useTheme,
 } from "@mui/material";
-import { KeyboardArrowDown, KeyboardArrowUp, MailOutlined, ContentCopy } from "@mui/icons-material";
+import { KeyboardArrowDown, KeyboardArrowUp, MailOutlined, ContentCopy, PushPin } from "@mui/icons-material";
 import {
   getTickets,
   updateTicketStatus,
@@ -36,6 +36,8 @@ import {
   updateTicketPriority,
   updateTicketCategory,
   updateTicketDueDate,
+  toggleTicketPin,
+  deleteTicket,
 } from "../services/ticketService";
 import { getUsers, getUserByCode, updateUser } from "../services/userService";
 import {
@@ -43,10 +45,9 @@ import {
   getCategories,
   getSubCategories,
 } from "../services/masterService";
-import { updateTicketTags } from "../services/tagService";
-import CategoryTreeSelect from "./tickets/CategoryTreeSelect";
+import { addFreeformTag, getFreeformTicketTags } from "../services/tagService";
 import TagInput from "../components/TagInput";
-import type { MasterCategory, SubCategory } from "./tickets/ticketTypes";
+import type { MasterCategory } from "./tickets/ticketTypes";
 
 type Ticket = {
   ticket_id: number;
@@ -58,6 +59,7 @@ type Ticket = {
   priority_name?: string;
   status_name?: string;
   raised_by_user_code?: string;
+  raised_by_name?: string | null;
   assigned_to_user_code?: string | null;
   assigned_to_name?: string | null;
   allocated_to_user_code?: string | null;
@@ -67,6 +69,7 @@ type Ticket = {
   created_at?: string | null;
   update_timestamp?: string | null;
   company_code?: string | null;
+  is_pinned?: boolean;
   tags?: { tag_id: number | string; tag_name: string; tag_color: string | null }[];
 };
 
@@ -93,6 +96,89 @@ const TicketsPage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+
+  // Theme-aware styles for bulk actions bar
+  const panelRowSx = {
+    backgroundColor: isDark ? "#16151f" : "var(--bg-header)",
+    display: "flex",
+    alignItems: "center",
+    gap: 1.5,
+    px: 2,
+    py: 1.5,
+    borderTop: isDark ? "none" : "1px solid var(--border)",
+  };
+
+  const darkSelectSx = {
+    color: "var(--text)",
+    backgroundColor: isDark ? "#1c1b27" : "#ffffff",
+    borderRadius: "6px",
+    "& .MuiOutlinedInput-notchedOutline": {
+      borderColor: "var(--border)",
+    },
+    "&:hover .MuiOutlinedInput-notchedOutline": {
+      borderColor: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)",
+    },
+    "& .MuiSvgIcon-root": { color: "var(--text-sub)" },
+  };
+
+  const darkMenuProps = {
+    slotProps: {
+      paper: {
+        sx: {
+          backgroundColor: isDark ? "#1c1b27" : "#ffffff",
+          color: "var(--text)",
+          mt: 0.5,
+          border: "1px solid var(--border)",
+          boxShadow: "var(--shadow)",
+        },
+      },
+    },
+  };
+
+  const menuItemSx = {
+    color: "var(--text)",
+    "&:hover": { backgroundColor: isDark ? "rgba(124,108,255,0.25)" : "rgba(99,91,255,0.08)" },
+    "&.Mui-selected": {
+      backgroundColor: isDark ? "rgba(124,108,255,0.35) !important" : "rgba(99,91,255,0.15) !important",
+      color: isDark ? "#fff" : "var(--accent)",
+    },
+  };
+
+  const darkTextFieldSx = {
+    "& .MuiOutlinedInput-root": {
+      color: "var(--text)",
+      backgroundColor: isDark ? "#1c1b27" : "#ffffff",
+      borderRadius: "6px",
+      "& fieldset": { borderColor: "var(--border)" },
+      "&:hover fieldset": { borderColor: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)" },
+    },
+    "& input::-webkit-calendar-picker-indicator": { filter: isDark ? "invert(1)" : "none" },
+  };
+
+  const primaryBtnSx = {
+    backgroundColor: "var(--accent, #7c6cff)",
+    color: "#fff",
+    textTransform: "none",
+    fontWeight: 600,
+    borderRadius: "6px",
+    px: 2.5,
+    "&:hover": { backgroundColor: isDark ? "#6a5af0" : "#5446e5" },
+    "&.Mui-disabled": {
+      backgroundColor: isDark ? "rgba(124,108,255,0.35)" : "rgba(99,91,255,0.25)",
+      color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.35)",
+    },
+  };
+
+  const cancelBtnSx = {
+    backgroundColor: isDark ? "rgba(124,108,255,0.25)" : "rgba(99,91,255,0.08)",
+    color: isDark ? "#cfc8ff" : "var(--accent)",
+    textTransform: "none",
+    fontWeight: 600,
+    borderRadius: "6px",
+    px: 2.5,
+    "&:hover": { backgroundColor: isDark ? "rgba(124,108,255,0.35)" : "rgba(99,91,255,0.15)" },
+  };
+
   const { columnVisibility, sortBy, sortOrder, handleSortSelect, filters } = useOutletContext<any>();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,14 +286,17 @@ const TicketsPage = () => {
   // broken the sidebar.
   const [categories, setCategories] = useState<MasterCategory[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [selectedSubCategoryId, setSelectedSubCategoryId] = useState("");
 
   // Due date panel — value lives in <input type="datetime-local"> format
   const [selectedDueDate, setSelectedDueDate] = useState("");
 
-  // Tag panel — tags to ADD to every selected ticket (does not remove existing tags)
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [categoryGroups, setCategoryGroups] = useState<any[]>([]);
+  const [bulkCategoryAnchorEl, setBulkCategoryAnchorEl] = useState<null | HTMLElement>(null);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
+
 
   const currentUser = (() => {
     try {
@@ -268,14 +357,49 @@ const TicketsPage = () => {
     }
   };
 
-  const loadSubCategories = async (categoryId: number) => {
+  const loadCategoryGroups = async () => {
+    if (categoryGroups.length > 0 || loadingCategories) return;
     try {
-      const data = await getSubCategories(categoryId);
-      setSubCategories(data || []);
+      setLoadingCategories(true);
+      const cats = await getCategories();
+      const groups = await Promise.all(
+        cats.map(async (category: any) => {
+          try {
+            const subs = await getSubCategories(category.category_id);
+            return {
+              category_id: category.category_id,
+              category_name: category.category_name,
+              subcategories: subs || [],
+            };
+          } catch {
+            return {
+              category_id: category.category_id,
+              category_name: category.category_name,
+              subcategories: [],
+            };
+          }
+        })
+      );
+      setCategoryGroups(groups);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoadingCategories(false);
     }
   };
+
+  const getSelectedBulkCategoryLabel = () => {
+    if (!selectedCategoryId) return "Select category";
+    const cat = categoryGroups.find((g) => String(g.category_id) === String(selectedCategoryId));
+    if (!cat) return "Select category";
+    if (selectedSubCategoryId) {
+      const sub = cat.subcategories.find((s: any) => String(s.subcategory_id) === String(selectedSubCategoryId));
+      return sub ? sub.subcategory_name : cat.category_name;
+    }
+    return cat.category_name;
+  };
+
+
 
   const CLOSED_STATUS_ID = 3;
 
@@ -542,6 +666,8 @@ const TicketsPage = () => {
   };
 
   const sortedTickets = [...filteredTickets].sort((a, b) => {
+    if (a.is_pinned && !b.is_pinned) return -1;
+    if (!a.is_pinned && b.is_pinned) return 1;
     if (!sortBy) return 0;
     const valA = getSortValue(a, sortBy);
     const valB = getSortValue(b, sortBy);
@@ -593,7 +719,6 @@ const TicketsPage = () => {
     setSelectedPriority("");
     setSelectedCategoryId("");
     setSelectedSubCategoryId("");
-    setSubCategories([]);
     setSelectedDueDate("");
     setSelectedTags([]);
   };
@@ -644,7 +769,7 @@ const TicketsPage = () => {
         : null;
       setSelectedCategoryId(match ? String(match.category_id) : "");
       setSelectedSubCategoryId("");
-      setSubCategories([]);
+      loadCategoryGroups();
     }
 
     if (action === "due") {
@@ -655,10 +780,11 @@ const TicketsPage = () => {
       );
     }
 
+
+
     if (action === "tag") {
       setSelectedTags([]);
     }
-
   };
 
   const handleAssignTickets = async () => {
@@ -719,7 +845,7 @@ const TicketsPage = () => {
   };
 
   const handleCategoryUpdate = async () => {
-    if (!selectedCategoryId || !selectedSubCategoryId) {
+    if (!selectedCategoryId) {
       return;
     }
 
@@ -729,7 +855,7 @@ const TicketsPage = () => {
           updateTicketCategory(
             ticketId,
             Number(selectedCategoryId),
-            Number(selectedSubCategoryId),
+            selectedSubCategoryId ? Number(selectedSubCategoryId) : null,
           ),
         ),
       );
@@ -782,26 +908,20 @@ const TicketsPage = () => {
     }
   };
 
-  // Additive: merges the chosen tags into each selected ticket's existing
-  // tag set rather than replacing it, since multiple tickets may already
-  // carry different tags and a "Tag" bulk action shouldn't wipe those out.
   const handleBulkTagUpdate = async () => {
     if (selectedTags.length === 0) return;
 
     try {
       await Promise.all(
-        selectedTickets.map((ticketId) => {
-          const existingTicket = tickets.find((t) => t.ticket_id === ticketId);
-          const existingNames = (existingTicket?.tags || []).map((t) => t.tag_name);
-          const mergedNames = [
-            ...new Map(
-              [...existingNames, ...selectedTags].map((name) => [
-                name.toLowerCase(),
-                name,
-              ]),
-            ).values(),
-          ];
-          return updateTicketTags(ticketId, mergedNames);
+        selectedTickets.map(async (ticketId) => {
+          const existingTags = await getFreeformTicketTags(ticketId).catch(() => []);
+          const existingMessages = existingTags.map((t) => t.tag_message.toLowerCase());
+
+          for (const tag of selectedTags) {
+            if (!existingMessages.includes(tag.toLowerCase())) {
+              await addFreeformTag(ticketId, tag);
+            }
+          }
         }),
       );
 
@@ -820,6 +940,56 @@ const TicketsPage = () => {
         open: true,
         severity: "error",
         message: error.response?.data?.message || "Failed to tag tickets",
+      });
+    }
+  };
+
+  const handleBulkPinTickets = async (isPinned: boolean) => {
+    try {
+      await Promise.all(
+        selectedTickets.map((ticketId) =>
+          toggleTicketPin(ticketId, isPinned)
+        )
+      );
+
+      setToast({
+        open: true,
+        severity: "success",
+        message: `${selectedTickets.length} ticket(s) ${isPinned ? "pinned" : "unpinned"}`,
+      });
+
+      setSelectedTickets([]);
+      await fetchData();
+    } catch (error: any) {
+      console.error(error);
+      setToast({
+        open: true,
+        severity: "error",
+        message: error.response?.data?.message || `Failed to ${isPinned ? "pin" : "unpin"} tickets`,
+      });
+    }
+  };
+
+  const handleDeleteTickets = async () => {
+    try {
+      await Promise.all(
+        selectedTickets.map((ticketId) => deleteTicket(ticketId))
+      );
+
+      setToast({
+        open: true,
+        severity: "success",
+        message: `${selectedTickets.length} ticket(s) deleted successfully`,
+      });
+
+      setSelectedTickets([]);
+      await fetchData();
+    } catch (error: any) {
+      console.error(error);
+      setToast({
+        open: true,
+        severity: "error",
+        message: error.response?.data?.message || "Failed to delete tickets",
       });
     }
   };
@@ -899,9 +1069,19 @@ const TicketsPage = () => {
     { label: "Tag", onClick: () => openBulkPanel("tag") },
   ];
 
+  const allSelectedPinned =
+    selectedTickets.length > 0 &&
+    selectedTickets.every(
+      (id) => tickets.find((t) => t.ticket_id === id)?.is_pinned,
+    );
+
   const plainActions: { label: string; onClick: () => void }[] = [
     { label: "Takeover", onClick: handleTakeoverTickets },
-    { label: "Delete", onClick: () => { } },
+    {
+      label: allSelectedPinned ? "Unpin" : "Pin",
+      onClick: () => handleBulkPinTickets(!allSelectedPinned),
+    },
+    { label: "Delete", onClick: handleDeleteTickets },
   ];
 
   if (loading) {
@@ -1343,90 +1523,74 @@ const TicketsPage = () => {
 
                         {/* Subject */}
                         <TableCell sx={{ py: 1.8, backgroundColor: "inherit" }}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: 500,
-                              color: "var(--text-h)",
-                              fontSize: "1rem",
-                              lineHeight: "1.5rem",
-                              mb: 0.5,
-                              cursor: "pointer",
-                              transition: "color 0.15s ease",
-                              "&:hover": { color: "#211b5a" },
-                            }}
-                          >
-                            {ticket.subject}
-                          </Typography>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              flexWrap: "wrap",
-                              alignItems: "center",
-                              gap: "16px",
-                              fontSize: 13,
-                              mt: 0.5,
-                            }}
-                          >
-                            <Box
-                              component="span"
-                              title="Click here for preview"
-                              sx={{
-                                color: "#211b5a",
-                                fontSize: 13,
-                                display: "inline-block",
-                                cursor: "pointer",
-                                "&:hover": { textDecoration: "underline" },
-                              }}
-                              onClick={(e) => handleUserClick(e, ticket.raised_by_user_code || "", "left")}
-                            >
-                              {ticket.raised_by_user_code}
-                            </Box>
-                            <Box
-                              component="span"
-                              sx={{ color: "var(--text-muted)", fontSize: 13 }}
-                            >
-                              {ticket.category_name}{(ticket as any).subcategory_name ? " / " + (ticket as any).subcategory_name : ""}
-                            </Box>
-                            <Box
-                              component="span"
-                              sx={{ color: "var(--text-muted)", fontSize: 13 }}
-                            >
-                              #{ticket.ticket_no}
+                          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.5 }}>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 500,
+                                  color: "var(--text-h)",
+                                  fontSize: "1rem",
+                                  lineHeight: "1.5rem",
+                                  mb: 0.5,
+                                  cursor: "pointer",
+                                  transition: "color 0.15s ease",
+                                  "&:hover": { color: "#211b5a" },
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 0.75,
+                                }}
+                              >
+                                {ticket.is_pinned && (
+                                  <PushPin
+                                    sx={{
+                                      fontSize: 16,
+                                      color: "var(--text-h)",
+                                      transform: "rotate(45deg)",
+                                    }}
+                                  />
+                                )}
+                                {ticket.subject}
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  alignItems: "center",
+                                  gap: "16px",
+                                  fontSize: 13,
+                                  mt: 0.5,
+                                }}
+                              >
+                                <Box
+                                  component="span"
+                                  title="Click here for preview"
+                                  sx={{
+                                    color: "#211b5a",
+                                    fontSize: 13,
+                                    display: "inline-block",
+                                    cursor: "pointer",
+                                    "&:hover": { textDecoration: "underline" },
+                                  }}
+                                  onClick={(e) => handleUserClick(e, ticket.raised_by_user_code || "", "left")}
+                                >
+                                  {ticket.raised_by_name || ticket.raised_by_user_code}
+                                </Box>
+                                <Box
+                                  component="span"
+                                  sx={{ color: "var(--text-muted)", fontSize: 13 }}
+                                >
+                                  {ticket.category_name}{(ticket as any).subcategory_name ? " / " + (ticket as any).subcategory_name : ""}
+                                </Box>
+                                <Box
+                                  component="span"
+                                  sx={{ color: "var(--text-muted)", fontSize: 13 }}
+                                >
+                                  #{ticket.ticket_no}
+                                </Box>
+                              </Box>
                             </Box>
                           </Box>
-                          {Boolean(ticket.tags?.length) && (
-                            <Box
-                              sx={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: "6px",
-                                mt: 0.75,
-                              }}
-                            >
-                              {ticket.tags!.map((tag) => {
-                                const color = tag.tag_color || "#635BFF";
-                                return (
-                                  <Box
-                                    key={tag.tag_id}
-                                    component="span"
-                                    sx={{
-                                      fontSize: 11,
-                                      fontWeight: 600,
-                                      lineHeight: "18px",
-                                      px: "8px",
-                                      borderRadius: "999px",
-                                      backgroundColor: `${color}1A`,
-                                      color,
-                                      border: `1px solid ${color}40`,
-                                    }}
-                                  >
-                                    {tag.tag_name}
-                                  </Box>
-                                );
-                              })}
-                            </Box>
-                          )}
                         </TableCell>
 
                         {/* Status */}
@@ -1592,24 +1756,25 @@ const TicketsPage = () => {
                               colSpan={2 + Object.values(columnVisibility).filter(Boolean).length}
                               sx={{
                                 border: 0,
-                                py: 0,
-                                position: "relative",
+                                p: 0,
                                 height: 0,
-                                overflow: "visible",
                               }}
                             >
-                              <Box
-                                sx={{
-                                  position: "absolute",
-                                  top: -6,
-                                  left: 56,
-                                  right: 8,
-                                  zIndex: 5,
-                                  borderRadius: "10px",
-                                  overflow: "hidden",
-                                  boxShadow: "0 8px 24px rgba(99,91,255,.35)",
-                                }}
-                              >
+                              <Box sx={{ position: "relative", width: "100%", height: 0 }}>
+                                <Box
+                                  sx={{
+                                    position: "absolute",
+                                    top: -6,
+                                    left: 56,
+                                    zIndex: 5,
+                                    borderRadius: "10px",
+                                    overflow: "hidden",
+                                    boxShadow: "0 8px 24px rgba(99,91,255,.35)",
+                                    border: "1px solid var(--border)",
+                                    width: "max-content",
+                                    maxWidth: "calc(100% - 64px)",
+                                  }}
+                                >
                                 {/* Row 1 — purple action bar */}
                                 <Box
                                   sx={{
@@ -1802,46 +1967,200 @@ const TicketsPage = () => {
                                 )}
 
                                 {/* Row 2 — Category panel */}
-                                {activeBulkAction === "category" && (
-                                  <Box sx={panelRowSx}>
-                                    {/* Tree-style category + subcategory picker */}
-                                    <CategoryTreeSelect
-                                      categories={categories}
-                                      selectedCategoryId={selectedCategoryId}
-                                      selectedSubCategoryId={
-                                        selectedSubCategoryId
-                                      }
-                                      subCategories={subCategories}
-                                      onCategorySelect={async (catId) => {
-                                        setSelectedCategoryId(catId);
-                                        setSelectedSubCategoryId("");
-                                        await loadSubCategories(Number(catId));
-                                      }}
-                                      onSubCategorySelect={(subId) =>
-                                        setSelectedSubCategoryId(subId)
-                                      }
-                                    />
+                                 {activeBulkAction === "category" && (
+                                   <Box sx={panelRowSx}>
+                                     <Box
+                                       onClick={(e) => {
+                                         if (!loadingCategories) {
+                                           setBulkCategoryAnchorEl(e.currentTarget);
+                                         }
+                                       }}
+                                       sx={{
+                                         width: 226,
+                                         height: 34,
+                                         fontSize: 14,
+                                         backgroundColor: "#ffffff",
+                                         border: "1px solid #d1d5db",
+                                         borderRadius: "4px",
+                                         display: "flex",
+                                         alignItems: "center",
+                                         justifyContent: "space-between",
+                                         px: 1.5,
+                                         cursor: "pointer",
+                                         color: selectedCategoryId ? "#111827" : "#6b7280",
+                                       }}
+                                     >
+                                       <Typography
+                                         variant="body2"
+                                         noWrap
+                                         sx={{
+                                           textOverflow: "ellipsis",
+                                           overflow: "hidden",
+                                           fontSize: 14,
+                                         }}
+                                       >
+                                         {loadingCategories
+                                           ? "Loading categories..."
+                                           : getSelectedBulkCategoryLabel()}
+                                       </Typography>
+                                       <KeyboardArrowDown sx={{ fontSize: 18, color: "#4b5563" }} />
+                                     </Box>
 
-                                    <Button
-                                      variant="contained"
-                                      onClick={handleCategoryUpdate}
-                                      disabled={
-                                        !selectedCategoryId ||
-                                        !selectedSubCategoryId
-                                      }
-                                      sx={primaryBtnSx}
-                                    >
-                                      Change category
-                                    </Button>
+                                     <Popover
+                                       open={Boolean(bulkCategoryAnchorEl)}
+                                       anchorEl={bulkCategoryAnchorEl}
+                                       onClose={() => setBulkCategoryAnchorEl(null)}
+                                       anchorOrigin={{
+                                         vertical: "bottom",
+                                         horizontal: "left",
+                                       }}
+                                       transformOrigin={{
+                                         vertical: "top",
+                                         horizontal: "left",
+                                       }}
+                                       slotProps={{
+                                         paper: {
+                                           sx: {
+                                             width: 226,
+                                             maxHeight: 280,
+                                             overflowY: "auto",
+                                             mt: 0.5,
+                                             border: "1px solid #d1d5db",
+                                             boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)",
+                                             backgroundColor: "#ffffff",
+                                             backgroundImage: "none",
+                                             display: "flex",
+                                             flexDirection: "column",
+                                             borderRadius: "8px",
+                                             "&::-webkit-scrollbar": {
+                                               width: "14px",
+                                             },
+                                             "&::-webkit-scrollbar-track": {
+                                               backgroundColor: "#f4f4f5",
+                                               borderLeft: "1px solid #e4e4e7",
+                                             },
+                                             "&::-webkit-scrollbar-thumb": {
+                                               backgroundColor: "#d4d4d8",
+                                               borderRadius: "0px",
+                                               border: "3px solid #f4f4f5",
+                                               "&:hover": {
+                                                 backgroundColor: "#a1a1aa",
+                                               },
+                                             },
+                                           },
+                                         },
+                                       }}
+                                     >
+                                       <Box sx={{ py: 0.5 }}>
+                                         {categoryGroups.map((category) => {
+                                           const hasSub = category.subcategories && category.subcategories.length > 0;
+                                           const isCatSelected =
+                                             String(selectedCategoryId) === String(category.category_id) &&
+                                             !selectedSubCategoryId;
+                                           return (
+                                             <Box key={category.category_id}>
+                                               <Box
+                                                 onClick={() => {
+                                                   if (!hasSub) {
+                                                     setSelectedCategoryId(String(category.category_id));
+                                                     setSelectedSubCategoryId("");
+                                                     setBulkCategoryAnchorEl(null);
+                                                   }
+                                                 }}
+                                                 sx={{
+                                                   px: 2,
+                                                   py: 0.85,
+                                                   fontWeight: 600,
+                                                   fontSize: 13.5,
+                                                   color: hasSub ? "#4b5563" : isCatSelected ? "#635BFF" : "#1f2937",
+                                                   cursor: hasSub ? "default" : "pointer",
+                                                   userSelect: "none",
+                                                   backgroundColor: isCatSelected ? "rgba(99, 91, 255, 0.08)" : "transparent",
+                                                   display: "flex",
+                                                   alignItems: "center",
+                                                   "&:hover": {
+                                                     backgroundColor: hasSub ? "transparent" : "#f3f4f6",
+                                                   },
+                                                 }}
+                                               >
+                                                 {category.category_name}
+                                               </Box>
 
-                                    <Button
-                                      onClick={closeBulkPanel}
-                                      sx={cancelBtnSx}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </Box>
-                                )}
+                                               {category.subcategories &&
+                                                 category.subcategories.map((sub: any) => {
+                                                   const isSelected =
+                                                     String(selectedCategoryId) === String(category.category_id) &&
+                                                     String(selectedSubCategoryId) === String(sub.subcategory_id);
+                                                   return (
+                                                     <Box
+                                                       key={sub.subcategory_id}
+                                                       onClick={() => {
+                                                         setSelectedCategoryId(String(category.category_id));
+                                                         setSelectedSubCategoryId(String(sub.subcategory_id));
+                                                         setBulkCategoryAnchorEl(null);
+                                                       }}
+                                                       sx={{
+                                                         pl: 3.5,
+                                                         pr: 2,
+                                                         py: 0.75,
+                                                         fontSize: 13.5,
+                                                         color: isSelected ? "#635BFF" : "#374151",
+                                                         fontWeight: isSelected ? 600 : 500,
+                                                         cursor: "pointer",
+                                                         userSelect: "none",
+                                                         backgroundColor: isSelected ? "rgba(99, 91, 255, 0.08)" : "transparent",
+                                                         "&:hover": {
+                                                           backgroundColor: "#f3f4f6",
+                                                         },
+                                                       }}
+                                                     >
+                                                       {sub.subcategory_name}
+                                                     </Box>
+                                                   );
+                                                 })}
+                                             </Box>
+                                           );
+                                         })}
+                                       </Box>
+                                     </Popover>
+
+                                     <Button
+                                       variant="contained"
+                                       onClick={handleCategoryUpdate}
+                                       disabled={!selectedCategoryId}
+                                       sx={{
+                                         backgroundColor: "#3127b2",
+                                         color: "#fff",
+                                         textTransform: "none",
+                                         fontWeight: 600,
+                                         borderRadius: "6px",
+                                         px: 2.5,
+                                         "&:hover": { backgroundColor: "#251c96" },
+                                         "&.Mui-disabled": {
+                                           backgroundColor: "rgba(49, 39, 178, 0.45)",
+                                           color: "rgba(255, 255, 255, 0.65)",
+                                         },
+                                       }}
+                                     >
+                                       Change category
+                                     </Button>
+
+                                     <Button
+                                       onClick={closeBulkPanel}
+                                       sx={{
+                                         backgroundColor: "#b2adfa",
+                                         color: "#2823b5",
+                                         textTransform: "none",
+                                         fontWeight: 600,
+                                         borderRadius: "6px",
+                                         px: 2.5,
+                                         "&:hover": { backgroundColor: "#9c96f8" },
+                                       }}
+                                     >
+                                       Cancel
+                                     </Button>
+                                   </Box>
+                                 )}
 
                                 {/* Row 2 — Due date panel */}
                                 {activeBulkAction === "due" && (
@@ -1881,11 +2200,41 @@ const TicketsPage = () => {
                                   </Box>
                                 )}
 
+                                {/* Row 2 — Tag panel */}
+                                {activeBulkAction === "tag" && (
+                                  <Box sx={panelRowSx}>
+                                    <Box sx={{ flex: 1, maxWidth: 360, ...darkTextFieldSx }}>
+                                      <TagInput
+                                        value={selectedTags}
+                                        onChange={(tags) => setSelectedTags(tags)}
+                                        placeholder="Add tags..."
+                                      />
+                                    </Box>
+
+                                    <Button
+                                      variant="contained"
+                                      onClick={handleBulkTagUpdate}
+                                      disabled={selectedTags.length === 0}
+                                      sx={primaryBtnSx}
+                                    >
+                                      Tag tickets
+                                    </Button>
+
+                                    <Button
+                                      onClick={closeBulkPanel}
+                                      sx={cancelBtnSx}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </Box>
+                                )}
+
 
 
                               </Box>
-                            </TableCell>
-                          </TableRow>
+                            </Box>
+                          </TableCell>
+                        </TableRow>
                         )}
                     </Fragment>
                   );
@@ -2216,75 +2565,6 @@ const checkboxSx = {
   p: 0,
   "& .MuiSvgIcon-root": { fontSize: 20 },
   "&.Mui-checked": { color: "var(--accent)" },
-};
-
-const panelRowSx = {
-  backgroundColor: "#16151f",
-  display: "flex",
-  alignItems: "center",
-  gap: 1.5,
-  px: 2,
-  py: 1.5,
-};
-
-const darkSelectSx = {
-  color: "#fff",
-  backgroundColor: "#1c1b27",
-  borderRadius: "6px",
-  "& .MuiOutlinedInput-notchedOutline": {
-    borderColor: "rgba(255,255,255,0.15)",
-  },
-  "&:hover .MuiOutlinedInput-notchedOutline": {
-    borderColor: "rgba(255,255,255,0.3)",
-  },
-  "& .MuiSvgIcon-root": { color: "rgba(255,255,255,0.6)" },
-};
-
-const darkMenuProps = {
-  slotProps: {
-    paper: {
-      sx: { backgroundColor: "#1c1b27", color: "#fff", mt: 0.5 },
-    },
-  },
-};
-
-const menuItemSx = {
-  "&:hover": { backgroundColor: "rgba(124,108,255,0.25)" },
-  "&.Mui-selected": { backgroundColor: "rgba(124,108,255,0.35) !important" },
-};
-
-const darkTextFieldSx = {
-  "& .MuiOutlinedInput-root": {
-    color: "#fff",
-    backgroundColor: "#1c1b27",
-    borderRadius: "6px",
-    "& fieldset": { borderColor: "rgba(255,255,255,0.15)" },
-    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.3)" },
-  },
-  "& input::-webkit-calendar-picker-indicator": { filter: "invert(1)" },
-};
-
-const primaryBtnSx = {
-  backgroundColor: "#7c6cff",
-  textTransform: "none",
-  fontWeight: 600,
-  borderRadius: "6px",
-  px: 2.5,
-  "&:hover": { backgroundColor: "#6a5af0" },
-  "&.Mui-disabled": {
-    backgroundColor: "rgba(124,108,255,0.35)",
-    color: "rgba(255,255,255,0.5)",
-  },
-};
-
-const cancelBtnSx = {
-  backgroundColor: "rgba(124,108,255,0.25)",
-  color: "#cfc8ff",
-  textTransform: "none",
-  fontWeight: 600,
-  borderRadius: "6px",
-  px: 2.5,
-  "&:hover": { backgroundColor: "rgba(124,108,255,0.35)" },
 };
 
 export default TicketsPage;

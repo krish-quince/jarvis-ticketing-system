@@ -280,7 +280,7 @@ trix-editor:focus {
 .MuiMenuItem-root {
   color: var(--text) !important;
   padding-top: 4px !important;
-  padding-bottom: 12px !important;
+  padding-bottom: 4px !important;
 }
 
 .MuiMenuItem-root:hover {

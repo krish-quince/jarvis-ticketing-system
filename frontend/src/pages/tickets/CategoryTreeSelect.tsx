@@ -71,13 +71,13 @@ const CategoryTreeSelect = ({
           py: "7px",
           minWidth: 220,
           borderRadius: "6px",
-          border: "1px solid rgba(255,255,255,0.18)",
-          backgroundColor: "#1c1b27",
-          color: selectedCategoryId ? "#fff" : "rgba(255,255,255,0.45)",
+          border: "1px solid var(--border)",
+          backgroundColor: "var(--bg-card)",
+          color: selectedCategoryId ? "var(--text)" : "var(--text-sub)",
           fontSize: 14,
           cursor: "pointer",
           userSelect: "none",
-          "&:hover": { borderColor: "rgba(255,255,255,0.35)" },
+          "&:hover": { borderColor: "var(--text-sub)" },
         }}
       >
         <Box
@@ -93,7 +93,7 @@ const CategoryTreeSelect = ({
         <KeyboardArrowDown
           sx={{
             fontSize: 18,
-            color: "rgba(255,255,255,0.6)",
+            color: "var(--text-sub)",
             flexShrink: 0,
             transform: open ? "rotate(180deg)" : "none",
             transition: "transform 0.15s",
@@ -114,10 +114,10 @@ const CategoryTreeSelect = ({
               sx={{
                 maxHeight: 340,
                 overflowY: "auto",
-                backgroundColor: "#1c1b27",
+                backgroundColor: "var(--bg-card)",
                 borderRadius: "8px",
-                border: "1px solid rgba(255,255,255,0.12)",
-                boxShadow: "0 -8px 32px rgba(0,0,0,0.55)",
+                border: "1px solid var(--border)",
+                boxShadow: "var(--shadow)",
                 py: 0.5,
               }}
             >
@@ -142,16 +142,16 @@ const CategoryTreeSelect = ({
                         fontWeight: 700,
                         color:
                           isParentSelected && kids.length === 0
-                            ? "#fff"
-                            : "rgba(255,255,255,0.9)",
+                            ? "var(--accent)"
+                            : "var(--text)",
                         cursor: kids.length > 0 ? "default" : "pointer",
                         backgroundColor:
                           isParentSelected && kids.length === 0
-                            ? "rgba(99,91,255,0.35)"
+                            ? "rgba(99,91,255,0.15)"
                             : "transparent",
                         "&:hover":
                           kids.length === 0
-                            ? { backgroundColor: "rgba(99,91,255,0.2)" }
+                            ? { backgroundColor: "rgba(99,91,255,0.1)" }
                             : {},
                       }}
                     >
@@ -175,15 +175,15 @@ const CategoryTreeSelect = ({
                               fontSize: 13,
                               fontWeight: 400,
                               color: isKidSelected
-                                ? "#fff"
-                                : "rgba(255,255,255,0.65)",
+                                ? "var(--accent)"
+                                : "var(--text-secondary)",
                               cursor: "pointer",
                               backgroundColor: isKidSelected
-                                ? "rgba(99,91,255,0.35)"
+                                ? "rgba(99,91,255,0.15)"
                                 : "transparent",
                               "&:hover": {
-                                backgroundColor: "rgba(99,91,255,0.2)",
-                                color: "#fff",
+                                backgroundColor: "rgba(99,91,255,0.1)",
+                                color: "var(--text)",
                               },
                             }}
                           >
@@ -262,14 +262,14 @@ const SubCategoryList = ({
             pr: 2,
             py: "5px",
             fontSize: 12.5,
-            color: isSelected ? "#fff" : "rgba(255,255,255,0.55)",
+            color: isSelected ? "var(--accent)" : "var(--text-muted)",
             cursor: "pointer",
             backgroundColor: isSelected
-              ? "rgba(99,91,255,0.3)"
+              ? "rgba(99,91,255,0.12)"
               : "transparent",
             "&:hover": {
-              backgroundColor: "rgba(99,91,255,0.18)",
-              color: "#fff",
+              backgroundColor: "rgba(99,91,255,0.08)",
+              color: "var(--text)",
             },
           }}
         >
