@@ -305,7 +305,7 @@ const LoginPage = () => {
           >
             <Box sx={{ position: "relative", display: "inline-flex" }}>
               <img
-                src={`${servicedeskLogo}?v=3`}
+                src={`${servicedeskLogo}?v=4`}
                 alt="Service Desk Pro Logo"
                 style={{
                   height: 110,
@@ -340,7 +340,7 @@ const LoginPage = () => {
               color: "#ffffff",
             }}
           >
-            Service Desk Pro
+            Servicedesk
           </Typography>
 
           {/* Stats Grid */}
