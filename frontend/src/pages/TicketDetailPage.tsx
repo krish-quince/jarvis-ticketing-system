@@ -54,6 +54,7 @@ import {
   updateTicketPriority,
   updateTicketCategory,
   assignTicket,
+  allocateTicket,
   takeoverTicket,
   getComments,
   getTicketHistory,
@@ -132,6 +133,8 @@ const TicketDetailPage = () => {
   const [selectedCategoryValue, setSelectedCategoryValue] = useState("");
   const [editingAssignee, setEditingAssignee] = useState(false);
   const [selectedAssigneeValue, setSelectedAssigneeValue] = useState<string[]>([]);
+  const [editingAllocated, setEditingAllocated] = useState(false);
+  const [selectedAllocatedValue, setSelectedAllocatedValue] = useState<string[]>([]);
 
   const [replyHtml, setReplyHtml] = useState("");
   const [replyComposerOpen, setReplyComposerOpen] = useState(false);
@@ -828,6 +831,53 @@ const TicketDetailPage = () => {
   const handleAssigneeSave = async () => {
     if (selectedAssigneeValue.length === 0) return;
     await handleAssigneeChange(selectedAssigneeValue[0]);
+  };
+
+  const handleAllocatedEditStart = async () => {
+    if (!canManageTicketMetadata()) return;
+    const currentAllocated = ticket.allocated_to_user_code
+      ? ticket.allocated_to_user_code.split("|").map((c: string) => c.trim()).filter(Boolean)
+      : [];
+    setSelectedAllocatedValue(currentAllocated);
+    setEditingAllocated(true);
+    if (users.length === 0) {
+      try {
+        const usersData = await getUsers();
+        setUsers(usersData);
+      } catch (error) {
+        console.error("Failed to load users:", error);
+      }
+    }
+  };
+
+  const handleAllocatedEditCancel = () => {
+    setEditingAllocated(false);
+    setSelectedAllocatedValue([]);
+  };
+
+  const handleAllocatedSave = async () => {
+    try {
+      setUpdatingMetadata(true);
+      const allocatedString = selectedAllocatedValue.join("|") || "";
+      await allocateTicket(ticketId, allocatedString);
+      setToast({
+        open: true,
+        message: "Allocated users updated successfully",
+        severity: "success",
+      });
+      await fetchData();
+      setEditingAllocated(false);
+      setSelectedAllocatedValue([]);
+    } catch (error: any) {
+      console.error(error);
+      setToast({
+        open: true,
+        message: error.response?.data?.message || "Failed to update allocations",
+        severity: "error",
+      });
+    } finally {
+      setUpdatingMetadata(false);
+    }
   };
 
 
@@ -2826,23 +2876,11 @@ const TicketDetailPage = () => {
                       <MenuItem value="">
                         <em>Unassigned</em>
                       </MenuItem>
-                      {users
-                        .filter((u) => {
-                          const isAllocated = ticket.allocated_to_user_code
-                            ? ticket.allocated_to_user_code
-                              .split("|")
-                              .map((c: string) => c.trim())
-                              .includes(u.user_code)
-                            : false;
-                          const inDepartment =
-                            Number(u.department_id) === Number(ticket.department_id);
-                          return isAllocated || inDepartment;
-                        })
-                        .map((u) => (
-                          <MenuItem key={u.user_code} value={u.user_code}>
-                            {u.first_name} {u.last_name} ({u.user_code})
-                          </MenuItem>
-                        ))}
+                      {users.map((u) => (
+                        <MenuItem key={u.user_code} value={u.user_code}>
+                          {u.first_name} {u.last_name} ({u.user_code})
+                        </MenuItem>
+                      ))}
                     </Select>
                     <IconButton
                       size="small"
@@ -2879,6 +2917,110 @@ const TicketDetailPage = () => {
                       <IconButton
                         size="small"
                         onClick={handleAssigneeEditStart}
+                        sx={{ color: "var(--text-secondary)", p: 0.5 }}
+                      >
+                        <MoreIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    )}
+                  </>
+                )}
+              </Box>
+
+              {/* Allocated to */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  py: 1,
+                  minHeight: 40,
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "var(--text-secondary)",
+                    width: 110,
+                    flexShrink: 0,
+                  }}
+                >
+                  Allocated to:
+                </Typography>
+                {editingAllocated ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.75,
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    <Select
+                      multiple
+                      size="small"
+                      value={selectedAllocatedValue}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedAllocatedValue(typeof val === "string" ? val.split(",") : (val as string[]));
+                      }}
+                      displayEmpty
+                      disabled={updatingMetadata}
+                      sx={inlineEditControlSx}
+                      MenuProps={inlineMenuProps}
+                      renderValue={(selected) => {
+                        if (!selected || selected.length === 0) {
+                          return <span style={{ color: "var(--text-secondary)" }}>Select collaborators</span>;
+                        }
+                        return selected
+                          .map((code) => {
+                            const u = users.find((user) => user.user_code === code);
+                            return u ? `${u.first_name} ${u.last_name}` : code;
+                          })
+                          .join(", ");
+                      }}
+                    >
+                      {users.map((u) => (
+                        <MenuItem key={u.user_code} value={u.user_code}>
+                          {u.first_name} {u.last_name} ({u.user_code})
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    <IconButton
+                      size="small"
+                      onClick={handleAllocatedSave}
+                      disabled={updatingMetadata}
+                      sx={inlineSaveButtonSx}
+                    >
+                      <CheckIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={handleAllocatedEditCancel}
+                      disabled={updatingMetadata}
+                      sx={inlineCancelButtonSx}
+                    >
+                      <CancelIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <>
+                    <Typography
+                      variant="body2"
+                      onClick={handleAllocatedEditStart}
+                      sx={{
+                        fontWeight: 600,
+                        color: "var(--text-h)",
+                        flex: 1,
+                        cursor: canEditRightCard ? "pointer" : "default",
+                      }}
+                    >
+                      {ticket.allocated_to_name || "None"}
+                    </Typography>
+                    {canEditRightCard && (
+                      <IconButton
+                        size="small"
+                        onClick={handleAllocatedEditStart}
                         sx={{ color: "var(--text-secondary)", p: 0.5 }}
                       >
                         <MoreIcon sx={{ fontSize: 16 }} />
