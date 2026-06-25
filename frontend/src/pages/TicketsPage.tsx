@@ -43,7 +43,9 @@ import {
   getCategories,
   getSubCategories,
 } from "../services/masterService";
+import { updateTicketTags } from "../services/tagService";
 import CategoryTreeSelect from "./tickets/CategoryTreeSelect";
+import TagInput from "../components/TagInput";
 import type { MasterCategory, SubCategory } from "./tickets/ticketTypes";
 
 type Ticket = {
@@ -65,6 +67,7 @@ type Ticket = {
   created_at?: string | null;
   update_timestamp?: string | null;
   company_code?: string | null;
+  tags?: { tag_id: number | string; tag_name: string; tag_color: string | null }[];
 };
 
 type CategoryTreeItem = {
@@ -84,7 +87,7 @@ type ToastState = {
   severity: "success" | "error" | "info" | "warning";
 };
 
-type BulkAction = "assign" | "priority" | "category" | "due" | null;
+type BulkAction = "assign" | "priority" | "category" | "due" | "tag" | null;
 
 const TicketsPage = () => {
   const navigate = useNavigate();
@@ -202,6 +205,9 @@ const TicketsPage = () => {
 
   // Due date panel — value lives in <input type="datetime-local"> format
   const [selectedDueDate, setSelectedDueDate] = useState("");
+
+  // Tag panel — tags to ADD to every selected ticket (does not remove existing tags)
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const currentUser = (() => {
     try {
@@ -399,7 +405,7 @@ const TicketsPage = () => {
 
   const filterCustom = (ticket: Ticket) => {
     if (!filters) return true;
-    
+
     // 1. Date filter (created_at)
     if (filters.date) {
       if (!ticket.created_at) return false;
@@ -589,6 +595,7 @@ const TicketsPage = () => {
     setSelectedSubCategoryId("");
     setSubCategories([]);
     setSelectedDueDate("");
+    setSelectedTags([]);
   };
 
   // If the selection changes while the Assign panel is open and the user no
@@ -619,10 +626,10 @@ const TicketsPage = () => {
     if (action === "priority") {
       const match = singleTicket
         ? priorities.find(
-            (p) =>
-              p.priority_name?.toLowerCase() ===
-              singleTicket.priority_name?.toLowerCase(),
-          )
+          (p) =>
+            p.priority_name?.toLowerCase() ===
+            singleTicket.priority_name?.toLowerCase(),
+        )
         : null;
       setSelectedPriority(match ? String(match.priority_id) : "");
     }
@@ -630,10 +637,10 @@ const TicketsPage = () => {
     if (action === "category") {
       const match = singleTicket
         ? categories.find(
-            (c) =>
-              c.category_name?.toLowerCase() ===
-              singleTicket.category_name?.toLowerCase(),
-          )
+          (c) =>
+            c.category_name?.toLowerCase() ===
+            singleTicket.category_name?.toLowerCase(),
+        )
         : null;
       setSelectedCategoryId(match ? String(match.category_id) : "");
       setSelectedSubCategoryId("");
@@ -646,6 +653,10 @@ const TicketsPage = () => {
           ? toDateTimeLocalValue(singleTicket.due_date)
           : "",
       );
+    }
+
+    if (action === "tag") {
+      setSelectedTags([]);
     }
 
   };
@@ -771,6 +782,48 @@ const TicketsPage = () => {
     }
   };
 
+  // Additive: merges the chosen tags into each selected ticket's existing
+  // tag set rather than replacing it, since multiple tickets may already
+  // carry different tags and a "Tag" bulk action shouldn't wipe those out.
+  const handleBulkTagUpdate = async () => {
+    if (selectedTags.length === 0) return;
+
+    try {
+      await Promise.all(
+        selectedTickets.map((ticketId) => {
+          const existingTicket = tickets.find((t) => t.ticket_id === ticketId);
+          const existingNames = (existingTicket?.tags || []).map((t) => t.tag_name);
+          const mergedNames = [
+            ...new Map(
+              [...existingNames, ...selectedTags].map((name) => [
+                name.toLowerCase(),
+                name,
+              ]),
+            ).values(),
+          ];
+          return updateTicketTags(ticketId, mergedNames);
+        }),
+      );
+
+      setToast({
+        open: true,
+        severity: "success",
+        message: `${selectedTickets.length} ticket(s) tagged`,
+      });
+
+      closeBulkPanel();
+      setSelectedTickets([]);
+      await fetchData();
+    } catch (error: any) {
+      console.error(error);
+      setToast({
+        open: true,
+        severity: "error",
+        message: error.response?.data?.message || "Failed to tag tickets",
+      });
+    }
+  };
+
   const handleSelectTicket = (ticketId: number) => {
     setSelectedTickets((prev) =>
       prev.includes(ticketId)
@@ -843,12 +896,12 @@ const TicketsPage = () => {
     { label: "Priority", onClick: () => openBulkPanel("priority") },
     { label: "Category", onClick: () => openBulkPanel("category") },
     { label: "Due", onClick: () => openBulkPanel("due") },
-    { label: "Tag", onClick: () => {} },
+    { label: "Tag", onClick: () => openBulkPanel("tag") },
   ];
 
   const plainActions: { label: string; onClick: () => void }[] = [
     { label: "Takeover", onClick: handleTakeoverTickets },
-    { label: "Delete", onClick: () => {} },
+    { label: "Delete", onClick: () => { } },
   ];
 
   if (loading) {
@@ -995,7 +1048,7 @@ const TicketsPage = () => {
                     {cat.label}
                   </Typography>
                 </Box>
-                
+
                 <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
                   {cat.isParent &&
                     (isExpanded ? (
@@ -1248,7 +1301,7 @@ const TicketsPage = () => {
                   const statusInfo = getStatusInfo(ticket.status_name);
                   const priorityInfo = getPriorityInfo(ticket.priority_name);
                   const updByTech = wasUpdatedByTech(ticket);
-                  
+
                   return (
                     <Fragment key={ticket.ticket_id}>
                       <TableRow
@@ -1342,6 +1395,38 @@ const TicketsPage = () => {
                               #{ticket.ticket_no}
                             </Box>
                           </Box>
+                          {Boolean(ticket.tags?.length) && (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "6px",
+                                mt: 0.75,
+                              }}
+                            >
+                              {ticket.tags!.map((tag) => {
+                                const color = tag.tag_color || "#635BFF";
+                                return (
+                                  <Box
+                                    key={tag.tag_id}
+                                    component="span"
+                                    sx={{
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      lineHeight: "18px",
+                                      px: "8px",
+                                      borderRadius: "999px",
+                                      backgroundColor: `${color}1A`,
+                                      color,
+                                      border: `1px solid ${color}40`,
+                                    }}
+                                  >
+                                    {tag.tag_name}
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+                          )}
                         </TableCell>
 
                         {/* Status */}
@@ -1795,6 +1880,8 @@ const TicketsPage = () => {
                                     </Button>
                                   </Box>
                                 )}
+
+
 
                               </Box>
                             </TableCell>

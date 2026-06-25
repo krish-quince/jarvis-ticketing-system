@@ -8,6 +8,7 @@ export const createTicket = async (ticket, client = null) => {
         INSERT INTO tickets
 (
     company_code,
+    ticket_no,
     subject,
     description,
 
@@ -27,17 +28,18 @@ export const createTicket = async (ticket, client = null) => {
 )
         VALUES
 (
-    $1,$2,$3,
-    $4,$5,
-    $6,$7,
-    $8,$9,$10,
-    $11,
-    $12
+    $1,$2,$3,$4,
+    $5,$6,
+    $7,$8,
+    $9,$10,$11,
+    $12,
+    $13
 )
         RETURNING *
         `,
     [
       ticket.companyCode,
+      ticket.ticketNo,
       ticket.subject,
       ticket.description,
 
@@ -98,6 +100,7 @@ export const getAllTickets = async (
   limit = 25,
   sortBy = "Updated",
   sortOrder = "desc",
+  tagFilter = "",
 ) => {
   const offset = (page - 1) * limit;
 
@@ -135,7 +138,23 @@ export const getAllTickets = async (
       c.category_name,
       sc.subcategory_name,
       p.priority_name,
-      p.priority_color
+      p.priority_color,
+      COALESCE(
+        (
+          SELECT json_agg(
+            json_build_object(
+              'tag_id', tg.tag_id,
+              'tag_name', tg.tag_name,
+              'tag_color', tg.tag_color
+            )
+            ORDER BY tg.tag_name
+          )
+          FROM ticket_tags tt
+          JOIN tags tg ON tg.tag_id = tt.tag_id
+          WHERE tt.ticket_id = t.ticket_id
+        ),
+        '[]'::json
+      ) AS tags
     FROM tickets t
     LEFT JOIN ticket_statuses s
       ON s.status_id = t.status_id
@@ -179,9 +198,24 @@ export const getAllTickets = async (
         OR p.priority_name ILIKE $${params.length + 1}
         OR t.raised_by_user_code ILIKE $${params.length + 1}
         OR COALESCE(t.assigned_to_user_code, '') ILIKE $${params.length + 1}
+        OR EXISTS (
+          SELECT 1 FROM ticket_freeform_tags ft
+          WHERE ft.ticket_id = t.ticket_id AND ft.tag_message ILIKE $${params.length + 1}
+        )
       )
     `;
     params.push(`%${search}%`);
+  }
+
+  if (tagFilter) {
+    query += `
+      AND EXISTS (
+        SELECT 1 FROM ticket_freeform_tags ft
+        WHERE ft.ticket_id = t.ticket_id
+          AND LOWER(ft.tag_message) = LOWER($${params.length + 1})
+      )
+    `;
+    params.push(tagFilter);
   }
 
   query += `
@@ -256,7 +290,23 @@ export const getTicketById = async (ticketId, companyCode) => {
             WHERE ta.ticket_id = t.ticket_id
           ),
           '[]'::json
-        ) AS attachments
+        ) AS attachments,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'tag_id', tg.tag_id,
+                'tag_name', tg.tag_name,
+                'tag_color', tg.tag_color
+              )
+              ORDER BY tg.tag_name
+            )
+            FROM ticket_tags tt
+            JOIN tags tg ON tg.tag_id = tt.tag_id
+            WHERE tt.ticket_id = t.ticket_id
+          ),
+          '[]'::json
+        ) AS tags
 
         FROM tickets t
 

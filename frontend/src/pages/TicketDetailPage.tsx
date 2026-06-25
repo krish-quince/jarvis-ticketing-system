@@ -43,6 +43,12 @@ import {
 } from "@mui/icons-material";
 import RichTextEditor from "../components/RichTextEditor";
 import {
+  getFreeformTicketTags,
+  addFreeformTag,
+  deleteFreeformTag,
+  type FreeformTag,
+} from "../services/tagService";
+import {
   getTicketById,
   updateTicketStatus,
   updateTicketPriority,
@@ -114,6 +120,8 @@ const TicketDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [updatingMetadata, setUpdatingMetadata] = useState(false);
+  const [freeformTags, setFreeformTags] = useState<FreeformTag[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingStatuses, setLoadingStatuses] = useState(false);
   const [editingStatus, setEditingStatus] = useState(false);
@@ -257,9 +265,8 @@ const TicketDetailPage = () => {
         timerStoppedRef.current = true;
         // Use sendBeacon for reliability on tab close
         const token = localStorage.getItem("token");
-        const url = `${
-          import.meta.env.VITE_API_URL || "http://localhost:5000/api"
-        }/tickets/${ticketId}/time-tracking/${entryId}/stop`;
+        const url = `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+          }/tickets/${ticketId}/time-tracking/${entryId}/stop`;
         const body = JSON.stringify({ time_spent_seconds: seconds });
 
         // Try sendBeacon first, fall back to sync XHR
@@ -273,7 +280,7 @@ const TicketDetailPage = () => {
             },
             body,
             keepalive: true,
-          }).catch(() => {});
+          }).catch(() => { });
         }
       }
     };
@@ -357,19 +364,22 @@ const TicketDetailPage = () => {
       }
 
       try {
-        const [commentsData, historyData] = await Promise.all([
+        const [commentsData, historyData, tagsData] = await Promise.all([
           getComments(ticketId),
           getTicketHistory(ticketId).catch((historyError) => {
             console.warn("Unable to load ticket history:", historyError);
             return [];
           }),
+          getFreeformTicketTags(ticketId).catch(() => []),
         ]);
         setComments(commentsData || []);
         setHistory(historyData || []);
+        setFreeformTags(tagsData || []);
       } catch (commentsError) {
         console.warn("Unable to load ticket comments:", commentsError);
         setComments([]);
         setHistory([]);
+        setFreeformTags([]);
       }
 
       await Promise.all([
@@ -586,6 +596,29 @@ const TicketDetailPage = () => {
     }
   };
 
+  const handleAddFreeformTag = async () => {
+    const trimmedTag = tagInput.trim();
+    if (!trimmedTag) return;
+    try {
+      await addFreeformTag(ticketId, trimmedTag);
+      setTagInput("");
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      setToast({ open: true, message: "Failed to add tag", severity: "error" });
+    }
+  };
+
+  const handleDeleteFreeformTag = async (tagId: number) => {
+    try {
+      await deleteFreeformTag(ticketId, tagId);
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      setToast({ open: true, message: "Failed to delete tag", severity: "error" });
+    }
+  };
+
   const handlePriorityChange = async (priorityId: number) => {
     try {
       setUpdatingMetadata(true);
@@ -790,7 +823,7 @@ const TicketDetailPage = () => {
     setSelectedAssigneeValue([]);
   };
 
-  
+
 
   const handleAssigneeSave = async () => {
     if (selectedAssigneeValue.length === 0) return;
@@ -874,10 +907,10 @@ const TicketDetailPage = () => {
       date.toDateString() === yesterday.toDateString()
         ? "Yest"
         : date.toLocaleDateString(undefined, {
-            month: "numeric",
-            day: "numeric",
-            year: "numeric",
-          });
+          month: "numeric",
+          day: "numeric",
+          year: "numeric",
+        });
 
     return `${isToday ? "Today" : dayLabel}, ${date.toLocaleTimeString(
       undefined,
@@ -1074,16 +1107,16 @@ const TicketDetailPage = () => {
   const ticketImageAttachments = [
     ...(Array.isArray(ticket.attachments)
       ? ticket.attachments.filter(isImageAttachment).map((attachment: any) => ({
-          ...attachment,
-          gallery_key: `ticket-${attachment.attachment_id}`,
-        }))
+        ...attachment,
+        gallery_key: `ticket-${attachment.attachment_id}`,
+      }))
       : []),
     ...comments.flatMap((comment) =>
       Array.isArray(comment.attachments)
         ? comment.attachments.filter(isImageAttachment).map((attachment: any) => ({
-            ...attachment,
-            gallery_key: `comment-${attachment.attachment_id}`,
-          }))
+          ...attachment,
+          gallery_key: `comment-${attachment.attachment_id}`,
+        }))
         : [],
     ),
   ];
@@ -1246,15 +1279,15 @@ const TicketDetailPage = () => {
   const priorityOptions =
     priorityMasterOptions.length > 0
       ? priorityMasterOptions.map((priority) => ({
-          id: priority.priority_id,
-          label: priority.priority_name,
-        }))
+        id: priority.priority_id,
+        label: priority.priority_name,
+      }))
       : [
-          { id: 1, label: "Low" },
-          { id: 2, label: "Medium" },
-          { id: 3, label: "High" },
-          { id: 4, label: "Critical" },
-        ];
+        { id: 1, label: "Low" },
+        { id: 2, label: "Medium" },
+        { id: 3, label: "High" },
+        { id: 4, label: "Critical" },
+      ];
   const inlineEditControlSx = {
     flex: 1,
     minWidth: 0,
@@ -1349,28 +1382,28 @@ const TicketDetailPage = () => {
                   Reply
                 </Button>
 
-                 {isTakeoverAllowed() && (
-                    <Button
-                      variant="outlined"
-                      startIcon={<TakeoverIcon />}
-                      onClick={handleTakeover}
-                      disabled={updatingMetadata}
-                      sx={{
-                        borderRadius: "6px",
-                        textTransform: "none",
-                        fontWeight: 600,
-                        color: "var(--text)",
-                        borderColor: "var(--border)",
-                        backgroundColor: "var(--bg-card)",
-                        "&:hover": {
-                          borderColor: "#211b5a",
-                          backgroundColor: "rgba(30, 58, 138, 0.05)",
-                        },
-                      }}
-                    >
-                      Takeover
-                    </Button>
-                  )}
+                {isTakeoverAllowed() && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<TakeoverIcon />}
+                    onClick={handleTakeover}
+                    disabled={updatingMetadata}
+                    sx={{
+                      borderRadius: "6px",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      color: "var(--text)",
+                      borderColor: "var(--border)",
+                      backgroundColor: "var(--bg-card)",
+                      "&:hover": {
+                        borderColor: "#211b5a",
+                        backgroundColor: "rgba(30, 58, 138, 0.05)",
+                      },
+                    }}
+                  >
+                    Takeover
+                  </Button>
+                )}
 
                 {!isClosed && (
                   <Button
@@ -1581,109 +1614,124 @@ const TicketDetailPage = () => {
                 )}
               </Box>
             )}
-            
+
             {/* Only allow reply if the user is the assignee, creator, or admin */}
             {canManageTicketMetadata() && (
               !replyComposerOpen ? (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                  mt: 2.5,
-                }}
-              >
-                <Avatar
-                  sx={{
-                    width: 42,
-                    height: 42,
-                    flexShrink: 0,
-                    bgcolor: "#e5e7eb",
-                    color: "#211b5a",
-                    fontSize: 15,
-                    fontWeight: 700,
-                  }}
-                >
-                  {replyInitials || "U"}
-                </Avatar>
                 <Box
-                  role="button"
-                  tabIndex={0}
-                  onClick={handleOpenReplyComposer}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      handleOpenReplyComposer();
-                    }
-                  }}
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between",
-                    flex: 1,
-                    minHeight: 56,
-                    border: "1px solid var(--border)",
-                    borderRadius: "7px",
-                    backgroundColor: "#fff",
-                    px: 1.5,
-                    cursor: "text",
-                    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-                    "&:hover, &:focus": {
-                      borderColor: "#8da2d6",
-                      boxShadow: "0 0 0 3px rgba(33, 27, 90, 0.08)",
-                    },
+                    gap: 2,
+                    mt: 2.5,
                   }}
                 >
-                  <Typography sx={{ color: "#9aa0ad", fontSize: 15 }}>
-                    Reply...
-                  </Typography>
-                  {subscriberNames.length > 0 && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "#9aa0ad",
-                        whiteSpace: "nowrap",
-                        ml: 1.5,
-                        display: { xs: "none", lg: "block" },
-                      }}
-                    >
-                      subscribers: {subscriberNames.join(", ")}
+                  <Avatar
+                    sx={{
+                      width: 42,
+                      height: 42,
+                      flexShrink: 0,
+                      bgcolor: "#e5e7eb",
+                      color: "#211b5a",
+                      fontSize: 15,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {replyInitials || "U"}
+                  </Avatar>
+                  <Box
+                    role="button"
+                    tabIndex={0}
+                    onClick={handleOpenReplyComposer}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleOpenReplyComposer();
+                      }
+                    }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flex: 1,
+                      minHeight: 56,
+                      border: "1px solid var(--border)",
+                      borderRadius: "7px",
+                      backgroundColor: "#fff",
+                      px: 1.5,
+                      cursor: "text",
+                      transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                      "&:hover, &:focus": {
+                        borderColor: "#8da2d6",
+                        boxShadow: "0 0 0 3px rgba(33, 27, 90, 0.08)",
+                      },
+                    }}
+                  >
+                    <Typography sx={{ color: "#9aa0ad", fontSize: 15 }}>
+                      Reply...
                     </Typography>
-                  )}
+                    {subscriberNames.length > 0 && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "#9aa0ad",
+                          whiteSpace: "nowrap",
+                          ml: 1.5,
+                          display: { xs: "none", lg: "block" },
+                        }}
+                      >
+                        subscribers: {subscriberNames.join(", ")}
+                      </Typography>
+                    )}
+                  </Box>
                 </Box>
-              </Box>
-            ) : (
-              <Box
-                sx={{
-                  mt: 2.5,
-                  border: "1px solid var(--border)",
-                  borderRadius: "8px",
-                  backgroundColor: "#fff",
-                  boxShadow: "0 1px 5px rgba(15, 23, 42, 0.08)",
-                  overflow: "hidden",
-                }}
-              >
+              ) : (
                 <Box
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    px: 2,
-                    py: 1.5,
-                    borderBottom: "1px solid var(--border)",
-                    flexWrap: "wrap",
+                    mt: 2.5,
+                    border: "1px solid var(--border)",
+                    borderRadius: "8px",
+                    backgroundColor: "#fff",
+                    boxShadow: "0 1px 5px rgba(15, 23, 42, 0.08)",
+                    overflow: "hidden",
                   }}
                 >
-                  <Typography sx={{ color: "var(--text-secondary)", fontSize: 14 }}>
-                    To:
-                  </Typography>
-                  {subscriberNames.length > 0 ? (
-                    subscriberNames.map((name) => (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      px: 2,
+                      py: 1.5,
+                      borderBottom: "1px solid var(--border)",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <Typography sx={{ color: "var(--text-secondary)", fontSize: 14 }}>
+                      To:
+                    </Typography>
+                    {subscriberNames.length > 0 ? (
+                      subscriberNames.map((name) => (
+                        <Chip
+                          key={name}
+                          size="small"
+                          icon={<CheckIcon sx={{ fontSize: "15px !important" }} />}
+                          label={name}
+                          sx={{
+                            borderRadius: "6px",
+                            backgroundColor: "#eef2ff",
+                            color: "#5f6475",
+                            "& .MuiChip-icon": {
+                              color: "#15803d",
+                            },
+                          }}
+                        />
+                      ))
+                    ) : (
                       <Chip
-                        key={name}
                         size="small"
                         icon={<CheckIcon sx={{ fontSize: "15px !important" }} />}
-                        label={name}
+                        label={ticket.raised_by_name ?? ticket.raised_by_user_code ?? "Requester"}
                         sx={{
                           borderRadius: "6px",
                           backgroundColor: "#eef2ff",
@@ -1693,133 +1741,118 @@ const TicketDetailPage = () => {
                           },
                         }}
                       />
-                    ))
-                  ) : (
-                    <Chip
+                    )}
+                    <Button
+                      variant="text"
                       size="small"
-                      icon={<CheckIcon sx={{ fontSize: "15px !important" }} />}
-                      label={ticket.raised_by_name ?? ticket.raised_by_user_code ?? "Requester"}
                       sx={{
-                        borderRadius: "6px",
-                        backgroundColor: "#eef2ff",
-                        color: "#5f6475",
-                        "& .MuiChip-icon": {
-                          color: "#15803d",
+                        textTransform: "none",
+                        minWidth: "auto",
+                        px: 0.5,
+                        color: "#3524c7",
+                      }}
+                    >
+                      add...
+                    </Button>
+                    <IconButton
+                      size="small"
+                      onClick={resetReplyComposer}
+                      sx={{
+                        ml: "auto",
+                        color: "#a3a7b2",
+                        "&:hover": {
+                          color: "#5f6475",
+                          backgroundColor: "transparent",
                         },
                       }}
-                    />
-                  )}
-                  <Button
-                    variant="text"
-                    size="small"
+                    >
+                      <CancelIcon sx={{ fontSize: 20 }} />
+                    </IconButton>
+                  </Box>
+
+                  <RichTextEditor
+                    value={replyHtml}
+                    onChange={setReplyHtml}
+                    attachments={replyAttachments}
+                    onAttachmentsChange={setReplyAttachments}
+                    autoFocus
+                    minHeight={145}
                     sx={{
-                      textTransform: "none",
-                      minWidth: "auto",
-                      px: 0.5,
-                      color: "#3524c7",
-                    }}
-                  >
-                    add...
-                  </Button>
-                  <IconButton
-                    size="small"
-                    onClick={resetReplyComposer}
-                    sx={{
-                      ml: "auto",
-                      color: "#a3a7b2",
-                      "&:hover": {
-                        color: "#5f6475",
-                        backgroundColor: "transparent",
+                      mb: 0,
+                      "& > .MuiBox-root:first-of-type": {
+                        borderRadius: 0,
+                        borderLeft: "none",
+                        borderRight: "none",
+                        backgroundColor: "#f7f8fb",
+                      },
+                      "& > .MuiBox-root:nth-of-type(2)": {
+                        borderLeft: "none",
+                        borderRight: "none",
+                        borderBottom: "1px solid var(--border)",
+                        borderRadius: 0,
                       },
                     }}
+                  />
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 1.5,
+                      px: 2,
+                      py: 1.5,
+                      flexWrap: "wrap",
+                    }}
                   >
-                    <CancelIcon sx={{ fontSize: 20 }} />
-                  </IconButton>
-                </Box>
-
-                <RichTextEditor
-                  value={replyHtml}
-                  onChange={setReplyHtml}
-                  attachments={replyAttachments}
-                  onAttachmentsChange={setReplyAttachments}
-                  autoFocus
-                  minHeight={145}
-                  sx={{
-                    mb: 0,
-                    "& > .MuiBox-root:first-of-type": {
-                      borderRadius: 0,
-                      borderLeft: "none",
-                      borderRight: "none",
-                      backgroundColor: "#f7f8fb",
-                    },
-                    "& > .MuiBox-root:nth-of-type(2)": {
-                      borderLeft: "none",
-                      borderRight: "none",
-                      borderBottom: "1px solid var(--border)",
-                      borderRadius: 0,
-                    },
-                  }}
-                />
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 1.5,
-                    px: 2,
-                    py: 1.5,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Button
-                      variant="contained"
-                      onClick={() => handlePostComment()}
-                      disabled={!canSubmitReply}
-                      sx={{
-                        minWidth: 110,
-                        borderRadius: "6px",
-                        textTransform: "none",
-                        fontWeight: 700,
-                        color: "#fff",
-                        backgroundColor: "#211b5a",
-                        "&:hover": { backgroundColor: "#211b5a", color: "#fff" },
-                      }}
-                    >
-                      {submittingComment ? (
-                        <CircularProgress size={18} sx={{ color: "#fff" }} />
-                      ) : (
-                        "Reply"
-                      )}
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={() => handlePostComment({ resolveTicket: true })}
-                      disabled={!canSubmitReply || updatingMetadata}
-                      sx={{
-                        borderRadius: "6px",
-                        textTransform: "none",
-                        fontWeight: 700,
-                        color: "#5f6475",
-                        borderColor: "var(--border)",
-                      }}
-                    >
-                      Reply & resolve
-                    </Button>
-                  </Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Switch
-                      checked={techniciansOnly}
-                      onChange={(event) => setTechniciansOnly(event.target.checked)}
-                    />
-                    <Typography sx={{ color: "#3f4453", fontSize: 15 }}>
-                      For technicians only
-                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Button
+                        variant="contained"
+                        onClick={() => handlePostComment()}
+                        disabled={!canSubmitReply}
+                        sx={{
+                          minWidth: 110,
+                          borderRadius: "6px",
+                          textTransform: "none",
+                          fontWeight: 700,
+                          color: "#fff",
+                          backgroundColor: "#211b5a",
+                          "&:hover": { backgroundColor: "#211b5a", color: "#fff" },
+                        }}
+                      >
+                        {submittingComment ? (
+                          <CircularProgress size={18} sx={{ color: "#fff" }} />
+                        ) : (
+                          "Reply"
+                        )}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={() => handlePostComment({ resolveTicket: true })}
+                        disabled={!canSubmitReply || updatingMetadata}
+                        sx={{
+                          borderRadius: "6px",
+                          textTransform: "none",
+                          fontWeight: 700,
+                          color: "#5f6475",
+                          borderColor: "var(--border)",
+                        }}
+                      >
+                        Reply & resolve
+                      </Button>
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Switch
+                        checked={techniciansOnly}
+                        onChange={(event) => setTechniciansOnly(event.target.checked)}
+                      />
+                      <Typography sx={{ color: "#3f4453", fontSize: 15 }}>
+                        For technicians only
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
-            ))}
+              ))}
           </Card>
 
           {/* Comment and update feed */}
@@ -2054,173 +2087,173 @@ const TicketDetailPage = () => {
                           color: "var(--text)",
                         }}
                       >
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            gap: 1.2,
-                            mb: 0.7,
-                          }}
-                        >
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Box
                             sx={{
                               display: "flex",
+                              justifyContent: "space-between",
                               alignItems: "center",
-                              flexWrap: "wrap",
-                              gap: 1,
+                              gap: 1.2,
+                              mb: 0.7,
                             }}
                           >
-                            <Typography
-                              variant="body1"
-                              sx={{
-                                color: isOwnComment ? "#211b5a" : "#00843d",
-                                fontSize: 14,
-                                fontWeight: 700,
-                              }}
-                            >
-                              {isOwnComment ? "You" : author}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              sx={{ color: "#686f80", fontSize: 12.5 }}
-                            >
-                              {formatFeedTime(item.feedDate)}
-                            </Typography>
-                          </Box>
-                          <IconButton
-                            size="small"
-                            sx={{
-                              width: 26,
-                              height: 26,
-                              borderRadius: "6px",
-                              color: "#1f2540",
-                              backgroundColor: isOwnComment
-                                ? "rgba(255,255,255,0.45)"
-                                : "#f5f5f6",
-                              "&:hover": { backgroundColor: "#eceef2" },
-                            }}
-                          >
-                            <MoreIcon sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        </Box>
-                        <Box
-                          sx={{
-                            color: "var(--text)",
-                            fontSize: 15.5,
-                            lineHeight: 1.55,
-                            overflowWrap: "anywhere",
-                            "& img": {
-                              maxWidth: "100%",
-                              borderRadius: "8px",
-                            },
-                            "& p": {
-                              margin: "4px 0",
-                            },
-                          }}
-                          dangerouslySetInnerHTML={{
-                            __html: item.comment_text,
-                          }}
-                        />
-                        {Array.isArray(item.attachments) &&
-                          item.attachments.length > 0 && (
                             <Box
                               sx={{
                                 display: "flex",
+                                alignItems: "center",
                                 flexWrap: "wrap",
-                                gap: 1.25,
-                                mt: 1.25,
+                                gap: 1,
                               }}
                             >
-                              {item.attachments.map((attachment: any) =>
-                                isImageAttachment(attachment) ? (
-                                  <Box
-                                    component="button"
-                                    type="button"
-                                    key={attachment.attachment_id}
-                                    onClick={() =>
-                                      openAttachmentPreview(
-                                        `comment-${attachment.attachment_id}`,
-                                      )
-                                    }
-                                    sx={{
-                                      width: 132,
-                                      p: 0,
-                                      border: 0,
-                                      background: "transparent",
-                                      textAlign: "left",
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    <Box
-                                      component="img"
-                                      src={getAttachmentUrl(attachment)}
-                                      alt={attachment.file_name}
-                                      sx={{
-                                        display: "block",
-                                        width: 132,
-                                        height: 92,
-                                        objectFit: "cover",
-                                        borderRadius: "6px",
-                                        border: "1px solid #d9dde5",
-                                        backgroundColor: "#f5f6f8",
-                                      }}
-                                    />
-                                    <Typography
-                                      title={attachment.file_name}
-                                      sx={{
-                                        mt: 0.5,
-                                        fontSize: 12.5,
-                                        color: "#646b7b",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
-                                      }}
-                                    >
-                                      {attachment.file_name}
-                                    </Typography>
-                                  </Box>
-                                ) : (
-                                  <Box
-                                    component="a"
-                                    key={attachment.attachment_id}
-                                    href={getAttachmentUrl(attachment)}
-                                    download={attachment.file_name}
-                                    sx={{
-                                      width: 220,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 1,
-                                      p: 1,
-                                      color: "inherit",
-                                      textDecoration: "none",
-                                      border: "1px solid #d9dde5",
-                                      borderRadius: "6px",
-                                      backgroundColor: "#fff",
-                                    }}
-                                  >
-                                    <FileIcon sx={{ color: "#596174" }} />
-                                    <Typography
-                                      title={attachment.file_name}
-                                      sx={{
-                                        minWidth: 0,
-                                        flex: 1,
-                                        fontSize: 12.5,
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
-                                      }}
-                                    >
-                                      {attachment.file_name}
-                                    </Typography>
-                                    <DownloadIcon sx={{ fontSize: 18 }} />
-                                  </Box>
-                                ),
-                              )}
+                              <Typography
+                                variant="body1"
+                                sx={{
+                                  color: isOwnComment ? "#211b5a" : "#00843d",
+                                  fontSize: 14,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {isOwnComment ? "You" : author}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{ color: "#686f80", fontSize: 12.5 }}
+                              >
+                                {formatFeedTime(item.feedDate)}
+                              </Typography>
                             </Box>
-                          )}
-                      </Box>
+                            <IconButton
+                              size="small"
+                              sx={{
+                                width: 26,
+                                height: 26,
+                                borderRadius: "6px",
+                                color: "#1f2540",
+                                backgroundColor: isOwnComment
+                                  ? "rgba(255,255,255,0.45)"
+                                  : "#f5f5f6",
+                                "&:hover": { backgroundColor: "#eceef2" },
+                              }}
+                            >
+                              <MoreIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Box>
+                          <Box
+                            sx={{
+                              color: "var(--text)",
+                              fontSize: 15.5,
+                              lineHeight: 1.55,
+                              overflowWrap: "anywhere",
+                              "& img": {
+                                maxWidth: "100%",
+                                borderRadius: "8px",
+                              },
+                              "& p": {
+                                margin: "4px 0",
+                              },
+                            }}
+                            dangerouslySetInnerHTML={{
+                              __html: item.comment_text,
+                            }}
+                          />
+                          {Array.isArray(item.attachments) &&
+                            item.attachments.length > 0 && (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 1.25,
+                                  mt: 1.25,
+                                }}
+                              >
+                                {item.attachments.map((attachment: any) =>
+                                  isImageAttachment(attachment) ? (
+                                    <Box
+                                      component="button"
+                                      type="button"
+                                      key={attachment.attachment_id}
+                                      onClick={() =>
+                                        openAttachmentPreview(
+                                          `comment-${attachment.attachment_id}`,
+                                        )
+                                      }
+                                      sx={{
+                                        width: 132,
+                                        p: 0,
+                                        border: 0,
+                                        background: "transparent",
+                                        textAlign: "left",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      <Box
+                                        component="img"
+                                        src={getAttachmentUrl(attachment)}
+                                        alt={attachment.file_name}
+                                        sx={{
+                                          display: "block",
+                                          width: 132,
+                                          height: 92,
+                                          objectFit: "cover",
+                                          borderRadius: "6px",
+                                          border: "1px solid #d9dde5",
+                                          backgroundColor: "#f5f6f8",
+                                        }}
+                                      />
+                                      <Typography
+                                        title={attachment.file_name}
+                                        sx={{
+                                          mt: 0.5,
+                                          fontSize: 12.5,
+                                          color: "#646b7b",
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                      >
+                                        {attachment.file_name}
+                                      </Typography>
+                                    </Box>
+                                  ) : (
+                                    <Box
+                                      component="a"
+                                      key={attachment.attachment_id}
+                                      href={getAttachmentUrl(attachment)}
+                                      download={attachment.file_name}
+                                      sx={{
+                                        width: 220,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 1,
+                                        p: 1,
+                                        color: "inherit",
+                                        textDecoration: "none",
+                                        border: "1px solid #d9dde5",
+                                        borderRadius: "6px",
+                                        backgroundColor: "#fff",
+                                      }}
+                                    >
+                                      <FileIcon sx={{ color: "#596174" }} />
+                                      <Typography
+                                        title={attachment.file_name}
+                                        sx={{
+                                          minWidth: 0,
+                                          flex: 1,
+                                          fontSize: 12.5,
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                      >
+                                        {attachment.file_name}
+                                      </Typography>
+                                      <DownloadIcon sx={{ fontSize: 18 }} />
+                                    </Box>
+                                  ),
+                                )}
+                              </Box>
+                            )}
+                        </Box>
                       </Box>
                       {isOwnComment && (
                         <Avatar
@@ -2388,6 +2421,94 @@ const TicketDetailPage = () => {
 
             {/* Sidebar properties fields in table layout structure */}
             <Box sx={{ display: "flex", flexDirection: "column" }}>
+              {/* Freeform Tags */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  py: 1,
+                  minHeight: 40,
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "var(--text-secondary)",
+                    width: 110,
+                    flexShrink: 0,
+                    pt: "8px",
+                  }}
+                >
+                  Tags:
+                </Typography>
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: freeformTags.length ? 1 : 0 }}>
+                    {freeformTags.map((tag) => (
+                      <Box
+                        key={tag.id}
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          px: 1.2,
+                          py: 0.35,
+                          borderRadius: "999px",
+                          border: "1px solid rgba(99,102,241,0.35)",
+                          backgroundColor: "rgba(99,102,241,0.08)",
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: "#6366f1",
+                          userSelect: "none",
+                        }}
+                      >
+                        {tag.tag_message}
+                        {!isClosed && (
+                          <Box
+                            component="span"
+                            onClick={() => handleDeleteFreeformTag(tag.id)}
+                            sx={{
+                              cursor: "pointer",
+                              ml: 0.3,
+                              opacity: 0.6,
+                              lineHeight: 1,
+                              fontSize: 14,
+                              "&:hover": { opacity: 1 },
+                            }}
+                          >
+                            ×
+                          </Box>
+                        )}
+                      </Box>
+                    ))}
+                  </Box>
+                  {!isClosed && (
+                    <Box
+                      component="input"
+                      placeholder="Type a tag and press Enter…"
+                      value={tagInput}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTagInput(e.target.value)}
+                      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddFreeformTag();
+                        }
+                      }}
+                      sx={{
+                        width: "100%",
+                        border: "none",
+                        outline: "none",
+                        background: "transparent",
+                        fontSize: 13,
+                        color: "var(--text)",
+                        py: 0.5,
+                        "&::placeholder": { color: "var(--text-secondary)", opacity: 0.7 },
+                      }}
+                    />
+                  )}
+                </Box>
+              </Box>
+
               {/* Priority */}
               <Box
                 sx={{
@@ -2709,9 +2830,9 @@ const TicketDetailPage = () => {
                         .filter((u) => {
                           const isAllocated = ticket.allocated_to_user_code
                             ? ticket.allocated_to_user_code
-                                .split("|")
-                                .map((c: string) => c.trim())
-                                .includes(u.user_code)
+                              .split("|")
+                              .map((c: string) => c.trim())
+                              .includes(u.user_code)
                             : false;
                           const inDepartment =
                             Number(u.department_id) === Number(ticket.department_id);
@@ -3024,70 +3145,6 @@ const TicketDetailPage = () => {
                   This ticket is not recurring
                 </Typography>
               </Box>
-
-              {/* Tags */}
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  py: 1,
-                  minHeight: 40,
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "var(--text-secondary)",
-                    width: 110,
-                    flexShrink: 0,
-                  }}
-                >
-                  Tags:
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "var(--text-secondary)",
-                    fontStyle: "italic",
-                    flex: 1,
-                  }}
-                >
-                  type a tag...
-                </Typography>
-              </Box>
-
-              {/* Assets */}
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  py: 1,
-                  minHeight: 40,
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "var(--text-secondary)",
-                    width: 110,
-                    flexShrink: 0,
-                  }}
-                >
-                  Assets:
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "var(--text-secondary)",
-                    fontStyle: "italic",
-                    flex: 1,
-                  }}
-                >
-                  type an asset...
-                </Typography>
-              </Box>
             </Box>
           </Card>
 
@@ -3241,7 +3298,7 @@ const TicketDetailPage = () => {
           if (event.key === "ArrowLeft") {
             setPreviewIndex(
               (previewIndex - 1 + previewAttachments.length) %
-                previewAttachments.length,
+              previewAttachments.length,
             );
           }
           if (event.key === "ArrowRight") {
@@ -3288,58 +3345,58 @@ const TicketDetailPage = () => {
               </IconButton>
             </Tooltip>
             <>
-                <IconButton
-                  aria-label="Previous attachment"
-                  disabled={previewAttachments.length < 2}
-                  onClick={() =>
-                    setPreviewIndex((currentIndex) =>
-                      (currentIndex - 1 + previewAttachments.length) %
-                        previewAttachments.length,
-                    )
-                  }
-                  sx={{
-                    position: "fixed",
-                    top: "50%",
-                    left: { xs: 8, sm: 24 },
-                    transform: "translateY(-50%)",
-                    zIndex: 3,
-                    color: "#fff",
-                    backgroundColor: "rgba(0,0,0,0.28)",
-                    "&:hover": { backgroundColor: "rgba(0,0,0,0.5)" },
-                    "&.Mui-disabled": {
-                      color: "rgba(255,255,255,0.3)",
-                      backgroundColor: "rgba(0,0,0,0.18)",
-                    },
-                  }}
-                >
-                  <ChevronLeftIcon sx={{ fontSize: 38 }} />
-                </IconButton>
-                <IconButton
-                  aria-label="Next attachment"
-                  disabled={previewAttachments.length < 2}
-                  onClick={() =>
-                    setPreviewIndex((currentIndex) =>
-                      (currentIndex + 1) % previewAttachments.length,
-                    )
-                  }
-                  sx={{
-                    position: "fixed",
-                    top: "50%",
-                    right: { xs: 8, sm: 24 },
-                    transform: "translateY(-50%)",
-                    zIndex: 3,
-                    color: "#fff",
-                    backgroundColor: "rgba(0,0,0,0.28)",
-                    "&:hover": { backgroundColor: "rgba(0,0,0,0.5)" },
-                    "&.Mui-disabled": {
-                      color: "rgba(255,255,255,0.3)",
-                      backgroundColor: "rgba(0,0,0,0.18)",
-                    },
-                  }}
-                >
-                  <ChevronRightIcon sx={{ fontSize: 38 }} />
-                </IconButton>
-              </>
+              <IconButton
+                aria-label="Previous attachment"
+                disabled={previewAttachments.length < 2}
+                onClick={() =>
+                  setPreviewIndex((currentIndex) =>
+                    (currentIndex - 1 + previewAttachments.length) %
+                    previewAttachments.length,
+                  )
+                }
+                sx={{
+                  position: "fixed",
+                  top: "50%",
+                  left: { xs: 8, sm: 24 },
+                  transform: "translateY(-50%)",
+                  zIndex: 3,
+                  color: "#fff",
+                  backgroundColor: "rgba(0,0,0,0.28)",
+                  "&:hover": { backgroundColor: "rgba(0,0,0,0.5)" },
+                  "&.Mui-disabled": {
+                    color: "rgba(255,255,255,0.3)",
+                    backgroundColor: "rgba(0,0,0,0.18)",
+                  },
+                }}
+              >
+                <ChevronLeftIcon sx={{ fontSize: 38 }} />
+              </IconButton>
+              <IconButton
+                aria-label="Next attachment"
+                disabled={previewAttachments.length < 2}
+                onClick={() =>
+                  setPreviewIndex((currentIndex) =>
+                    (currentIndex + 1) % previewAttachments.length,
+                  )
+                }
+                sx={{
+                  position: "fixed",
+                  top: "50%",
+                  right: { xs: 8, sm: 24 },
+                  transform: "translateY(-50%)",
+                  zIndex: 3,
+                  color: "#fff",
+                  backgroundColor: "rgba(0,0,0,0.28)",
+                  "&:hover": { backgroundColor: "rgba(0,0,0,0.5)" },
+                  "&.Mui-disabled": {
+                    color: "rgba(255,255,255,0.3)",
+                    backgroundColor: "rgba(0,0,0,0.18)",
+                  },
+                }}
+              >
+                <ChevronRightIcon sx={{ fontSize: 38 }} />
+              </IconButton>
+            </>
             <Box
               component="img"
               src={getAttachmentUrl(previewAttachments[previewIndex])}

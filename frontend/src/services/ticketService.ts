@@ -5,13 +5,15 @@ const unwrapData = (responseData: any) => responseData.data ?? responseData;
 export const getTickets = async (
   search = "",
   sortBy = "",
-  sortOrder = ""
+  sortOrder = "",
+  tagFilter = "",
 ) => {
   const response = await API.get("/tickets", {
     params: {
       search,
       sortBy,
       sortOrder,
+      tagFilter,
     },
   });
 

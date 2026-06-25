@@ -62,7 +62,8 @@ export const getAllTickets = async (
             limit = 25,
             companyCode,
             sortBy,
-            sortOrder
+            sortOrder,
+            tagFilter = "",
         } = req.query;
 
         const targetCompanyCode = (Number(req.user.roleId) === 4) ? (companyCode || null) : req.user.companyCode;
@@ -75,7 +76,8 @@ export const getAllTickets = async (
                 Number(page),
                 Number(limit),
                 sortBy,
-                sortOrder
+                sortOrder,
+                tagFilter,
             );
 
         return res.status(200).json({

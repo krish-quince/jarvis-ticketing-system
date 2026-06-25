@@ -19,6 +19,7 @@ import userRoutes from "./routes/user.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import masterRoutes from "./routes/master.routes.js";
 import emailConfigRoutes from "./routes/emailConfig.routes.js";
+import tagRoutes from "./routes/tag.routes.js";
 
 dotenv.config();
 
@@ -41,6 +42,11 @@ app.use(
 
 app.use("/api/auth", authRoutes);
 
+// tagRoutes must be mounted BEFORE ticketRoutes: it defines a static
+// "/tags" path, and ticket.routes.js defines a greedy "/:ticketId" route
+// that would otherwise swallow "/api/tickets/tags" as ticketId="tags".
+app.use("/api/tickets", tagRoutes);
+
 app.use("/api/tickets", ticketRoutes);
 
 app.use("/api/tickets", commentRoutes);
@@ -48,6 +54,7 @@ app.use("/api/tickets", commentRoutes);
 app.use("/api/tickets", historyRoutes);
 
 app.use("/api/tickets", timeTrackingRoutes);
+
 app.use("/api/users", userRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);

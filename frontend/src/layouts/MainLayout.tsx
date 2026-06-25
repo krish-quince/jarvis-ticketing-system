@@ -262,10 +262,10 @@ const MainLayout = () => {
             >
               {[
                 { id: "unanswered", label: "Unanswered", count: unansweredCount },
-                { id: "unclosed",   label: "Unclosed",   count: unclosedCount   },
+                { id: "unclosed", label: "Unclosed", count: unclosedCount },
                 { id: "unassigned", label: "Unassigned", count: unassignedCount },
-                { id: "assigned",   label: "Assigned to you", count: assignedCount },
-                { id: "all",        label: "All",        count: allCount        },
+                { id: "assigned", label: "Assigned to you", count: assignedCount },
+                { id: "all", label: "All", count: allCount },
               ].map((pill) => {
                 const isActive = activePill === pill.id;
                 return (
@@ -531,15 +531,15 @@ const MainLayout = () => {
                           color: isActive
                             ? "#ffffff !important"
                             : isDark
-                            ? "#d1d5db"
-                            : "#374151",
+                              ? "#d1d5db"
+                              : "#374151",
                           fontWeight: isActive ? 500 : 400,
                           "&:hover": {
                             backgroundColor: isActive
                               ? "#3531b2 !important"
                               : isDark
-                              ? "rgba(255,255,255,0.05)"
-                              : "rgba(0,0,0,0.04)",
+                                ? "rgba(255,255,255,0.05)"
+                                : "rgba(0,0,0,0.04)",
                           },
                         }}
                       >
@@ -832,8 +832,8 @@ const MainLayout = () => {
               mode === "light"
                 ? LightModeIcon
                 : mode === "dark"
-                ? DarkModeIcon
-                : AutoModeIcon;
+                  ? DarkModeIcon
+                  : AutoModeIcon;
             return (
               <Button
                 key={mode}
@@ -855,8 +855,8 @@ const MainLayout = () => {
                     backgroundColor: isActive
                       ? "#211b5a"
                       : isDark
-                      ? "rgba(255,255,255,0.07)"
-                      : "rgba(0,0,0,0.04)",
+                        ? "rgba(255,255,255,0.07)"
+                        : "rgba(0,0,0,0.04)",
                   },
                 }}
                 startIcon={<Icon sx={{ fontSize: "14px !important" }} />}

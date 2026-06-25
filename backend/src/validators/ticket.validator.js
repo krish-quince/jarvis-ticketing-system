@@ -27,6 +27,31 @@ export const createTicketSchema = z.object({
       .number()
       .int()
       .positive(),
+
+    tags: z.preprocess(
+      (value) => {
+        if (value === undefined || value === null) return undefined;
+        if (Array.isArray(value)) return value;
+        if (typeof value === "string") {
+          const trimmed = value.trim();
+          if (!trimmed) return [];
+          if (trimmed.startsWith("[")) {
+            try {
+              const parsed = JSON.parse(trimmed);
+              return Array.isArray(parsed) ? parsed : [];
+            } catch {
+              return trimmed.split(",");
+            }
+          }
+          return trimmed.split(",");
+        }
+        return value;
+      },
+      z
+        .array(z.string().trim().min(1).max(100))
+        .max(25, "A ticket cannot have more than 25 tags.")
+        .optional(),
+    ),
   }),
 });
 

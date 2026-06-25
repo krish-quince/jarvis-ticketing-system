@@ -6,8 +6,11 @@ import {
   canManageTicket
 } from "../utils/ticketPermissions.js";
 import * as masterRepository from "../repositories/master.repository.js";
+import * as tagRepository from "../repositories/tag.repository.js";
 
 export const createTicket = async (ticketData, user, files = []) => {
+  const ticketNo = `TKT-${Date.now()}`;
+
   let category_id = ticketData.category_id;
   let priority_id = ticketData.priority_id;
   let status_id = ticketData.status_id;
@@ -186,6 +189,8 @@ export const createTicket = async (ticketData, user, files = []) => {
     
     due_date: ticketData.due_date || null,
 
+    ticketNo,
+
     raisedByUserCode: user.userCode,
     companyCode: user.companyCode,
 
@@ -206,6 +211,65 @@ export const createTicket = async (ticketData, user, files = []) => {
       client,
     );
 
+    let tags = [];
+
+    // Tags arrive differently depending on the client:
+    // - multipart/form-data (current frontend): JSON.stringify'd array as a string, e.g. '["Bug","Urgent"]'
+    // - JSON body: a real array
+    // - legacy free-text input: a comma-separated string, e.g. "Bug, Urgent"
+    let rawTags = ticketData.tags;
+
+    if (typeof rawTags === "string") {
+      const trimmedRaw = rawTags.trim();
+      if (trimmedRaw.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(trimmedRaw);
+          rawTags = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          rawTags = trimmedRaw ? trimmedRaw.split(",") : [];
+        }
+      } else {
+        rawTags = trimmedRaw ? trimmedRaw.split(",") : [];
+      }
+    }
+
+    if (!Array.isArray(rawTags)) {
+      rawTags = [];
+    }
+
+    const uniqueTagNames = [
+      ...new Map(
+        rawTags
+          .map((name) => String(name ?? "").trim())
+          .filter(Boolean)
+          .map((name) => [name.toLowerCase(), name]),
+      ).values(),
+    ];
+
+    if (uniqueTagNames.length > 25) {
+      throw new Error("A ticket cannot have more than 25 tags.");
+    }
+
+    for (const tagName of uniqueTagNames) {
+      let tag = await tagRepository.getTagByNameAndCompany(
+        tagName,
+        user.companyCode,
+        client,
+      );
+
+      if (!tag) {
+        tag = await tagRepository.createTag(
+          { tag_name: tagName, company_code: user.companyCode },
+          client,
+        );
+      } else if (!tag.is_active) {
+        tag = await tagRepository.reactivateTag(tag.tag_id, client);
+      }
+
+      await tagRepository.addTicketTag(ticket.ticket_id, tag.tag_id, client);
+      tags.push(tag);
+    }
+
     await historyService.createHistory(
       ticket.ticket_id,
       "Created",
@@ -217,7 +281,7 @@ export const createTicket = async (ticketData, user, files = []) => {
 
     await client.query("COMMIT");
 
-    return { ...ticket, attachments };
+    return { ...ticket, attachments, tags };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -226,7 +290,7 @@ export const createTicket = async (ticketData, user, files = []) => {
   }
 };
 
-export const getAllTickets = async (companyCode, user, search, page, limit, sortBy, sortOrder) => {
+export const getAllTickets = async (companyCode, user, search, page, limit, sortBy, sortOrder, tagFilter = "") => {
   return await ticketRepository.getAllTickets(
     companyCode,
     user,
@@ -235,6 +299,7 @@ export const getAllTickets = async (companyCode, user, search, page, limit, sort
     limit,
     sortBy,
     sortOrder,
+    tagFilter,
   );
 };
 

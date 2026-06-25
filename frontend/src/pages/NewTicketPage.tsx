@@ -22,6 +22,7 @@ import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 
 import RichTextEditor from "../components/RichTextEditor";
+import TagInput from "../components/TagInput";
 import { createTicket } from "../services/ticketService";
 import { getAssignableUsersForTicket } from "../services/masterService";
 import api from "../services/api";
@@ -115,7 +116,7 @@ const NewTicketPage = () => {
   const [loading, setLoading] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [dueDate, setDueDate] = useState("");
-  const [tags, setTags] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [recurring, setRecurring] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [toast, setToast] = useState<{
@@ -258,6 +259,7 @@ const NewTicketPage = () => {
     setAllocatedTo([]);
     setAssignableUsers([]);
     setAttachments([]);
+    setTags([]);
   };
 
   const handleSubmit = async () => {
@@ -712,16 +714,9 @@ const NewTicketPage = () => {
                   </Select>
                 </FormControl>
 
-                <TextField
-                  size="small"
-                  placeholder="Tags..."
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  sx={{
-                    width: 220,
-                    "& .MuiOutlinedInput-root": { background: "var(--bg-app)" },
-                  }}
-                />
+                <Box sx={{ width: 260 }}>
+                  <TagInput value={tags} onChange={setTags} />
+                </Box>
 
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Switch
