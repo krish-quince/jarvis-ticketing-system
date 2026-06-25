@@ -249,16 +249,55 @@ const LoginPage = () => {
         height: "100vh",
         width: "100vw",
         display: "flex",
+        flexDirection: "column",
         overflow: "hidden",
         backgroundColor: "#ffffff",
       }}
     >
+      {/* ─── Top Header Bar ─── */}
+      <Box
+        sx={{
+          width: "100%",
+          height: "56px",
+          flexShrink: 0,
+          backgroundColor: "#ffffff",
+          borderBottom: "1px solid #e2e8f0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+          zIndex: 10,
+        }}
+      >
+        <Box sx={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+          <img
+            src={`${servicedeskLogo}?v=3`}
+            alt="Service Desk Pro Logo"
+            style={{ height: 36, objectFit: "contain" }}
+          />
+          <Typography
+            sx={{
+              position: "absolute",
+              bottom: "2px",
+              right: "-26px",
+              color: "#e2b857",
+              fontSize: "9px",
+              fontWeight: 800,
+              letterSpacing: "0.5px",
+              fontFamily: "'InterVariable', sans-serif",
+            }}
+          >
+            PRO
+          </Typography>
+        </Box>
+      </Box>
+
       {/* Main Split Section */}
       <Box
         sx={{
           width: "100%",
           display: "flex",
-          height: "100vh",
+          flex: 1,
           overflow: "hidden",
           "@media (max-width:900px)": {
             flexDirection: "column",
@@ -273,7 +312,7 @@ const LoginPage = () => {
             backgroundColor: "#211B5A",
             color: "#ffffff",
             p: { xs: 3, md: 5 },
-            pt: { xs: 6, md: 12 },
+            pt: { xs: 4, md: 8 },
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-start",
@@ -295,39 +334,6 @@ const LoginPage = () => {
               alignItems: "flex-start",
             }}
           >
-            {/* Main Logo (No background) */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              mb: 3,
-            }}
-          >
-            <Box sx={{ position: "relative", display: "inline-flex" }}>
-              <img
-                src={`${servicedeskLogo}?v=3`}
-                alt="Service Desk Pro Logo"
-                style={{
-                  height: 110,
-                  objectFit: "contain",
-                }}
-              />
-              <Typography
-                sx={{
-                  position: "absolute",
-                  bottom: "10px",
-                  right: "-32px",
-                  color: "#e2b857", // Matching gold/bronze color from the logo
-                  fontSize: "11px",
-                  fontWeight: 800,
-                  letterSpacing: "0.5px",
-                  fontFamily: "'InterVariable', sans-serif",
-                }}
-              >
-                PRO
-              </Typography>
-            </Box>
-          </Box>
 
           <Typography
             variant="h3"
@@ -418,7 +424,7 @@ const LoginPage = () => {
           sx={{
             width: "50%",
             p: { xs: 3, md: 5 },
-            pt: { xs: 6, md: 12 },
+            pt: { xs: 4, md: 8 },
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-start",
@@ -439,33 +445,6 @@ const LoginPage = () => {
               flexDirection: "column",
             }}
           >
-            {/* Logo container */}
-            <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
-              <Box sx={{ position: "relative", display: "inline-flex" }}>
-                <img
-                  src={`${servicedeskLogo}?v=3`}
-                  alt="Service Desk Pro Logo"
-                  style={{
-                    height: 95,
-                    objectFit: "contain",
-                  }}
-                />
-                <Typography
-                  sx={{
-                    position: "absolute",
-                    bottom: "8px",
-                    right: "-26px",
-                    color: "#e2b857", // Matching gold/bronze color from the logo
-                    fontSize: "9.5px",
-                    fontWeight: 800,
-                    letterSpacing: "0.5px",
-                    fontFamily: "'InterVariable', sans-serif",
-                  }}
-                >
-                  PRO
-                </Typography>
-              </Box>
-            </Box>
 
 
 
