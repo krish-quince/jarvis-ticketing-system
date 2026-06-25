@@ -258,7 +258,7 @@ const LoginPage = () => {
       <Box
         sx={{
           width: "100%",
-          height: "58px",
+          height: "70px",
           flexShrink: 0,
           backgroundColor: "#ffffff",
           borderBottom: "1.5px solid #e2e8f0",
@@ -272,7 +272,7 @@ const LoginPage = () => {
         <img
           src={`${servicedeskLogo}?v=3`}
           alt="Service Desk Pro Logo"
-          style={{ height: 38, objectFit: "contain" }}
+          style={{ height: 65, objectFit: "cover" }}
         />
       </Box>
 
@@ -289,115 +289,123 @@ const LoginPage = () => {
           },
         }}
       >
-        {/* Left Panel: Brand info with Statistics & Services */}
+        {/* Left Panel */}
         <Box
           sx={{
             width: "50%",
             backgroundColor: "#211B5A",
             color: "#ffffff",
-            p: { xs: 3, md: 5 },
-            pt: { xs: 4, md: 7 },
             display: "flex",
             flexDirection: "column",
-            justifyContent: "flex-start",
-            alignItems: "center",
+            justifyContent: "center",
+            alignItems: "flex-start",
             overflow: "hidden",
+            position: "relative",
             "@media (max-width:900px)": {
               width: "100%",
               p: 4,
-              pt: 4,
             },
           }}
         >
+          {/* Decorative circle — top left */}
           <Box
             sx={{
-              width: "100%",
-              maxWidth: "400px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
+              position: "absolute",
+              top: "-100px",
+              left: "-100px",
+              width: "320px",
+              height: "320px",
+              borderRadius: "50%",
+              backgroundColor: "rgba(255,255,255,0.09)",
+              pointerEvents: "none",
+            }}
+          />
+          {/* Decorative circle — bottom right */}
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: "-70px",
+              right: "-70px",
+              width: "260px",
+              height: "260px",
+              borderRadius: "50%",
+              backgroundColor: "rgba(255,255,255,0.06)",
+              pointerEvents: "none",
+            }}
+          />
+
+          <Box
+            sx={{
+              position: "relative",
+              zIndex: 1,
+              px: { xs: 4, md: 7 },
+              py: { xs: 4, md: 0 },
+              maxWidth: "480px",
             }}
           >
-
+            {/* Heading */}
             <Typography
-              variant="h3"
+              variant="h2"
               sx={{
-                fontWeight: 700,
+                fontWeight: 800,
                 mb: 3,
-                fontSize: { xs: "28px", md: "38px" },
-                lineHeight: 1.3,
+                fontSize: { xs: "34px", md: "50px" },
+                lineHeight: 1.15,
                 fontFamily: "'InterVariable', sans-serif",
                 color: "#ffffff",
               }}
             >
-              Service Desk Pro
+              ServiceDesk Pro
             </Typography>
 
-            {/* Stats Grid */}
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 3,
-                width: "100%",
-                mb: 4,
-              }}
-            >
-              <Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: "#ffffff", fontSize: { xs: "22px", md: "28px" } }}>
-                  99.9%
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.2, fontSize: "13px" }}>
-                  Uptime guarantee
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: "#ffffff", fontSize: { xs: "22px", md: "28px" } }}>
-                  10+
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.2, fontSize: "13px" }}>
-                  Departments supported
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Product Pills */}
+            {/* Description */}
             <Typography
-              variant="caption"
               sx={{
-                fontWeight: 600,
-                letterSpacing: 1.5,
-                color: "rgba(255, 255, 255, 0.7)",
-                mb: 1.5,
-                textTransform: "uppercase",
+                fontSize: { xs: "14px", md: "15.5px" },
+                lineHeight: 1.75,
+                color: "rgba(255,255,255,0.88)",
+                mb: 5,
+                fontFamily: "'InterVariable', sans-serif",
               }}
             >
-              Our Core Services
+              Smart Ticketing &amp; Service Management Platform designed to
+              streamline support operations, automate workflows, and accelerate
+              issue resolution.
             </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 1,
-              }}
-            >
+
+            {/* Feature Checklist */}
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
               {[
-                "Ticket Management System",
-              ].map((pill) => (
+                "Ticket Management",
+                "SLA Tracking",
+                "Workflow Automation",
+                "Reports & Dashboards",
+              ].map((feature) => (
                 <Box
-                  key={pill}
-                  sx={{
-                    border: "1px solid rgba(255, 255, 255, 0.4)",
-                    borderRadius: "20px",
-                    px: 1.8,
-                    py: 0.5,
-                    fontSize: "11px",
-                    fontWeight: 500,
-                    color: "#ffffff",
-                    backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  }}
+                  key={feature}
+                  sx={{ display: "flex", alignItems: "center", gap: 2 }}
                 >
-                  {pill}
+                  <Typography
+                    sx={{
+                      fontSize: "17px",
+                      color: "#ffffff",
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      flexShrink: 0,
+                    }}
+                  >
+                    ✓
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: { xs: "14px", md: "15.5px" },
+                      fontWeight: 500,
+                      color: "#ffffff",
+                      fontFamily: "'InterVariable', sans-serif",
+                    }}
+                  >
+                    {feature}
+                  </Typography>
                 </Box>
               ))}
             </Box>
@@ -432,18 +440,32 @@ const LoginPage = () => {
 
 
 
+            {/* Heading */}
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 800,
+                mb: 0.8,
+                fontSize: { xs: "26px", md: "32px" },
+                color: "#211B5A",
+                fontFamily: "'InterVariable', sans-serif",
+              }}
+            >
+              {mode === "login" ? "Welcome Back" : "Create Account"}
+            </Typography>
+
             <Typography
               variant="body2"
               align="left"
               sx={{
                 color: "#64748b",
-                mb: 5,
-                fontSize: "13px",
+                mb: 3,
+                fontSize: "14px",
                 fontFamily: "'InterVariable', sans-serif",
               }}
             >
               {mode === "login"
-                ? "Welcome back! Sign in securely to access your dashboard"
+                ? "Sign in to access your ServiceDesk Pro account"
                 : "Register to get started with Jarvis Helpdesk"}
             </Typography>
 
@@ -515,21 +537,21 @@ const LoginPage = () => {
                   </Link>
                 </Box>
 
-                <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 1.5 }}>
                   <Button
                     fullWidth
                     variant="contained"
                     onClick={handleLogin}
                     sx={{
-                      backgroundColor: "#211B5A",
+                      backgroundColor: "#2563EB",
                       color: "#ffffff",
                       borderRadius: "10px",
-                      fontWeight: 600,
+                      fontWeight: 700,
                       textTransform: "none",
-                      py: 1.2,
-                      fontSize: "14px",
-                      boxShadow: "0 4px 12px rgba(33, 27, 90, 0.2)",
-                      "&:hover": { backgroundColor: "#151944" },
+                      py: 1.4,
+                      fontSize: "15px",
+                      boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)",
+                      "&:hover": { backgroundColor: "#1d4ed8" },
                     }}
                   >
                     Sign In
@@ -828,29 +850,20 @@ const LoginPage = () => {
             <Box
               sx={{
                 display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 0.5,
-                mt: 1.5,
+                justifyContent: "center",
+                mt: 2,
               }}
             >
               <Typography
                 align="center"
                 sx={{
                   color: "#94a3b8",
-                  fontSize: "10px",
+                  fontSize: "12px",
                   fontFamily: "'InterVariable', sans-serif",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
                 }}
               >
-                Powered By
+                © 2026 ServiceDesk Pro | Streamlining Support, Accelerating Resolution
               </Typography>
-              <img
-                src={`${servicedeskLogo}?v=3`}
-                alt="Service Desk Pro"
-                style={{ height: 16, opacity: 0.6, objectFit: "contain" }}
-              />
             </Box>
           </Box>
         </Box>
