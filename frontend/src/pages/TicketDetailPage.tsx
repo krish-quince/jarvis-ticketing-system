@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -64,6 +64,7 @@ import {
   getTicketHistory,
   createComment,
   deleteAttachment,
+  reopenTicket,
 } from "../services/ticketService";
 import { getUsers } from "../services/userService";
 import {
@@ -585,6 +586,28 @@ const TicketDetailPage = () => {
       setToast({
         open: true,
         message: error.response?.data?.message || "Failed to close ticket",
+        severity: "error",
+      });
+    } finally {
+      setUpdatingMetadata(false);
+    }
+  };
+
+  const handleReopenTicket = async () => {
+    try {
+      setUpdatingMetadata(true);
+      await reopenTicket(ticketId);
+      setToast({
+        open: true,
+        message: "Ticket reopened successfully",
+        severity: "success",
+      });
+      await fetchData();
+    } catch (error: any) {
+      console.error(error);
+      setToast({
+        open: true,
+        message: error.response?.data?.message || "Failed to reopen ticket",
         severity: "error",
       });
     } finally {
@@ -1495,6 +1518,28 @@ const TicketDetailPage = () => {
                     Close ticket
                   </Button>
                 )}
+
+                {isClosed && (ticket.raised_by_user_code === loggedInUserCode || ticket.assigned_to_user_code === loggedInUserCode || isAdminOrDev) && (
+                  <Button
+                    variant="outlined"
+                    onClick={handleReopenTicket}
+                    disabled={updatingMetadata}
+                    sx={{
+                      borderRadius: "6px",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      color: "var(--text)",
+                      borderColor: "var(--border)",
+                      backgroundColor: "var(--bg-card)",
+                      "&:hover": {
+                        borderColor: "#28A745",
+                        backgroundColor: "rgba(40, 167, 69, 0.05)",
+                      },
+                    }}
+                  >
+                    Reopen ticket
+                  </Button>
+                )}
               </Box>
 
               {/* More menu on right side of actions row */}
@@ -1684,7 +1729,7 @@ const TicketDetailPage = () => {
             )}
 
             {/* Only allow reply if the user is the assignee, creator, or admin */}
-            {canManageTicketMetadata() && (
+            {canManageTicketMetadata() && !isClosed && (
               !replyComposerOpen ? (
                 <Box
                   sx={{

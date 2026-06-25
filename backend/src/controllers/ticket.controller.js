@@ -338,3 +338,22 @@ export const deleteAttachment = async (req, res) => {
         });
     }
 };
+
+export const reopenTicket = async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+
+        const ticket = await ticketService.reopenTicket(
+            ticketId,
+            req.user
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: ticket,
+        });
+    } catch (error) {
+        console.error("reopenTicket controller error:", error);
+        return sendTicketError(res, error);
+    }
+};

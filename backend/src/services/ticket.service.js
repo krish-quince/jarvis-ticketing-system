@@ -954,3 +954,108 @@ export const updateTicketDueDate = async (ticketId, dueDate, user) => {
 export const deleteAttachment = async (type, attachmentId) => {
   return await ticketRepository.deleteAttachment(type, attachmentId);
 };
+
+export const reopenTicket = async (ticketId, user) => {
+  const ticket = await ticketRepository.getTicketById(
+    ticketId,
+    user.companyCode,
+  );
+
+  if (!ticket) {
+    throw new Error("Ticket not found.");
+  }
+
+  const currentStatusRes = await pool.query(
+    "SELECT is_closed_status FROM ticket_statuses WHERE status_id = $1 AND company_code = $2",
+    [ticket.status_id, user.companyCode]
+  );
+  const currentStatus = currentStatusRes.rows[0];
+  const isClosed = currentStatus ? currentStatus.is_closed_status : (ticket.status_name === "Closed");
+
+  if (!isClosed) {
+    throw new Error("Ticket is not closed.");
+  }
+
+  const isCreator = ticket.raised_by_user_code === user.userCode;
+  const isAssigned = ticket.assigned_to_user_code === user.userCode;
+  const isAdminOrSuper = [1, 4].includes(Number(user.roleId));
+
+  if (!isCreator && !isAssigned && !isAdminOrSuper) {
+    throw new Error("Access denied. Only the creator, assigned user, or an administrator can reopen this ticket.");
+  }
+
+  let targetStatusId = null;
+  
+  const inProgressRes = await pool.query(
+    `SELECT status_id FROM ticket_statuses 
+     WHERE company_code = $1 
+     AND LOWER(status_name) = 'in progress' 
+     AND is_active = true 
+     LIMIT 1`,
+    [user.companyCode]
+  );
+  
+  if (inProgressRes.rows.length > 0) {
+    targetStatusId = inProgressRes.rows[0].status_id;
+  } else {
+    const defaultRes = await pool.query(
+      `SELECT status_id FROM ticket_statuses 
+       WHERE company_code = $1 
+       AND is_default = true 
+       AND is_active = true 
+       LIMIT 1`,
+      [user.companyCode]
+    );
+    if (defaultRes.rows.length > 0) {
+      targetStatusId = defaultRes.rows[0].status_id;
+    } else {
+      const fallbackRes = await pool.query(
+        `SELECT status_id FROM ticket_statuses 
+         WHERE company_code = $1 
+         AND is_closed_status = false 
+         AND is_active = true 
+         ORDER BY display_order ASC, status_id ASC 
+         LIMIT 1`,
+        [user.companyCode]
+      );
+      if (fallbackRes.rows.length > 0) {
+        targetStatusId = fallbackRes.rows[0].status_id;
+      }
+    }
+  }
+
+  if (!targetStatusId) {
+    throw new Error("No active open status found to reopen the ticket.");
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const updatedTicket = await ticketRepository.updateTicketStatus(
+      ticketId,
+      targetStatusId,
+      user.companyCode,
+      client,
+    );
+
+    await historyService.createHistory(
+      ticketId,
+      "Status",
+      String(ticket.status_id),
+      String(targetStatusId),
+      user.userCode,
+      client,
+    );
+
+    await client.query("COMMIT");
+
+    return updatedTicket;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};

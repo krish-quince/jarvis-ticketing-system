@@ -12,7 +12,8 @@ import {
     updateTicketStatus,
     takeoverTicket,
     updateTicketDueDate,
-    deleteAttachment
+    deleteAttachment,
+    reopenTicket
 } from "../controllers/ticket.controller.js";
 
 import { validate }
@@ -56,6 +57,7 @@ router.patch(
   updateTicketDueDate
 );
 router.patch("/:ticketId/takeover", verifyToken, takeoverTicket);
+router.patch("/:ticketId/reopen", verifyToken, reopenTicket);
 router.delete("/attachments/:type/:attachmentId", verifyToken, deleteAttachment);
 
 
