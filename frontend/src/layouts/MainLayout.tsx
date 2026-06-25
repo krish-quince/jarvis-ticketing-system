@@ -431,10 +431,8 @@ const MainLayout = () => {
                     sx: {
                       p: 0,
                       width: 130,
-                      backgroundColor: isDark
-                        ? "rgba(22, 27, 39, 0.6)"
-                        : "rgba(255, 255, 255, 0.6)",
-                      backdropFilter: "blur(8px)",
+                      backgroundColor: "var(--bg-popover-glass) !important",
+                      backdropFilter: "blur(12px)",
                       border: `1px solid ${border}`,
                       boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
                       borderRadius: "8px",
@@ -496,10 +494,8 @@ const MainLayout = () => {
                     sx: {
                       py: 0,
                       width: 190,
-                      backgroundColor: isDark
-                        ? "rgba(22, 27, 39, 0.6)"
-                        : "rgba(255, 255, 255, 0.6)",
-                      backdropFilter: "blur(8px)",
+                      backgroundColor: "var(--bg-popover-glass) !important",
+                      backdropFilter: "blur(12px)",
                       border: `1px solid ${border}`,
                       borderRadius: "8px",
                       color: text,
@@ -571,10 +567,8 @@ const MainLayout = () => {
                       width: 320,
                       maxHeight: "85vh",
                       overflowY: "auto",
-                      backgroundColor: isDark
-                        ? "rgba(22, 27, 39, 0.6)"
-                        : "rgba(255, 255, 255, 0.6)",
-                      backdropFilter: "blur(8px)",
+                      backgroundColor: "var(--bg-popover-glass) !important",
+                      backdropFilter: "blur(12px)",
                       border: `1px solid ${border}`,
                       boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
                       borderRadius: "16px",

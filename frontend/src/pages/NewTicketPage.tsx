@@ -411,7 +411,8 @@ const NewTicketPage = () => {
     paper: {
       sx: {
         mt: 0.5,
-        background: "var(--bg-card)",
+        backgroundColor: "var(--bg-popover-glass) !important",
+        backdropFilter: "blur(12px)",
         border: "1px solid var(--border)",
         boxShadow: "0 8px 32px rgba(0,0,0,0.28)",
         borderRadius: "10px",
