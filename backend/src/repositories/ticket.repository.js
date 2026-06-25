@@ -24,7 +24,9 @@ export const createTicket = async (ticket, client = null) => {
 
     due_date,
 
-    department_id
+    department_id,
+
+    created_at
 )
         VALUES
 (
@@ -33,7 +35,8 @@ export const createTicket = async (ticket, client = null) => {
     $7,$8,
     $9,$10,$11,
     $12,
-    $13
+    $13,
+    CURRENT_TIMESTAMP
 )
         RETURNING *
         `,
