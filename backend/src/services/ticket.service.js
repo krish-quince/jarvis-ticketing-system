@@ -8,8 +8,6 @@ import {
 import * as masterRepository from "../repositories/master.repository.js";
 
 export const createTicket = async (ticketData, user, files = []) => {
-  const ticketNo = `TKT-${Date.now()}`;
-
   let category_id = ticketData.category_id;
   let priority_id = ticketData.priority_id;
   let status_id = ticketData.status_id;
@@ -187,8 +185,6 @@ export const createTicket = async (ticketData, user, files = []) => {
     allocated_to_user_code,
     
     due_date: ticketData.due_date || null,
-
-    ticketNo,
 
     raisedByUserCode: user.userCode,
     companyCode: user.companyCode,

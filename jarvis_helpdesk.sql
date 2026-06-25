@@ -668,7 +668,8 @@ ALTER SEQUENCE public.ticket_time_entries_entry_id_seq OWNED BY public.ticket_ti
 
 CREATE TABLE public.tickets (
     ticket_id bigint NOT NULL,
-    ticket_no character varying(30) NOT NULL,
+    company_ticket_serial bigint,
+    ticket_no character varying(30) GENERATED ALWAYS AS (((company_code)::text || '-'::text) || (100000 + company_ticket_serial)::text) STORED,
     subject character varying(500) NOT NULL,
     description text,
     category_id bigint NOT NULL,
@@ -690,6 +691,30 @@ CREATE TABLE public.tickets (
 
 
 ALTER TABLE public.tickets OWNER TO postgres;
+
+CREATE OR REPLACE FUNCTION public.set_company_ticket_serial()
+RETURNS TRIGGER AS $$
+DECLARE
+  next_serial bigint;
+BEGIN
+  IF NEW.company_ticket_serial IS NULL THEN
+    PERFORM pg_advisory_xact_lock(hashtext(NEW.company_code));
+    SELECT COALESCE(MAX(company_ticket_serial), 0) + 1
+    INTO next_serial
+    FROM public.tickets
+    WHERE company_code = NEW.company_code;
+    NEW.company_ticket_serial := next_serial;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+ALTER FUNCTION public.set_company_ticket_serial() OWNER TO postgres;
+
+CREATE TRIGGER tickets_company_seq_trigger
+    BEFORE INSERT ON public.tickets
+    FOR EACH ROW
+    EXECUTE FUNCTION public.set_company_ticket_serial();
 
 --
 -- TOC entry 246 (class 1259 OID 19327)
@@ -1234,20 +1259,20 @@ COPY public.ticket_time_entries (entry_id, ticket_id, user_code, status_name, ti
 -- Data for Name: tickets; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.tickets (ticket_id, ticket_no, subject, description, category_id, priority_id, status_id, raised_by_user_code, assigned_to_user_code, resolved_by_user_code, due_date, resolution_date, is_recurring, update_timestamp, user_code, subcategory_id, department_id, company_code, allocated_to_user_code) FROM stdin;
-6	TKT-1781606467724	kjyffiyo	<p>k,cty,uyo,y</p>	2	2	1	QC_employee_krish_bhojwani	QC_employee_rohit_kulkarni	\N	\N	\N	f	2026-06-16 16:11:07.760284	\N	9	1	QC	\N
-7	TKT-1781606493700	?>mnbvfsx	<p>;/ljhmgbf</p>	1	3	1	QC_employee_krish_bhojwani	QC_manager_pooja_deshmukh	\N	\N	\N	f	2026-06-16 16:11:33.797776	\N	7	1	QC	\N
-9	TKT-1781606565194	jgh c.	<p>hvyhyli,yob</p>	2	1	1	QC_employee_krish_bhojwani	QC_manager_amit_sharma	\N	\N	\N	f	2026-06-16 16:12:45.197581	\N	8	1	QC	\N
-10	TKT-1781606589251	,vu6f,6o6xcoxs6	<p>mvtliuv,.l</p>	2	4	3	QC_employee_krish_bhojwani	QC_admin_krish_bhojwani	\N	2026-07-02 14:00:00	\N	f	2026-06-17 15:07:17.47032	\N	9	1	QC	\N
-8	TKT-1781606548742	.l/ic.d7od7co/	<p>ct,kutcu7o6c</p>	2	3	1	QC_employee_krish_bhojwani	QC_manager_amit_sharma	\N	\N	\N	f	2026-06-17 15:24:44.323243	\N	9	1	QC	\N
-11	TKT-1781777912848	Urgent ticket	<p>ticket with info</p>	2	2	3	QC_admin_rahul_patil	QC_admin_rahul_patil	\N	2026-06-19 16:52:00	\N	f	2026-06-18 16:53:45.324608	\N	9	1	QC	\N
-5	TKT-1781605410382	Hello from krish	<p>Testing by krish.</p>	1	3	1	QC_employee_krish_bhojwani	QC_admin_rahul_patil	\N	\N	\N	f	2026-06-18 17:47:28.027858	\N	6	1	QC	\N
-12	TKT-1781968525173	fghjkl.	<p>trdjch m</p>	1	1	1	QC_admin_krish_bhojwani	QC_admin_rahul_patil	\N	\N	\N	f	2026-06-20 20:47:15.385188	\N	6	3	QC	\N
-13	TKT-1781968835532	mbkjvkjhcvjh	<p>mjbjkugu</p>	3	3	1	QC_admin_rahul_patil	\N	\N	\N	\N	f	2026-06-20 20:50:35.573004	\N	\N	1	QC	\N
-15	TKT-1782104595727	ASDFGHJKL;	<p>ASDFGHJKL;</p>	13	14	12	SAT_EMPLOYEE_KRISH	SAT_EMPLOYEE_temp	\N	2026-06-24 00:00:00	\N	f	2026-06-22 10:34:19.6716	\N	19	\N	SAT	\N
-16	TKT-1782219108670	Auto Routing Test Ticket	Testing if ticket is assigned to one of the routing assignees and allocated to all.	1	2	1	QC_admin_rahul_patil	QC_employee_sneha_iyer	\N	\N	\N	f	2026-06-23 18:21:48.825723	\N	6	1	QC	QC_admin_rahul_patil
-17	TKT-1782219611078	Auto Routing Test Ticket	Testing if ticket is assigned to one of the routing assignees and allocated to all.	1	2	1	QC_admin_rahul_patil	QC_employee_sneha_iyer	\N	\N	\N	f	2026-06-23 18:30:11.229968	\N	6	1	QC	QC_admin_rahul_patil
-14	TKT-1781969219783	m k j  jkn 	<p>m nikonjn</p>	1	3	3	QC_admin_rahul_patil	QC_employee_sneha_iyer	\N	\N	\N	f	2026-06-24 16:25:16.49574	\N	7	1	QC	QC_manager_anjali_verma|QC_employee_sneha_iyer|QC_manager_amit_sharma|QC_employee_rohit_kulkarni
+COPY public.tickets (ticket_id, company_ticket_serial, subject, description, category_id, priority_id, status_id, raised_by_user_code, assigned_to_user_code, resolved_by_user_code, due_date, resolution_date, is_recurring, update_timestamp, user_code, subcategory_id, department_id, company_code, allocated_to_user_code) FROM stdin;
+6	2	kjyffiyo	<p>k,cty,uyo,y</p>	2	2	1	QC_employee_krish_bhojwani	QC_employee_rohit_kulkarni	\N	\N	\N	f	2026-06-16 16:11:07.760284	\N	9	1	QC	\N
+7	3	?>mnbvfsx	<p>;/ljhmgbf</p>	1	3	1	QC_employee_krish_bhojwani	QC_manager_pooja_deshmukh	\N	\N	\N	f	2026-06-16 16:11:33.797776	\N	7	1	QC	\N
+9	5	jgh c.	<p>hvyhyli,yob</p>	2	1	1	QC_employee_krish_bhojwani	QC_manager_amit_sharma	\N	\N	\N	f	2026-06-16 16:12:45.197581	\N	8	1	QC	\N
+10	6	,vu6f,6o6xcoxs6	<p>mvtliuv,.l</p>	2	4	3	QC_employee_krish_bhojwani	QC_admin_krish_bhojwani	\N	2026-07-02 14:00:00	\N	f	2026-06-17 15:07:17.47032	\N	9	1	QC	\N
+8	4	.l/ic.d7od7co/	<p>ct,kutcu7o6c</p>	2	3	1	QC_employee_krish_bhojwani	QC_manager_amit_sharma	\N	\N	\N	f	2026-06-17 15:24:44.323243	\N	9	1	QC	\N
+11	7	Urgent ticket	<p>ticket with info</p>	2	2	3	QC_admin_rahul_patil	QC_admin_rahul_patil	\N	2026-06-19 16:52:00	\N	f	2026-06-18 16:53:45.324608	\N	9	1	QC	\N
+5	1	Hello from krish	<p>Testing by krish.</p>	1	3	1	QC_employee_krish_bhojwani	QC_admin_rahul_patil	\N	\N	\N	f	2026-06-18 17:47:28.027858	\N	6	1	QC	\N
+12	8	fghjkl.	<p>trdjch m</p>	1	1	1	QC_admin_krish_bhojwani	QC_admin_rahul_patil	\N	\N	\N	f	2026-06-20 20:47:15.385188	\N	6	3	QC	\N
+13	9	mbkjvkjhcvjh	<p>mjbjkugu</p>	3	3	1	QC_admin_rahul_patil	\N	\N	\N	\N	f	2026-06-20 20:50:35.573004	\N	\N	1	QC	\N
+15	1	ASDFGHJKL;	<p>ASDFGHJKL;</p>	13	14	12	SAT_EMPLOYEE_KRISH	SAT_EMPLOYEE_temp	\N	2026-06-24 00:00:00	\N	f	2026-06-22 10:34:19.6716	\N	19	\N	SAT	\N
+16	11	Auto Routing Test Ticket	Testing if ticket is assigned to one of the routing assignees and allocated to all.	1	2	1	QC_admin_rahul_patil	QC_employee_sneha_iyer	\N	\N	\N	f	2026-06-23 18:21:48.825723	\N	6	1	QC	QC_admin_rahul_patil
+17	12	Auto Routing Test Ticket	Testing if ticket is assigned to one of the routing assignees and allocated to all.	1	2	1	QC_admin_rahul_patil	QC_employee_sneha_iyer	\N	\N	\N	f	2026-06-23 18:30:11.229968	\N	6	1	QC	QC_admin_rahul_patil
+14	10	m k j  jkn 	<p>m nikonjn</p>	1	3	3	QC_admin_rahul_patil	QC_employee_sneha_iyer	\N	\N	\N	f	2026-06-24 16:25:16.49574	\N	7	1	QC	QC_manager_anjali_verma|QC_employee_sneha_iyer|QC_manager_amit_sharma|QC_employee_rohit_kulkarni
 \.
 
 
