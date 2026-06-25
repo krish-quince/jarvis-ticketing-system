@@ -254,42 +254,26 @@ const LoginPage = () => {
         backgroundColor: "#ffffff",
       }}
     >
-      {/* ─── Top Header Bar ─── */}
+      {/* ─── Top White Header Bar ─── */}
       <Box
         sx={{
           width: "100%",
-          height: "56px",
+          height: "58px",
           flexShrink: 0,
           backgroundColor: "#ffffff",
-          borderBottom: "1px solid #e2e8f0",
+          borderBottom: "1.5px solid #e2e8f0",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
           zIndex: 10,
         }}
       >
-        <Box sx={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
-          <img
-            src={`${servicedeskLogo}?v=3`}
-            alt="Service Desk Pro Logo"
-            style={{ height: 36, objectFit: "contain" }}
-          />
-          <Typography
-            sx={{
-              position: "absolute",
-              bottom: "2px",
-              right: "-26px",
-              color: "#e2b857",
-              fontSize: "9px",
-              fontWeight: 800,
-              letterSpacing: "0.5px",
-              fontFamily: "'InterVariable', sans-serif",
-            }}
-          >
-            PRO
-          </Typography>
-        </Box>
+        <img
+          src={`${servicedeskLogo}?v=3`}
+          alt="Service Desk Pro Logo"
+          style={{ height: 38, objectFit: "contain" }}
+        />
       </Box>
 
       {/* Main Split Section */}
@@ -312,7 +296,7 @@ const LoginPage = () => {
             backgroundColor: "#211B5A",
             color: "#ffffff",
             p: { xs: 3, md: 5 },
-            pt: { xs: 4, md: 8 },
+            pt: { xs: 4, md: 7 },
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-start",
@@ -335,96 +319,96 @@ const LoginPage = () => {
             }}
           >
 
-          <Typography
-            variant="h3"
-            sx={{
-              fontWeight: 700,
-              mb: 3,
-              fontSize: { xs: "28px", md: "38px" },
-              lineHeight: 1.3,
-              fontFamily: "'InterVariable', sans-serif",
-              color: "#ffffff",
-            }}
-          >
-            Service Desk Pro
-          </Typography>
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 700,
+                mb: 3,
+                fontSize: { xs: "28px", md: "38px" },
+                lineHeight: 1.3,
+                fontFamily: "'InterVariable', sans-serif",
+                color: "#ffffff",
+              }}
+            >
+              Service Desk Pro
+            </Typography>
 
-          {/* Stats Grid */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 3,
-              width: "100%",
-              mb: 4,
-            }}
-          >
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: "#ffffff", fontSize: { xs: "22px", md: "28px" } }}>
-                99.9%
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.2, fontSize: "13px" }}>
-                Uptime guarantee
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: "#ffffff", fontSize: { xs: "22px", md: "28px" } }}>
-                10+
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.2, fontSize: "13px" }}>
-                Departments supported
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Product Pills */}
-          <Typography
-            variant="caption"
-            sx={{
-              fontWeight: 600,
-              letterSpacing: 1.5,
-              color: "rgba(255, 255, 255, 0.7)",
-              mb: 1.5,
-              textTransform: "uppercase",
-            }}
-          >
-            Our Core Services
-          </Typography>
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 1,
-            }}
-          >
-            {[
-              "Ticket Management System",
-            ].map((pill) => (
-              <Box
-                key={pill}
-                sx={{
-                  border: "1px solid rgba(255, 255, 255, 0.4)",
-                  borderRadius: "20px",
-                  px: 1.8,
-                  py: 0.5,
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  color: "#ffffff",
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                }}
-              >
-                {pill}
+            {/* Stats Grid */}
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 3,
+                width: "100%",
+                mb: 4,
+              }}
+            >
+              <Box>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: "#ffffff", fontSize: { xs: "22px", md: "28px" } }}>
+                  99.9%
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.2, fontSize: "13px" }}>
+                  Uptime guarantee
+                </Typography>
               </Box>
-            ))}
+              <Box>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: "#ffffff", fontSize: { xs: "22px", md: "28px" } }}>
+                  10+
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.2, fontSize: "13px" }}>
+                  Departments supported
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Product Pills */}
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 600,
+                letterSpacing: 1.5,
+                color: "rgba(255, 255, 255, 0.7)",
+                mb: 1.5,
+                textTransform: "uppercase",
+              }}
+            >
+              Our Core Services
+            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+              }}
+            >
+              {[
+                "Ticket Management System",
+              ].map((pill) => (
+                <Box
+                  key={pill}
+                  sx={{
+                    border: "1px solid rgba(255, 255, 255, 0.4)",
+                    borderRadius: "20px",
+                    px: 1.8,
+                    py: 0.5,
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    color: "#ffffff",
+                    backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  }}
+                >
+                  {pill}
+                </Box>
+              ))}
+            </Box>
           </Box>
         </Box>
-      </Box>
 
         <Box
           sx={{
             width: "50%",
             p: { xs: 3, md: 5 },
-            pt: { xs: 4, md: 8 },
+            pt: { xs: 4, md: 7 },
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-start",
