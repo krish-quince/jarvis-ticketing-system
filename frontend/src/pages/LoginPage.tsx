@@ -273,18 +273,29 @@ const LoginPage = () => {
             backgroundColor: "#211B5A",
             color: "#ffffff",
             p: { xs: 3, md: 5 },
+            pt: { xs: 6, md: 12 },
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "flex-start",
+            justifyContent: "flex-start",
+            alignItems: "center",
             overflow: "hidden",
             "@media (max-width:900px)": {
               width: "100%",
               p: 4,
+              pt: 4,
             },
           }}
         >
-          {/* Main Logo (No background) */}
+          <Box
+            sx={{
+              width: "100%",
+              maxWidth: "400px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+            }}
+          >
+            {/* Main Logo (No background) */}
           <Box
             sx={{
               display: "flex",
@@ -401,483 +412,483 @@ const LoginPage = () => {
             ))}
           </Box>
         </Box>
+      </Box>
 
-        {/* Right Panel: Login / Registration Form */}
         <Box
           sx={{
             width: "50%",
             p: { xs: 3, md: 5 },
+            pt: { xs: 6, md: 12 },
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
+            justifyContent: "flex-start",
+            alignItems: "center",
             overflow: "hidden",
             "@media (max-width:900px)": {
               width: "100%",
               p: 4,
+              pt: 4,
             },
           }}
         >
-          {/* Logo container */}
-          <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
-            <Box sx={{ position: "relative", display: "inline-flex" }}>
-              <img
-                src={`${servicedeskLogo}?v=3`}
-                alt="Service Desk Pro Logo"
-                style={{
-                  height: 95,
-                  objectFit: "contain",
-                }}
-              />
-              <Typography
-                sx={{
-                  position: "absolute",
-                  bottom: "8px",
-                  right: "-26px",
-                  color: "#e2b857", // Matching gold/bronze color from the logo
-                  fontSize: "9.5px",
-                  fontWeight: 800,
-                  letterSpacing: "0.5px",
-                  fontFamily: "'InterVariable', sans-serif",
-                }}
-              >
-                PRO
-              </Typography>
-            </Box>
-          </Box>
-
-          <Typography
-            variant="h4"
-            align="center"
+          <Box
             sx={{
-              color: "#211B5A",
-              fontWeight: 700,
-              mb: 0.5,
-              fontSize: "24px",
-              fontFamily: "'InterVariable', sans-serif",
+              width: "100%",
+              maxWidth: "400px",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
-            Service Desk Pro
-          </Typography>
-
-          <Typography
-            variant="body2"
-            align="center"
-            sx={{
-              color: "#64748b",
-              mb: 5,
-              fontSize: "13px",
-              fontFamily: "'InterVariable', sans-serif",
-            }}
-          >
-            {mode === "login"
-              ? "Welcome back! Sign in securely to access your dashboard"
-              : "Register to get started with Jarvis Helpdesk"}
-          </Typography>
-
-          {mode === "login" ? (
-            <Box component="form" noValidate sx={{ display: "flex", flexDirection: "column", pt: 1 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="User Code or Email Address"
-                placeholder="Enter your User Code or Email"
-                value={userCode}
-                onChange={(e) => setUserCode(e.target.value)}
-                error={!!errors.userCode}
-                helperText={errors.userCode}
-                sx={{ mb: 1.5, ...inputSx }}
-              />
-
-              <TextField
-                fullWidth
-                size="small"
-                label="Password"
-                placeholder="Enter Password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                error={!!errors.loginPassword}
-                helperText={errors.loginPassword}
-                sx={{ mb: 1.5, ...inputSx }}
-                slotProps={{
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={handleTogglePassword} edge="end" size="small">
-                          {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 1.8,
-                }}
-              >
-                <FormControlLabel
-                  control={<Checkbox size="small" sx={{ color: "#211B5A", "&.Mui-checked": { color: "#211B5A" } }} />}
-                  label={
-                    <Typography variant="body2" sx={{ color: "#475569", fontSize: "13px" }}>
-                      Remember Me
-                    </Typography>
-                  }
+            {/* Logo container */}
+            <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+              <Box sx={{ position: "relative", display: "inline-flex" }}>
+                <img
+                  src={`${servicedeskLogo}?v=3`}
+                  alt="Service Desk Pro Logo"
+                  style={{
+                    height: 95,
+                    objectFit: "contain",
+                  }}
                 />
-                <Link
-                  href="#"
-                  underline="none"
+                <Typography
                   sx={{
-                    fontSize: "13px",
-                    color: "#211B5A",
-                    fontWeight: 500,
-                    "&:hover": { color: "#151944" },
+                    position: "absolute",
+                    bottom: "8px",
+                    right: "-26px",
+                    color: "#e2b857", // Matching gold/bronze color from the logo
+                    fontSize: "9.5px",
+                    fontWeight: 800,
+                    letterSpacing: "0.5px",
+                    fontFamily: "'InterVariable', sans-serif",
                   }}
                 >
-                  Forgot Password?
-                </Link>
-              </Box>
-
-              <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={handleLogin}
-                  sx={{
-                    backgroundColor: "#211B5A",
-                    color: "#ffffff",
-                    borderRadius: "10px",
-                    fontWeight: 600,
-                    textTransform: "none",
-                    py: 1.2,
-                    fontSize: "14px",
-                    boxShadow: "0 4px 12px rgba(33, 27, 90, 0.2)",
-                    "&:hover": { backgroundColor: "#151944" },
-                  }}
-                >
-                  Sign In
-                </Button>
-
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  onClick={() => {
-                    setMode("register");
-                    setErrors({});
-                  }}
-                  sx={{
-                    borderRadius: "10px",
-                    color: "#211B5A",
-                    borderColor: "#211B5A",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    py: 1.2,
-                    fontSize: "14px",
-                    "&:hover": {
-                      borderColor: "#151944",
-                      backgroundColor: "rgba(33, 27, 90, 0.05)",
-                    },
-                  }}
-                >
-                  Register
-                </Button>
-              </Box>
-
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  textAlign: "center",
-                  color: "#94a3b8",
-                  fontSize: "12px",
-                  mb: 1.5,
-                  "&::before, &::after": {
-                    content: '""',
-                    flex: 1,
-                    borderBottom: "1px solid #e2e8f0",
-                  },
-                  "&::before": { marginRight: 2 },
-                  "&::after": { marginLeft: 2 },
-                }}
-              >
-                OR
-              </Box>
-
-              <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  sx={{
-                    borderRadius: "10px",
-                    borderColor: "#dbe3ef",
-                    color: "#334155",
-                    textTransform: "none",
-                    py: 1,
-                    fontSize: "12.5px",
-                    fontWeight: 500,
-                    "&:hover": {
-                      borderColor: "#cbd5e1",
-                      backgroundColor: "#f8fafc",
-                    },
-                  }}
-                >
-                  <MicrosoftIcon /> Microsoft 365
-                </Button>
-
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  sx={{
-                    borderRadius: "10px",
-                    borderColor: "#dbe3ef",
-                    color: "#334155",
-                    textTransform: "none",
-                    py: 1,
-                    fontSize: "12.5px",
-                    fontWeight: 500,
-                    "&:hover": {
-                      borderColor: "#cbd5e1",
-                      backgroundColor: "#f8fafc",
-                    },
-                  }}
-                >
-                  <GoogleIcon /> Google Workspace
-                </Button>
-              </Box>
-
-              {/* MFA security note */}
-              <Box
-                sx={{
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "10px",
-                  p: 1.5,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 0.5,
-                  mb: 1.5,
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
-                  <SecurityIcon sx={{ color: "#211B5A", fontSize: 16 }} />
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ color: "#1e293b", fontWeight: 600, fontSize: "12.5px" }}
-                  >
-                    Multi-Factor Authentication Enabled
-                  </Typography>
-                </Box>
-                <Typography variant="body2" sx={{ color: "#64748b", fontSize: "11.5px", lineHeight: 1.4 }}>
-                  Identity verification via secure authenticator app is required post-login.
+                  PRO
                 </Typography>
               </Box>
             </Box>
-          ) : (
-            <Box component="form" noValidate sx={{ display: "flex", flexDirection: "column", overflowY: "auto", pr: 0.5, maxH: "55vh", pt: 1 }}>
-              <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="First Name"
-                  placeholder="First Name"
-                  value={regFirstName}
-                  onChange={(e) => setRegFirstName(e.target.value)}
-                  error={!!errors.firstName}
-                  helperText={errors.firstName}
-                  sx={inputSx}
-                />
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Last Name"
-                  placeholder="Last Name"
-                  value={regLastName}
-                  onChange={(e) => setRegLastName(e.target.value)}
-                  error={!!errors.lastName}
-                  helperText={errors.lastName}
-                  sx={inputSx}
-                />
-              </Box>
 
-              <TextField
-                fullWidth
-                size="small"
-                label="Email Address"
-                placeholder="name@company.com"
-                value={regEmail}
-                onChange={(e) => setRegEmail(e.target.value)}
-                error={!!errors.email}
-                helperText={errors.email}
-                sx={{ mb: 1.5, ...inputSx }}
-              />
 
-              <FormControl fullWidth size="small" error={!!errors.company} sx={{ mb: 1.5 }}>
-                <InputLabel id="reg-company-label">Company</InputLabel>
-                <Select
-                  labelId="reg-company-label"
-                  value={regCompanyCode}
-                  label="Company"
-                  onChange={(e) => {
-                    setRegCompanyCode(e.target.value);
-                    setRegDepartmentId("");
-                  }}
-                  sx={selectSx}
-                >
-                  {COMPANIES.map((c) => (
-                    <MenuItem key={c.code} value={c.code}>
-                      {c.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {errors.company && <FormHelperText>{errors.company}</FormHelperText>}
-              </FormControl>
 
-              <FormControl fullWidth size="small" error={!!errors.department} sx={{ mb: 1.5 }}>
-                <InputLabel id="reg-department-label">Department</InputLabel>
-                <Select
-                  labelId="reg-department-label"
-                  value={regDepartmentId}
-                  label="Department"
-                  onChange={(e) => setRegDepartmentId(Number(e.target.value))}
-                  sx={selectSx}
-                  disabled={!regCompanyCode}
-                >
-                  {(DEPARTMENTS[regCompanyCode] || []).map((d) => (
-                    <MenuItem key={d.id} value={d.id}>
-                      {d.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {errors.department && (
-                  <FormHelperText>{errors.department}</FormHelperText>
-                )}
-              </FormControl>
-
-              <TextField
-                fullWidth
-                size="small"
-                label="Password"
-                placeholder="Password"
-                type={showPassword ? "text" : "password"}
-                value={regPassword}
-                onChange={(e) => setRegPassword(e.target.value)}
-                error={!!errors.password}
-                helperText={errors.password}
-                sx={{ mb: 1.5, ...inputSx }}
-                slotProps={{
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={handleTogglePassword} edge="end" size="small">
-                          {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-
-              <TextField
-                fullWidth
-                size="small"
-                label="Confirm Password"
-                placeholder="Confirm Password"
-                type={showPassword ? "text" : "password"}
-                value={regConfirmPassword}
-                onChange={(e) => setRegConfirmPassword(e.target.value)}
-                error={!!errors.confirmPassword}
-                helperText={errors.confirmPassword}
-                sx={{ mb: 2, ...inputSx }}
-                slotProps={{
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={handleTogglePassword} edge="end" size="small">
-                          {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-
-              <Box sx={{ display: "flex", gap: 1.5 }}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={handleRegister}
-                  sx={{
-                    backgroundColor: "#211B5A",
-                    color: "#ffffff",
-                    borderRadius: "10px",
-                    fontWeight: 600,
-                    textTransform: "none",
-                    py: 1.2,
-                    fontSize: "14px",
-                    boxShadow: "0 4px 12px rgba(33, 27, 90, 0.2)",
-                    "&:hover": { backgroundColor: "#151944" },
-                  }}
-                >
-                  Submit
-                </Button>
-
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  onClick={() => {
-                    setMode("login");
-                    setErrors({});
-                  }}
-                  sx={{
-                    borderRadius: "10px",
-                    color: "#211B5A",
-                    borderColor: "#211B5A",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    py: 1.2,
-                    fontSize: "14px",
-                    "&:hover": {
-                      borderColor: "#151944",
-                      backgroundColor: "rgba(33, 27, 90, 0.05)",
-                    },
-                  }}
-                >
-                  Cancel
-                </Button>
-              </Box>
-            </Box>
-          )}
-
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 0.5,
-              mt: 1.5,
-            }}
-          >
             <Typography
-              align="center"
+              variant="body2"
+              align="left"
               sx={{
-                color: "#94a3b8",
-                fontSize: "10px",
+                color: "#64748b",
+                mb: 5,
+                fontSize: "13px",
                 fontFamily: "'InterVariable', sans-serif",
-                textTransform: "uppercase",
-                letterSpacing: 1,
               }}
             >
-              Powered By
+              {mode === "login"
+                ? "Welcome back! Sign in securely to access your dashboard"
+                : "Register to get started with Jarvis Helpdesk"}
             </Typography>
-            <img
-              src={`${servicedeskLogo}?v=3`}
-              alt="Service Desk Pro"
-              style={{ height: 16, opacity: 0.6, objectFit: "contain" }}
-            />
+
+            {mode === "login" ? (
+              <Box component="form" noValidate sx={{ display: "flex", flexDirection: "column", pt: 1 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="User Code or Email Address"
+                  placeholder="Enter your User Code or Email"
+                  value={userCode}
+                  onChange={(e) => setUserCode(e.target.value)}
+                  error={!!errors.userCode}
+                  helperText={errors.userCode}
+                  sx={{ mb: 1.5, ...inputSx }}
+                />
+
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Password"
+                  placeholder="Enter Password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  error={!!errors.loginPassword}
+                  helperText={errors.loginPassword}
+                  sx={{ mb: 1.5, ...inputSx }}
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={handleTogglePassword} edge="end" size="small">
+                            {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 1.8,
+                  }}
+                >
+                  <FormControlLabel
+                    control={<Checkbox size="small" sx={{ color: "#211B5A", "&.Mui-checked": { color: "#211B5A" } }} />}
+                    label={
+                      <Typography variant="body2" sx={{ color: "#475569", fontSize: "13px" }}>
+                        Remember Me
+                      </Typography>
+                    }
+                  />
+                  <Link
+                    href="#"
+                    underline="none"
+                    sx={{
+                      fontSize: "13px",
+                      color: "#211B5A",
+                      fontWeight: 500,
+                      "&:hover": { color: "#151944" },
+                    }}
+                  >
+                    Forgot Password?
+                  </Link>
+                </Box>
+
+                <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={handleLogin}
+                    sx={{
+                      backgroundColor: "#211B5A",
+                      color: "#ffffff",
+                      borderRadius: "10px",
+                      fontWeight: 600,
+                      textTransform: "none",
+                      py: 1.2,
+                      fontSize: "14px",
+                      boxShadow: "0 4px 12px rgba(33, 27, 90, 0.2)",
+                      "&:hover": { backgroundColor: "#151944" },
+                    }}
+                  >
+                    Sign In
+                  </Button>
+
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    onClick={() => {
+                      setMode("register");
+                      setErrors({});
+                    }}
+                    sx={{
+                      borderRadius: "10px",
+                      color: "#211B5A",
+                      borderColor: "#211B5A",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      py: 1.2,
+                      fontSize: "14px",
+                      "&:hover": {
+                        borderColor: "#151944",
+                        backgroundColor: "rgba(33, 27, 90, 0.05)",
+                      },
+                    }}
+                  >
+                    Register
+                  </Button>
+                </Box>
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    textAlign: "center",
+                    color: "#94a3b8",
+                    fontSize: "12px",
+                    mb: 1.5,
+                    "&::before, &::after": {
+                      content: '""',
+                      flex: 1,
+                      borderBottom: "1px solid #e2e8f0",
+                    },
+                    "&::before": { marginRight: 2 },
+                    "&::after": { marginLeft: 2 },
+                  }}
+                >
+                  OR
+                </Box>
+
+                <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    sx={{
+                      borderRadius: "10px",
+                      borderColor: "#dbe3ef",
+                      color: "#334155",
+                      textTransform: "none",
+                      py: 1,
+                      fontSize: "12.5px",
+                      fontWeight: 500,
+                      "&:hover": {
+                        borderColor: "#cbd5e1",
+                        backgroundColor: "#f8fafc",
+                      },
+                    }}
+                  >
+                    <MicrosoftIcon /> Microsoft 365
+                  </Button>
+
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    sx={{
+                      borderRadius: "10px",
+                      borderColor: "#dbe3ef",
+                      color: "#334155",
+                      textTransform: "none",
+                      py: 1,
+                      fontSize: "12.5px",
+                      fontWeight: 500,
+                      "&:hover": {
+                        borderColor: "#cbd5e1",
+                        backgroundColor: "#f8fafc",
+                      },
+                    }}
+                  >
+                    <GoogleIcon /> Google Workspace
+                  </Button>
+                </Box>
+
+                {/* MFA security note */}
+                <Box
+                  sx={{
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                    p: 1.5,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.5,
+                    mb: 1.5,
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                    <SecurityIcon sx={{ color: "#211B5A", fontSize: 16 }} />
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ color: "#1e293b", fontWeight: 600, fontSize: "12.5px" }}
+                    >
+                      Multi-Factor Authentication Enabled
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ color: "#64748b", fontSize: "11.5px", lineHeight: 1.4 }}>
+                    Identity verification via secure authenticator app is required post-login.
+                  </Typography>
+                </Box>
+              </Box>
+            ) : (
+              <Box component="form" noValidate sx={{ display: "flex", flexDirection: "column", overflowY: "auto", pr: 0.5, maxH: "55vh", pt: 1 }}>
+                <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="First Name"
+                    placeholder="First Name"
+                    value={regFirstName}
+                    onChange={(e) => setRegFirstName(e.target.value)}
+                    error={!!errors.firstName}
+                    helperText={errors.firstName}
+                    sx={inputSx}
+                  />
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Last Name"
+                    placeholder="Last Name"
+                    value={regLastName}
+                    onChange={(e) => setRegLastName(e.target.value)}
+                    error={!!errors.lastName}
+                    helperText={errors.lastName}
+                    sx={inputSx}
+                  />
+                </Box>
+
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Email Address"
+                  placeholder="name@company.com"
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  error={!!errors.email}
+                  helperText={errors.email}
+                  sx={{ mb: 1.5, ...inputSx }}
+                />
+
+                <FormControl fullWidth size="small" error={!!errors.company} sx={{ mb: 1.5 }}>
+                  <InputLabel id="reg-company-label">Company</InputLabel>
+                  <Select
+                    labelId="reg-company-label"
+                    value={regCompanyCode}
+                    label="Company"
+                    onChange={(e) => {
+                      setRegCompanyCode(e.target.value);
+                      setRegDepartmentId("");
+                    }}
+                    sx={selectSx}
+                  >
+                    {COMPANIES.map((c) => (
+                      <MenuItem key={c.code} value={c.code}>
+                        {c.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.company && <FormHelperText>{errors.company}</FormHelperText>}
+                </FormControl>
+
+                <FormControl fullWidth size="small" error={!!errors.department} sx={{ mb: 1.5 }}>
+                  <InputLabel id="reg-department-label">Department</InputLabel>
+                  <Select
+                    labelId="reg-department-label"
+                    value={regDepartmentId}
+                    label="Department"
+                    onChange={(e) => setRegDepartmentId(Number(e.target.value))}
+                    sx={selectSx}
+                    disabled={!regCompanyCode}
+                  >
+                    {(DEPARTMENTS[regCompanyCode] || []).map((d) => (
+                      <MenuItem key={d.id} value={d.id}>
+                        {d.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.department && (
+                    <FormHelperText>{errors.department}</FormHelperText>
+                  )}
+                </FormControl>
+
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Password"
+                  placeholder="Password"
+                  type={showPassword ? "text" : "password"}
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  error={!!errors.password}
+                  helperText={errors.password}
+                  sx={{ mb: 1.5, ...inputSx }}
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={handleTogglePassword} edge="end" size="small">
+                            {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Confirm Password"
+                  placeholder="Confirm Password"
+                  type={showPassword ? "text" : "password"}
+                  value={regConfirmPassword}
+                  onChange={(e) => setRegConfirmPassword(e.target.value)}
+                  error={!!errors.confirmPassword}
+                  helperText={errors.confirmPassword}
+                  sx={{ mb: 2, ...inputSx }}
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={handleTogglePassword} edge="end" size="small">
+                            {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+
+                <Box sx={{ display: "flex", gap: 1.5 }}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={handleRegister}
+                    sx={{
+                      backgroundColor: "#211B5A",
+                      color: "#ffffff",
+                      borderRadius: "10px",
+                      fontWeight: 600,
+                      textTransform: "none",
+                      py: 1.2,
+                      fontSize: "14px",
+                      boxShadow: "0 4px 12px rgba(33, 27, 90, 0.2)",
+                      "&:hover": { backgroundColor: "#151944" },
+                    }}
+                  >
+                    Submit
+                  </Button>
+
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    onClick={() => {
+                      setMode("login");
+                      setErrors({});
+                    }}
+                    sx={{
+                      borderRadius: "10px",
+                      color: "#211B5A",
+                      borderColor: "#211B5A",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      py: 1.2,
+                      fontSize: "14px",
+                      "&:hover": {
+                        borderColor: "#151944",
+                        backgroundColor: "rgba(33, 27, 90, 0.05)",
+                      },
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </Box>
+              </Box>
+            )}
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 0.5,
+                mt: 1.5,
+              }}
+            >
+              <Typography
+                align="center"
+                sx={{
+                  color: "#94a3b8",
+                  fontSize: "10px",
+                  fontFamily: "'InterVariable', sans-serif",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                }}
+              >
+                Powered By
+              </Typography>
+              <img
+                src={`${servicedeskLogo}?v=3`}
+                alt="Service Desk Pro"
+                style={{ height: 16, opacity: 0.6, objectFit: "contain" }}
+              />
+            </Box>
           </Box>
         </Box>
       </Box>
