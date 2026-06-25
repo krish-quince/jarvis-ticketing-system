@@ -1319,7 +1319,7 @@ const TicketsPage = () => {
                           },
                           "& td": { borderColor: "var(--border)" },
                         }}
-                        onClick={() => navigate(`/tickets/${ticket.ticket_id}`)}
+                        onClick={() => navigate(`/tickets/${ticket.ticket_no}`)}
                       >
                         <TableCell
                           padding="checkbox"
@@ -2153,7 +2153,7 @@ const TicketsPage = () => {
                             }}
                             onClick={() => {
                               handleUserPopoverClose();
-                              navigate(`/tickets/${t.ticket_id}`);
+                              navigate(`/tickets/${t.ticket_no}`);
                             }}
                           >
                             {t.subject}

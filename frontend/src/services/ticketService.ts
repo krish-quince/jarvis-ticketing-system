@@ -21,7 +21,7 @@ export const getTickets = async (
 };
 
 export const getTicketById = async (
-  id: number
+  id: number | string
 ) => {
   const response =
     await API.get(

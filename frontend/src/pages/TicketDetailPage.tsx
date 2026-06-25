@@ -105,7 +105,8 @@ const TicketDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const ticketId = Number(id);
+  const [resolvedTicketId, setResolvedTicketId] = useState<number | null>(null);
+  const ticketId = resolvedTicketId || (isNaN(Number(id)) ? 0 : Number(id));
 
   // States
   const [ticket, setTicket] = useState<any>(null);
@@ -346,8 +347,11 @@ const TicketDetailPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const ticketData = await getTicketById(ticketId);
+      const ticketData = await getTicketById(id!);
       setTicket(ticketData);
+      setResolvedTicketId(ticketData.ticket_id);
+
+      const realTicketId = ticketData.ticket_id;
 
       // Track recently viewed tickets in localStorage
       try {
@@ -368,12 +372,12 @@ const TicketDetailPage = () => {
 
       try {
         const [commentsData, historyData, tagsData] = await Promise.all([
-          getComments(ticketId),
-          getTicketHistory(ticketId).catch((historyError) => {
+          getComments(realTicketId),
+          getTicketHistory(realTicketId).catch((historyError) => {
             console.warn("Unable to load ticket history:", historyError);
             return [];
           }),
-          getFreeformTicketTags(ticketId).catch(() => []),
+          getFreeformTicketTags(realTicketId).catch(() => []),
         ]);
         setComments(commentsData || []);
         setHistory(historyData || []);

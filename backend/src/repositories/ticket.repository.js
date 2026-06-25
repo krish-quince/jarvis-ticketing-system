@@ -321,11 +321,16 @@ export const getTicketById = async (ticketId, companyCode) => {
 
         LEFT JOIN ticket_statuses s
             ON s.status_id = t.status_id
-
-        WHERE
-            t.ticket_id = $1
   `;
-  const params = [ticketId];
+
+  const isNumeric = /^\d+$/.test(String(ticketId));
+  if (isNumeric) {
+    query += ` WHERE t.ticket_id = $1`;
+  } else {
+    query += ` WHERE t.ticket_no = $1`;
+  }
+
+  const params = [isNumeric ? Number(ticketId) : ticketId];
   if (companyCode) {
     query += ` AND t.company_code = $2`;
     params.push(companyCode);

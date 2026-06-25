@@ -142,7 +142,7 @@ const TimeSpentPage = () => {
           underline="hover"
           color="inherit"
           sx={{ cursor: "pointer" }}
-          onClick={() => navigate(`/tickets/${ticketId}`)}
+          onClick={() => navigate(`/tickets/${ticket?.ticket_no || ticketId}`)}
         >
           Ticket {ticket?.ticket_no ? `#${ticket.ticket_no}` : ""}
         </Link>

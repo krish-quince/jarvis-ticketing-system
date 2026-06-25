@@ -426,7 +426,7 @@ const Topbar = () => {
                                             <Avatar
                                                 onClick={() => {
                                                     handleCloseMenu();
-                                                    navigate(`/tickets/${t.ticket_id}`);
+                                                    navigate(`/tickets/${t.ticket_no}`);
                                                 }}
                                                 sx={{
                                                     width: 28,
