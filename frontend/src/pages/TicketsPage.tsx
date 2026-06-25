@@ -1300,7 +1300,7 @@ const TicketsPage = () => {
                               mb: 0.5,
                               cursor: "pointer",
                               transition: "color 0.15s ease",
-                              "&:hover": { color: "#3b82f6" },
+                              "&:hover": { color: "#211b5a" },
                             }}
                           >
                             {ticket.subject}
@@ -1319,13 +1319,13 @@ const TicketsPage = () => {
                               component="span"
                               title="Click here for preview"
                               sx={{
-                                color: "#3b82f6",
+                                color: "#211b5a",
                                 fontSize: 13,
                                 display: "inline-block",
                                 cursor: "pointer",
                                 "&:hover": { textDecoration: "underline" },
                               }}
-                              onClick={(e) => handleUserClick(e, ticket.raised_by_user_code, "left")}
+                              onClick={(e) => handleUserClick(e, ticket.raised_by_user_code || "", "left")}
                             >
                               {ticket.raised_by_user_code}
                             </Box>
@@ -1470,7 +1470,7 @@ const TicketsPage = () => {
                                   sx={{
                                     display: "inline-block",
                                     whiteSpace: "nowrap",
-                                    color: "#3b82f6",
+                                    color: "#211b5a",
                                     cursor: "pointer",
                                     "&:hover": { textDecoration: "underline" },
                                   }}
@@ -2086,7 +2086,7 @@ const TicketsPage = () => {
                               }}
                             />
                             <Typography sx={{ fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                              {new Date(t.created_at || t.date || Date.now()).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" })}
+                              {new Date(t.created_at || (t as any).date || Date.now()).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" })}
                             </Typography>
                           </Box>
                         </Box>

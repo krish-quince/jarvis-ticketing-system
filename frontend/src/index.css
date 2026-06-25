@@ -34,7 +34,7 @@
   color-scheme: light dark;
   color: var(--text);
   background: var(--bg-app);
-  font-synthesis: none;
+  /* font-synthesis: none; */
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -293,4 +293,59 @@ strong, b, th {
 
 .font-semibold {
   font-weight: 600 !important;
+}
+
+/* ── Tiptap Image Resizer Styles ── */
+[data-resize-container] {
+  position: relative;
+  display: inline-flex !important;
+  max-width: 100%;
+}
+
+[data-resize-wrapper] {
+  position: relative;
+  display: inline-block;
+}
+
+[data-resize-handle] {
+  width: 20px;
+  height: 20px;
+  background-color: transparent !important;
+  border: none !important;
+  position: absolute;
+  z-index: 50;
+}
+
+[data-resize-handle="top-left"] {
+  top: -10px !important;
+  left: -10px !important;
+  cursor: nwse-resize;
+}
+
+[data-resize-handle="top-right"] {
+  top: -10px !important;
+  right: -10px !important;
+  cursor: nesw-resize;
+}
+
+[data-resize-handle="bottom-left"] {
+  bottom: -10px !important;
+  left: -10px !important;
+  cursor: nesw-resize;
+}
+
+[data-resize-handle="bottom-right"] {
+  bottom: -10px !important;
+  right: -10px !important;
+  cursor: nwse-resize;
+}
+
+[data-resize-container] img {
+  display: block;
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+[data-resize-container][data-resize-state="resizing"] img {
+  outline: 2px solid #2563eb;
 }

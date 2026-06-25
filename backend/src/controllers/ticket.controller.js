@@ -307,3 +307,26 @@ export const updateTicketDueDate = async (req, res) => {
         return sendTicketError(res, error);
     }
 };
+
+export const deleteAttachment = async (req, res) => {
+    try {
+        const { type, attachmentId } = req.params;
+        const deleted = await ticketService.deleteAttachment(type, Number(attachmentId));
+        if (!deleted) {
+            return res.status(404).json({
+                success: false,
+                message: "Attachment not found",
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Attachment deleted successfully",
+        });
+    } catch (error) {
+        console.error("deleteAttachment controller error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Server error",
+        });
+    }
+};

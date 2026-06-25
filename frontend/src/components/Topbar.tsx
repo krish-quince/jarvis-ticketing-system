@@ -16,11 +16,8 @@ import {
 } from "@mui/material";
 import {
   Search as SearchIcon,
-  Add,
   KeyboardArrowDown,
   ListAltOutlined,
-  MenuBookOutlined,
-  DnsOutlined,
   InsertChartOutlined,
   SettingsOutlined,
 } from "@mui/icons-material";

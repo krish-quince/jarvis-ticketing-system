@@ -35,6 +35,11 @@ import {
   ChevronRight as ChevronRightIcon,
   DownloadOutlined as DownloadIcon,
   InsertDriveFileOutlined as FileIcon,
+  PlayArrow as PlayIcon,
+  Pause as PauseIcon,
+  CloudDownloadOutlined as CloudDownloadIcon,
+  ImportExport as SortIcon,
+  DeleteOutlined as DeleteIcon,
 } from "@mui/icons-material";
 import RichTextEditor from "../components/RichTextEditor";
 import {
@@ -47,6 +52,7 @@ import {
   getComments,
   getTicketHistory,
   createComment,
+  deleteAttachment,
 } from "../services/ticketService";
 import { getUsers } from "../services/userService";
 import {
@@ -132,6 +138,8 @@ const TicketDetailPage = () => {
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const [totalTimeSeconds, setTotalTimeSeconds] = useState(0);
+  const [togglingTimer, setTogglingTimer] = useState(false);
+  const [fileSortOrder, setFileSortOrder] = useState<"asc" | "desc">("desc");
   const timerSecondsRef = useRef(0);
   const currentEntryIdRef = useRef<number | null>(null);
   const timerStoppedRef = useRef(false);
@@ -288,6 +296,41 @@ const TicketDetailPage = () => {
       m.toString().padStart(2, "0"),
       s.toString().padStart(2, "0"),
     ].join(":");
+  };
+
+  const handleToggleTimer = async () => {
+    if (togglingTimer || !ticket) return;
+    setTogglingTimer(true);
+    try {
+      if (timerRunning) {
+        // Pause tracking
+        const entryId = currentEntryIdRef.current;
+        const seconds = timerSecondsRef.current;
+        if (entryId && !timerStoppedRef.current) {
+          timerStoppedRef.current = true;
+          await stopTimeTracking(ticketId, entryId, seconds);
+          setTotalTimeSeconds((prev) => prev + seconds);
+          setTimerSeconds(0);
+          timerSecondsRef.current = 0;
+          currentEntryIdRef.current = null;
+          setTimerRunning(false);
+        }
+      } else {
+        // Start tracking
+        const entry = await startTimeTracking(ticketId, ticket.status_name);
+        if (entry) {
+          currentEntryIdRef.current = entry.entry_id;
+          timerStoppedRef.current = false;
+          setTimerSeconds(0);
+          timerSecondsRef.current = 0;
+          setTimerRunning(true);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to toggle timer:", err);
+    } finally {
+      setTogglingTimer(false);
+    }
   };
 
   const fetchData = async () => {
@@ -452,8 +495,9 @@ const TicketDetailPage = () => {
     resolveTicket = false,
   }: { resolveTicket?: boolean } = {}) => {
     const plainText = getReplyPlainText();
+    const hasImage = replyHtml.includes("<img");
 
-    if (!plainText && replyAttachments.length === 0) return;
+    if (!plainText && !hasImage && replyAttachments.length === 0) return;
 
     try {
       setSubmittingComment(true);
@@ -1053,6 +1097,149 @@ const TicketDetailPage = () => {
       ),
     );
   };
+
+  const getFileExtension = (filename: string) => {
+    return filename.slice(((filename.lastIndexOf(".") - 1) >>> 0) + 2).toLowerCase();
+  };
+
+  const renderFileIcon = (file: any) => {
+    if (isImageAttachment(file)) {
+      return (
+        <Box
+          component="img"
+          src={getAttachmentUrl(file)}
+          alt={file.file_name}
+          onClick={() => openAttachmentPreview(file.gallery_key || `ticket-${file.attachment_id}`)}
+          sx={{
+            width: 64,
+            height: 40,
+            objectFit: "cover",
+            borderRadius: "4px",
+            cursor: "pointer",
+            border: "1px solid #eef2f6",
+          }}
+        />
+      );
+    }
+
+    const ext = getFileExtension(file.file_name || "");
+    let bgColor = "#f5f5f5";
+    let textColor = "#757575";
+    let letter = "F";
+
+    if (["xlsx", "xls", "csv"].includes(ext)) {
+      bgColor = "#E2F0D9";
+      textColor = "#385723";
+      letter = "X";
+    } else if (["pptx", "ppt"].includes(ext)) {
+      bgColor = "#FCE4D6";
+      textColor = "#C65911";
+      letter = "P";
+    } else if (["docx", "doc"].includes(ext)) {
+      bgColor = "#D9E1F2";
+      textColor = "#1F4E79";
+      letter = "W";
+    } else if (["pdf"].includes(ext)) {
+      bgColor = "#FCE4D6";
+      textColor = "#C00000";
+      letter = "PDF";
+    } else if (["txt"].includes(ext)) {
+      bgColor = "#EDEDED";
+      textColor = "#595959";
+      letter = "T";
+    }
+
+    return (
+      <Box
+        sx={{
+          width: 64,
+          height: 40,
+          backgroundColor: bgColor,
+          borderRadius: "4px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontWeight: "bold",
+          fontSize: letter.length > 1 ? 10 : 14,
+          color: textColor,
+          border: "1px solid #eef2f6",
+        }}
+      >
+        {letter}
+      </Box>
+    );
+  };
+
+  const formatFileSize = (bytes?: number) => {
+    if (bytes === undefined || bytes === null || Number.isNaN(bytes)) return "";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1048576) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / 1048576).toFixed(1)} MB`;
+  };
+
+  const formatUploadDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return date.toLocaleString("en-US", {
+      month: "numeric",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    }).replace(",", "");
+  };
+
+  const allFiles = [
+    ...(ticket?.attachments || []).map((att: any) => ({
+      ...att,
+      type: "ticket",
+      gallery_key: `ticket-${att.attachment_id}`,
+    })),
+    ...comments.flatMap((comment: any) =>
+      (comment.attachments || []).map((att: any) => ({
+        ...att,
+        type: "comment",
+        gallery_key: `comment-${att.attachment_id}`,
+      }))
+    ),
+  ].sort((a, b) => {
+    const timeA = new Date(a.uploaded_at || 0).getTime();
+    const timeB = new Date(b.uploaded_at || 0).getTime();
+    return fileSortOrder === "asc" ? timeA - timeB : timeB - timeA;
+  });
+
+  const handleDownloadAllFiles = () => {
+    allFiles.forEach((file) => {
+      const link = document.createElement("a");
+      link.href = getAttachmentUrl(file);
+      link.setAttribute("download", file.file_name);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+  };
+
+  const handleDeleteAttachment = async (type: string, id: number) => {
+    if (!window.confirm("Are you sure you want to delete this attachment?")) return;
+    try {
+      await deleteAttachment(type, id);
+      setToast({
+        open: true,
+        message: "Attachment deleted successfully",
+        severity: "success",
+      });
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      setToast({
+        open: true,
+        message: "Failed to delete attachment",
+        severity: "error",
+      });
+    }
+  };
   const categoryDisplay = ticket.subcategory_name
     ? `${ticket.category_name} / ${ticket.subcategory_name}`
     : ticket.category_name || "Uncategorized";
@@ -1109,7 +1296,7 @@ const TicketDetailPage = () => {
     },
   };
   const canSubmitReply =
-    (getReplyPlainText().length > 0 || replyAttachments.length > 0) &&
+    (getReplyPlainText().length > 0 || replyHtml.includes("<img") || replyAttachments.length > 0) &&
     !submittingComment;
 
   return (
@@ -2606,7 +2793,15 @@ const TicketDetailPage = () => {
                   variant="body2"
                   sx={{ fontWeight: 600, color: "var(--text-h)", flex: 1 }}
                 >
-                  {new Date(ticket.update_timestamp).toLocaleDateString()}
+                  {ticket.update_timestamp
+                    ? new Date(ticket.update_timestamp).toLocaleString("en-US", {
+                        month: "numeric",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })
+                    : ""}
                 </Typography>
               </Box>
 
@@ -2635,7 +2830,13 @@ const TicketDetailPage = () => {
                   sx={{ fontWeight: 600, color: "var(--text-h)", flex: 1 }}
                 >
                   {ticket.due_date
-                    ? new Date(ticket.due_date).toLocaleDateString()
+                    ? new Date(ticket.due_date).toLocaleString("en-US", {
+                        month: "numeric",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })
                     : ""}
                 </Typography>
               </Box>
@@ -2685,24 +2886,42 @@ const TicketDetailPage = () => {
                   )}
                   <Typography
                     variant="body2"
+                    onClick={() => navigate(`/tickets/${ticketId}/time-spent`)}
                     sx={{
                       fontWeight: 600,
                       color: timerRunning ? "#211b5a" : "var(--text-secondary)",
-                      fontFamily: "'Roboto Mono', monospace",
                       fontSize: 13,
+                      cursor: "pointer",
+                      "&:hover": {
+                  
+                        color: "#211b5a",
+                      },
                     }}
                   >
                     {formatTime(totalTimeSeconds + timerSeconds)}
                   </Typography>
-                  <Tooltip title="View time spent details">
+                  <Tooltip title={timerRunning ? "Pause tracking" : "Start tracking"}>
                     <IconButton
                       size="small"
-                      sx={{ p: 0, color: "var(--text-secondary)", ml: 0.5 }}
-                      onClick={() => navigate(`/tickets/${ticketId}/time-spent`)}
+                      disabled={togglingTimer}
+                      onClick={handleToggleTimer}
+                      sx={{
+                        p: 0,
+                        color: timerRunning ? "#f44336" : "#4caf50",
+                        ml: 0.5,
+                        "&:hover": {
+                          color: timerRunning ? "#d32f2f" : "#388e3c",
+                        },
+                      }}
                     >
-                      <AccessTimeIcon sx={{ fontSize: 15 }} />
+                      {timerRunning ? (
+                        <PauseIcon sx={{ fontSize: 16 }} />
+                      ) : (
+                        <PlayIcon sx={{ fontSize: 16 }} />
+                      )}
                     </IconButton>
                   </Tooltip>
+                  
                 </Box>
               </Box>
 
@@ -2729,7 +2948,17 @@ const TicketDetailPage = () => {
                 <Typography
                   variant="body2"
                   sx={{ fontWeight: 600, color: "var(--text-h)", flex: 1 }}
-                />
+                >
+                  {ticket.created_at
+                    ? new Date(ticket.created_at).toLocaleString("en-US", {
+                        month: "numeric",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })
+                    : ""}
+                </Typography>
               </Box>
 
               {/* Close Date */}
@@ -2755,7 +2984,17 @@ const TicketDetailPage = () => {
                 <Typography
                   variant="body2"
                   sx={{ fontWeight: 600, color: "var(--text-h)", flex: 1 }}
-                />
+                >
+                  {ticket.resolution_date
+                    ? new Date(ticket.resolution_date).toLocaleString("en-US", {
+                        month: "numeric",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })
+                    : ""}
+                </Typography>
               </Box>
 
               {/* Recurring */}
@@ -2849,6 +3088,145 @@ const TicketDetailPage = () => {
                   type an asset...
                 </Typography>
               </Box>
+            </Box>
+          </Card>
+
+          {/* FILES Card */}
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: "var(--shadow)",
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--bg-card)",
+              color: "var(--text)",
+              p: 3,
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+            }}
+          >
+            {/* Header */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  color: "var(--text-sub)",
+                }}
+              >
+                FILES
+              </Typography>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Tooltip title="Download all files">
+                  <IconButton
+                    size="small"
+                    onClick={handleDownloadAllFiles}
+                    disabled={allFiles.length === 0}
+                    sx={{ color: "var(--text-secondary)" }}
+                  >
+                    <CloudDownloadIcon sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={`Sort by upload date: ${fileSortOrder === "asc" ? "Ascending" : "Descending"}`}>
+                  <IconButton
+                    size="small"
+                    onClick={() => setFileSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))}
+                    sx={{ color: "var(--text-secondary)" }}
+                  >
+                    <SortIcon sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+
+            {/* List */}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                mt: 1,
+              }}
+            >
+              {allFiles.length === 0 ? (
+                <Typography variant="body2" sx={{ color: "var(--text-secondary)", fontStyle: "italic" }}>
+                  No files uploaded.
+                </Typography>
+              ) : (
+                allFiles.map((file) => {
+                  const fileSizeStr = file.file_size
+                    ? `, ${formatFileSize(Number(file.file_size))}`
+                    : "";
+                  return (
+                    <Box
+                      key={file.gallery_key}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        py: 1,
+                        "&:not(:last-child)": {
+                          borderBottom: "1px solid var(--border)",
+                          pb: 2,
+                        },
+                      }}
+                    >
+                      {/* Left thumbnail/icon */}
+                      {renderFileIcon(file)}
+
+                      {/* File Details */}
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          component="a"
+                          href={getAttachmentUrl(file)}
+                          download={file.file_name}
+                          variant="body2"
+                          sx={{
+                            fontWeight: 600,
+                            color: "var(--primary-link, #211b5a)",
+                            textDecoration: "none",
+                            wordBreak: "break-all",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            "&:hover": {
+                              textDecoration: "underline",
+                            },
+                          }}
+                        >
+                          {file.file_name}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "var(--text-secondary)", mt: 0.5, display: "block" }}
+                        >
+                          {`${formatUploadDate(file.uploaded_at)}${fileSizeStr}`}
+                        </Typography>
+                      </Box>
+
+                      {/* Delete icon */}
+                      <Tooltip title="Delete file">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteAttachment(file.type, file.attachment_id)}
+                          sx={{ color: "var(--text-secondary)", "&:hover": { color: "error.main" } }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  );
+                })
+              )}
             </Box>
           </Card>
         </Grid>

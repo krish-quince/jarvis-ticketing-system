@@ -279,7 +279,9 @@ const NewTicketPage = () => {
       .replace(/&nbsp;/g, "")
       .trim();
 
-    if (!plainText) {
+    const hasImage = description.includes("<img");
+
+    if (!plainText && !hasImage) {
       setToast({ open: true, severity: "error", message: "Description is required" });
       return;
     }

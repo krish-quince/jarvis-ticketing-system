@@ -163,3 +163,8 @@ export const allocateTicket = async (
 
   return response.data;
 };
+
+export const deleteAttachment = async (type: string, attachmentId: number) => {
+  const response = await API.delete(`/tickets/attachments/${type}/${attachmentId}`);
+  return response.data;
+};

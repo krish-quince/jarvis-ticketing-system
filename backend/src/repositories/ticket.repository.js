@@ -562,3 +562,16 @@ export const updateTicketDueDate = async (
 
   return result.rows[0];
 };
+
+export const deleteAttachment = async (type, attachmentId) => {
+  let query = "";
+  if (type === "ticket") {
+    query = "DELETE FROM ticket_attachments WHERE attachment_id = $1 RETURNING *";
+  } else if (type === "comment") {
+    query = "DELETE FROM comment_attachments WHERE attachment_id = $1 RETURNING *";
+  } else {
+    throw new Error("Invalid attachment type");
+  }
+  const result = await pool.query(query, [attachmentId]);
+  return result.rows[0];
+};

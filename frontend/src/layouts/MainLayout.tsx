@@ -87,23 +87,18 @@ const MainLayout = () => {
 
   // Dark mode palette
   const darkBg = "#0f1117";
-  const darkCard = "#161b27";
   const darkBorder = "rgba(255,255,255,0.08)";
   const darkText = "rgba(255,255,255,0.88)";
   const darkSubtext = "rgba(255,255,255,0.45)";
 
   const lightBg = "#f8fafc";
-  const lightCard = "#ffffff";
   const lightBorder = "rgba(0,0,0,0.08)";
   const lightText = "#111827";
 
   const bg = isDark ? darkBg : lightBg;
-  const cardBg = isDark ? darkCard : lightCard;
   const border = isDark ? darkBorder : lightBorder;
   const text = isDark ? darkText : lightText;
 
-  // Pill: inactive styling
-  const pillInactiveBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(33,27,90,0.06)";
   const pillInactiveColor = isDark ? darkText : "#374151";
   const pillCountInactiveBg = isDark ? "rgba(255,255,255,0.1)" : "rgba(33,27,90,0.1)";
   const pillCountInactiveColor = isDark ? darkText : "#374151";
@@ -812,7 +807,7 @@ const MainLayout = () => {
           py: 2.5,
           px: { xs: 3, md: 5 },
           borderTop: `1px solid ${border}`,
-          backgroundColor: cardBg,
+          backgroundColor: "#f8fafc",
           display: "flex",
           justifyContent: "flex-start",
           alignItems: "center",

@@ -48,11 +48,35 @@ const RichTextToolbar = ({ editor }: RichTextToolbarProps) => {
   if (!editor) return null;
 
   const insertLink = () => {
-    const url = prompt("Enter URL");
+    const url = prompt("Enter a URL:", "http://");
 
-    if (!url) return;
+    if (url === null) return;
 
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    if (url === "" || url === "http://") {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+
+    const { from, to } = editor.state.selection;
+    const isNoSelection = from === to;
+
+    if (isNoSelection) {
+      editor
+        .chain()
+        .focus()
+        .insertContent(url)
+        .setTextSelection({ from, to: from + url.length })
+        .setLink({ href: url })
+        .setTextSelection(from + url.length)
+        .run();
+    } else {
+      editor
+        .chain()
+        .focus()
+        .extendMarkRange("link")
+        .setLink({ href: url })
+        .run();
+    }
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,19 +121,26 @@ const RichTextToolbar = ({ editor }: RichTextToolbarProps) => {
       {/* Bold */}
 
       <Tooltip title="Bold">
-  <IconButton
-    size="small"
-    onClick={() =>
-      editor
-        .chain()
-        .focus()
-        .toggleBold()
-        .run()
-    }
-  >
-    <FormatBold />
-  </IconButton>
-</Tooltip>
+        <IconButton
+          size="small"
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .toggleBold()
+              .run()
+          }
+          color={editor.isActive("bold") ? "primary" : "default"}
+          sx={{
+            backgroundColor: editor.isActive("bold") ? "rgba(33, 27, 90, 0.08)" : "transparent",
+            "&:hover": {
+              backgroundColor: editor.isActive("bold") ? "rgba(33, 27, 90, 0.12)" : "rgba(0, 0, 0, 0.04)",
+            }
+          }}
+        >
+          <FormatBold />
+        </IconButton>
+      </Tooltip>
 
       {/* Italic */}
 
@@ -123,6 +154,13 @@ const RichTextToolbar = ({ editor }: RichTextToolbarProps) => {
               .toggleItalic()
               .run()
           }
+          color={editor.isActive("italic") ? "primary" : "default"}
+          sx={{
+            backgroundColor: editor.isActive("italic") ? "rgba(33, 27, 90, 0.08)" : "transparent",
+            "&:hover": {
+              backgroundColor: editor.isActive("italic") ? "rgba(33, 27, 90, 0.12)" : "rgba(0, 0, 0, 0.04)",
+            }
+          }}
         >
           <FormatItalic />
         </IconButton>
@@ -140,6 +178,13 @@ const RichTextToolbar = ({ editor }: RichTextToolbarProps) => {
               .toggleUnderline()
               .run()
           }
+          color={editor.isActive("underline") ? "primary" : "default"}
+          sx={{
+            backgroundColor: editor.isActive("underline") ? "rgba(33, 27, 90, 0.08)" : "transparent",
+            "&:hover": {
+              backgroundColor: editor.isActive("underline") ? "rgba(33, 27, 90, 0.12)" : "rgba(0, 0, 0, 0.04)",
+            }
+          }}
         >
           <FormatUnderlined />
         </IconButton>
@@ -307,43 +352,70 @@ const RichTextToolbar = ({ editor }: RichTextToolbarProps) => {
         orientation="vertical"
         flexItem
       />
-     {/* Bullet List */}
+      {/* Bullet List */}
 
-<IconButton
-  size="small"
-  onClick={() =>
-    editor
-      .chain()
-      .focus()
-      .toggleBulletList()
-      .run()
-  }
->
-  <FormatListBulleted />
-</IconButton>
+      <Tooltip title="Bullet List">
+        <IconButton
+          size="small"
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .toggleBulletList()
+              .run()
+          }
+          color={editor.isActive("bulletList") ? "primary" : "default"}
+          sx={{
+            backgroundColor: editor.isActive("bulletList") ? "rgba(33, 27, 90, 0.08)" : "transparent",
+            "&:hover": {
+              backgroundColor: editor.isActive("bulletList") ? "rgba(33, 27, 90, 0.12)" : "rgba(0, 0, 0, 0.04)",
+            }
+          }}
+        >
+          <FormatListBulleted />
+        </IconButton>
+      </Tooltip>
 
-{/* Numbered List */}
+      {/* Numbered List */}
 
-<IconButton
-  size="small"
-  onClick={() =>
-    editor
-      .chain()
-      .focus()
-      .toggleOrderedList()
-      .run()
-  }
->
-  <FormatListNumbered />
-</IconButton>
+      <Tooltip title="Numbered List">
+        <IconButton
+          size="small"
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .toggleOrderedList()
+              .run()
+          }
+          color={editor.isActive("orderedList") ? "primary" : "default"}
+          sx={{
+            backgroundColor: editor.isActive("orderedList") ? "rgba(33, 27, 90, 0.08)" : "transparent",
+            "&:hover": {
+              backgroundColor: editor.isActive("orderedList") ? "rgba(33, 27, 90, 0.12)" : "rgba(0, 0, 0, 0.04)",
+            }
+          }}
+        >
+          <FormatListNumbered />
+        </IconButton>
+      </Tooltip>
       {/* Link */}
 
-      <IconButton
-        size="small"
-        onClick={insertLink}
-      >
-        <LinkIcon />
-      </IconButton>
+      <Tooltip title="Link">
+        <IconButton
+          size="small"
+          onClick={insertLink}
+          color={editor.isActive("link") ? "primary" : "default"}
+          sx={{
+            backgroundColor: editor.isActive("link") ? "rgba(33, 27, 90, 0.08)" : "transparent",
+            "&:hover": {
+              backgroundColor: editor.isActive("link") ? "rgba(33, 27, 90, 0.12)" : "rgba(0, 0, 0, 0.04)",
+            }
+          }}
+        >
+          <LinkIcon />
+        </IconButton>
+      </Tooltip>
 
       {/* Image */}
 
@@ -366,18 +438,27 @@ const RichTextToolbar = ({ editor }: RichTextToolbarProps) => {
 
       {/* Checkbox */}
 
-      <IconButton
-        size="small"
-        onClick={() =>
-          editor
-            .chain()
-            .focus()
-            .toggleTaskList()
-            .run()
-        }
-      >
-        <CheckBox />
-      </IconButton>
+      <Tooltip title="Task List">
+        <IconButton
+          size="small"
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .toggleTaskList()
+              .run()
+          }
+          color={editor.isActive("taskList") ? "primary" : "default"}
+          sx={{
+            backgroundColor: editor.isActive("taskList") ? "rgba(33, 27, 90, 0.08)" : "transparent",
+            "&:hover": {
+              backgroundColor: editor.isActive("taskList") ? "rgba(33, 27, 90, 0.12)" : "rgba(0, 0, 0, 0.04)",
+            }
+          }}
+        >
+          <CheckBox />
+        </IconButton>
+      </Tooltip>
 
       {/* Color */}
 

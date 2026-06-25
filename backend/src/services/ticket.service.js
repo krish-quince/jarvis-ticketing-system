@@ -888,3 +888,7 @@ export const updateTicketDueDate = async (ticketId, dueDate, user) => {
     client.release();
   }
 };
+
+export const deleteAttachment = async (type, attachmentId) => {
+  return await ticketRepository.deleteAttachment(type, attachmentId);
+};
