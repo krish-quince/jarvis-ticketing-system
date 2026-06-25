@@ -18,6 +18,16 @@ const sendTicketError = (res, error) => {
         });
     }
 
+    if (
+        error.message === "Access denied to this ticket." ||
+        error.message.startsWith("Access denied")
+    ) {
+        return res.status(403).json({
+            success: false,
+            message: error.message,
+        });
+    }
+
     if(error.message.endsWith("is required.")) {
         return res.status(400).json({
             success: false,
@@ -118,11 +128,7 @@ export const getTicketById = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-
-        return res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+        return sendTicketError(res, error);
     }
 };
 

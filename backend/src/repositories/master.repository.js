@@ -466,33 +466,6 @@ export const getAssignableUsers = async (
   },
   companyCode,
 ) => {
-  const departmentIds = new Set();
-
-  if (departmentId) {
-    departmentIds.add(Number(departmentId));
-  }
-
-  const addRoutingDepartment = async (assignedUserCode) => {
-    if (!assignedUserCode) return;
-
-    const departmentResult = await pool.query(
-      `
-      SELECT department_id
-      FROM users
-      WHERE user_code = $1
-      AND company_code = $2
-      AND is_active = true
-      `,
-      [assignedUserCode, companyCode],
-    );
-
-    const routingDepartmentId = departmentResult.rows[0]?.department_id;
-
-    if (routingDepartmentId) {
-      departmentIds.add(Number(routingDepartmentId));
-    }
-  };
-
   if (subcategoryId) {
     const subCategoryResult = await pool.query(
       `
@@ -505,20 +478,36 @@ export const getAssignableUsers = async (
       [subcategoryId, companyCode],
     );
 
-    if (subCategoryResult.rows.length === 0) {
-      return [];
-    }
-
-    const routingUser = subCategoryResult.rows[0].assigned_user_code;
-    if (routingUser) {
-      const usersList = routingUser.split("|").map(u => u.trim()).filter(Boolean);
-      for (const u of usersList) {
-        await addRoutingDepartment(u);
+    if (subCategoryResult.rows.length > 0) {
+      const routingUser = subCategoryResult.rows[0].assigned_user_code;
+      if (routingUser) {
+        const usersList = routingUser.split("|").map(u => u.trim()).filter(Boolean);
+        if (usersList.length > 0) {
+          const usersResult = await pool.query(
+            `
+            SELECT user_code, first_name, last_name
+            FROM users
+            WHERE user_code = ANY($1::varchar[])
+            AND company_code = $2
+            AND is_active = true
+            ORDER BY first_name
+            `,
+            [usersList, companyCode],
+          );
+          return usersResult.rows;
+        }
       }
     }
+    return [];
   }
 
-  if (!subcategoryId && categoryId) {
+  const departmentIds = new Set();
+
+  if (departmentId) {
+    departmentIds.add(Number(departmentId));
+  }
+
+  if (categoryId) {
     const categoryRoutingResult = await pool.query(
       `
       SELECT DISTINCT u.department_id

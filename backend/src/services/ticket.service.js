@@ -89,6 +89,8 @@ export const createTicket = async (ticketData, user, files = []) => {
     throw new Error("Category not found.");
   }
 
+  let allocated_to_user_code = null;
+
   if (subcategory_id) {
     const subCategory =
       await masterRepository.getSubCategoryById(subcategory_id, user.companyCode);
@@ -101,33 +103,28 @@ export const createTicket = async (ticketData, user, files = []) => {
       throw new Error("Subcategory does not belong to selected category.");
     }
 
-    // Manual assignment wins
-    if (!assigned_to_user_code) {
-      const routingUser = subCategory.assigned_user_code;
+    const routingUser = subCategory.assigned_user_code;
+    if (routingUser) {
+      const routingUsers = routingUser
+        .split("|")
+        .map((u) => u.trim())
+        .filter(Boolean);
 
-      if (routingUser) {
-        const routingUsers = routingUser
-          .split("|")
-          .map((u) => u.trim())
-          .filter(Boolean);
-
-        if (routingUsers.length > 0) {
+      if (routingUsers.length > 0) {
+        // Automatic assignment if no user is manually assigned
+        if (!assigned_to_user_code) {
           const randomIndex = Math.floor(Math.random() * routingUsers.length);
           assigned_to_user_code = routingUsers[randomIndex];
+        }
 
-          // Allocate to all of them (excluding the assigned one)
-          const allocatedList = routingUsers.filter(
-            (code) => code !== assigned_to_user_code,
-          );
-          if (allocatedList.length > 0) {
-            ticketData.allocated_to_user_code = allocatedList.join("|");
-          }
+        // Allocate all routing users of the subcategory
+        const allocatedList = routingUsers;
+        if (allocatedList.length > 0) {
+          allocated_to_user_code = allocatedList.join("|");
         }
       }
     }
   }
-
-  let allocated_to_user_code = ticketData.allocated_to_user_code || null;
 
   // Let's validate allocated users if provided
   if (allocated_to_user_code) {
