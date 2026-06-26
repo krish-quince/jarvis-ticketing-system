@@ -297,7 +297,7 @@ const LoginPage = () => {
             color: "#ffffff",
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
+            justifyContent: "flex-start",
             alignItems: "flex-start",
             overflow: "hidden",
             position: "relative",
@@ -339,7 +339,8 @@ const LoginPage = () => {
               position: "relative",
               zIndex: 1,
               px: { xs: 4, md: 7 },
-              py: { xs: 4, md: 0 },
+              pt: { xs: 4, md: 7 },
+              pb: { xs: 4, md: 0 },
               maxWidth: "480px",
             }}
           >
