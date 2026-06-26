@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -41,7 +41,6 @@ import {
   Pause as PauseIcon,
   CloudDownloadOutlined as CloudDownloadIcon,
   ImportExport as SortIcon,
-  DeleteOutlined as DeleteIcon,
   SearchOutlined as SearchIcon,
   Visibility as VisibilityIcon,
   PushPin,
@@ -64,7 +63,6 @@ import {
   getComments,
   getTicketHistory,
   createComment,
-  deleteAttachment,
   reopenTicket,
   updateTicketDueDate,
   toggleTicketPin,
@@ -436,16 +434,17 @@ const TicketDetailPage = () => {
         setFreeformTags([]);
       }
 
+      const companyCodeForMasters = ticketData.company_code;
       await Promise.all([
-        getUsers()
+        getUsers(companyCodeForMasters)
           .then((usersData) => setUsers(usersData || []))
           .catch((usersError) => {
             console.warn("Unable to load users for history labels:", usersError);
             setUsers([]);
           }),
-        loadCategoryGroups(),
-        loadStatuses(),
-        loadPriorities(),
+        loadCategoryGroups(companyCodeForMasters),
+        loadStatuses(companyCodeForMasters),
+        loadPriorities(companyCodeForMasters),
       ]);
     } catch (error: any) {
       console.error(error);
@@ -470,16 +469,18 @@ const TicketDetailPage = () => {
     }
   };
 
-  const loadCategoryGroups = async () => {
+  const loadCategoryGroups = async (compCode?: string) => {
+    const code = compCode || ticket?.company_code;
+    if (!code) return;
     if (categoryGroups.length > 0 || loadingCategories) return;
 
     try {
       setLoadingCategories(true);
-      const categories = await getCategories();
+      const categories = await getCategories(code);
       const groups = await Promise.all(
         categories.map(async (category: any) => {
           try {
-            const subcategories = await getSubCategories(category.category_id);
+            const subcategories = await getSubCategories(category.category_id, code);
             return {
               category_id: category.category_id,
               category_name: category.category_name,
@@ -508,12 +509,14 @@ const TicketDetailPage = () => {
     }
   };
 
-  const loadStatuses = async () => {
+  const loadStatuses = async (compCode?: string) => {
+    const code = compCode || ticket?.company_code;
+    if (!code) return fallbackStatusOptions;
     if (statusOptions.length > 0) return statusOptions;
 
     try {
       setLoadingStatuses(true);
-      const statuses = await getStatuses();
+      const statuses = await getStatuses(code);
       const nextStatuses =
         Array.isArray(statuses) && statuses.length > 0
           ? statuses
@@ -529,11 +532,13 @@ const TicketDetailPage = () => {
     }
   };
 
-  const loadPriorities = async () => {
+  const loadPriorities = async (compCode?: string) => {
+    const code = compCode || ticket?.company_code;
+    if (!code) return [];
     if (priorityMasterOptions.length > 0) return priorityMasterOptions;
 
     try {
-      const priorities = await getPriorities();
+      const priorities = await getPriorities(code);
       const nextPriorities = Array.isArray(priorities) ? priorities : [];
       setPriorityMasterOptions(nextPriorities);
       return nextPriorities;
@@ -1002,7 +1007,7 @@ const TicketDetailPage = () => {
     Low: "#28A745",
   };
 
-  const isClosed = ticket.status_name === "Closed";
+  const isClosed = !!ticket.is_closed_status || ticket.status_name?.toLowerCase() === "closed" || ticket.status_name?.toLowerCase() === "close";
   const canEditRightCard = canManageTicketMetadata(ticket);
   const availableStatusOptions =
     statusOptions.length > 0 ? statusOptions : fallbackStatusOptions;
@@ -1125,13 +1130,13 @@ const TicketDetailPage = () => {
   const getSelectedCategoryLabel = () => {
     if (!selectedCategoryValue) return "Select category";
     const parts = selectedCategoryValue.split(":");
-    const catId = Number(parts[0]);
-    const subId = parts[1] ? Number(parts[1]) : null;
+    const catId = parts[0];
+    const subId = parts[1] || "";
 
-    const cat = categoryGroups.find((g) => g.category_id === catId);
+    const cat = categoryGroups.find((g) => String(g.category_id) === String(catId));
     if (!cat) return "Select category";
-    if (subId) {
-      const sub = cat.subcategories.find((s) => s.subcategory_id === subId);
+    if (subId && subId !== "") {
+      const sub = cat.subcategories.find((s) => String(s.subcategory_id) === String(subId));
       return sub ? sub.subcategory_name : cat.category_name;
     }
     return cat.category_name;
@@ -1415,25 +1420,25 @@ const allFiles = [
     });
   };
 
-  const handleDeleteAttachment = async (type: string, id: number) => {
-    if (!window.confirm("Are you sure you want to delete this attachment?")) return;
-    try {
-      await deleteAttachment(type, id);
-      setToast({
-        open: true,
-        message: "Attachment deleted successfully",
-        severity: "success",
-      });
-      await fetchData();
-    } catch (err) {
-      console.error(err);
-      setToast({
-        open: true,
-        message: "Failed to delete attachment",
-        severity: "error",
-      });
-    }
-  };
+  // const handleDeleteAttachment = async (type: string, id: number) => {
+  //   if (!window.confirm("Are you sure you want to delete this attachment?")) return;
+  //   try {
+  //     await deleteAttachment(type, id);
+  //     setToast({
+  //       open: true,
+  //       message: "Attachment deleted successfully",
+  //       severity: "success",
+  //     });
+  //     await fetchData();
+  //   } catch (err) {
+  //     console.error(err);
+  //     setToast({
+  //       open: true,
+  //       message: "Failed to delete attachment",
+  //       severity: "error",
+  //     });
+  //   }
+  // };
   
 const scrollToAttachment = (file: any) => {
   if (file.type === "ticket") {
@@ -2911,29 +2916,27 @@ const scrollToAttachment = (file: any) => {
                         >
                           Select category
                         </Box>
-                        {categoryGroups.map((category) => {
-                          const hasSub = category.subcategories && category.subcategories.length > 0;
-                          return (
-                            <Box key={category.category_id}>
+                         {categoryGroups.map((category) => {
+                           return (
+                             <Box key={category.category_id}>
                               <Box
                                 onClick={() => {
-                                  if (!hasSub) {
-                                    setSelectedCategoryValue(`${category.category_id}:`);
-                                    setCategoryAnchorEl(null);
-                                  }
+                                  setSelectedCategoryValue(`${category.category_id}:`);
+                                  setCategoryAnchorEl(null);
                                 }}
                                 sx={{
                                   px: 2,
                                   py: 0.85,
                                   fontWeight: 600,
                                   fontSize: 13.5,
-                                  color: hasSub ? "var(--text-secondary)" : "var(--text-h)",
-                                  cursor: hasSub ? "default" : "pointer",
+                                  color: selectedCategoryValue === `${category.category_id}:` ? "#635BFF" : "var(--text-h)",
+                                  cursor: "pointer",
                                   userSelect: "none",
                                   display: "flex",
                                   alignItems: "center",
+                                  backgroundColor: selectedCategoryValue === `${category.category_id}:` ? "rgba(99, 91, 255, 0.08)" : "transparent",
                                   "&:hover": {
-                                    backgroundColor: hasSub ? "transparent" : "var(--bg-row-hover)",
+                                    backgroundColor: "var(--bg-row-hover)",
                                   },
                                 }}
                               >

@@ -103,8 +103,7 @@ export const getCommentsByTicketId = async (
 ) => {
     await ensureCommentAttachmentsTable();
 
-    const result = await pool.query(
-        `
+    let query = `
         SELECT
             tc.*,
             COALESCE(
@@ -125,13 +124,18 @@ export const getCommentsByTicketId = async (
         LEFT JOIN comment_attachments ca
             ON ca.comment_id = tc.comment_id
         WHERE tc.ticket_id = $1
-        AND t.company_code = $2
+    `;
+    const params = [ticketId];
+    if (companyCode) {
+        query += ` AND t.company_code = $2`;
+        params.push(companyCode);
+    }
+    query += `
         GROUP BY tc.comment_id
         ORDER BY tc.created_at ASC
-        `,
-        [ticketId, companyCode]
-    );
+    `;
 
+    const result = await pool.query(query, params);
     return result.rows;
 };
 
@@ -139,19 +143,22 @@ export const getTicketById = async (
     ticketId,
     companyCode
 ) => {
-    const result = await pool.query(
-        `
+    let query = `
         SELECT
             ticket_id,
             assigned_to_user_code,
             raised_by_user_code,
-            department_id
+            department_id,
+            company_code
         FROM tickets
         WHERE ticket_id = $1
-        AND company_code = $2
-        `,
-        [ticketId, companyCode]
-    );
+    `;
+    const params = [ticketId];
+    if (companyCode) {
+        query += ` AND company_code = $2`;
+        params.push(companyCode);
+    }
 
+    const result = await pool.query(query, params);
     return result.rows[0];
 };

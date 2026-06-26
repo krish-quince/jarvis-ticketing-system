@@ -96,7 +96,7 @@ export const updateTicketTags = async (ticketId, tagNames, user) => {
 
     const resolvedTags = [];
     for (const name of uniqueNames) {
-      const tag = await findOrCreateTag(name, user.companyCode, client);
+      const tag = await findOrCreateTag(name, ticket.company_code, client);
       resolvedTags.push(tag);
     }
 

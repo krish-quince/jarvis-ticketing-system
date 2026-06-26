@@ -29,5 +29,5 @@ export const getCommentsByTicketId = async(ticketId, user) => {
         throw new Error("Access denied to this ticket.");
     }
 
-    return await commmentRepository.getCommentsByTicketId(ticketId, user.companyCode);
+    return await commmentRepository.getCommentsByTicketId(ticketId, ticket.company_code);
 };

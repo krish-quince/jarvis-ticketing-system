@@ -249,13 +249,20 @@ export const removeFreeformTag = async (tagId, ticketId, companyCode) => {
 
 // Returns unique tag texts with their ticket counts, for the sidebar.
 export const getAllFreeformTagsWithCount = async (companyCode) => {
-  const result = await pool.query(
-    `SELECT LOWER(tag_message) AS tag_message, COUNT(DISTINCT ticket_id)::int AS ticket_count
-     FROM ticket_freeform_tags
-     WHERE company_code = $1
-     GROUP BY LOWER(tag_message)
-     ORDER BY ticket_count DESC, LOWER(tag_message)`,
-    [companyCode],
-  );
+  let query = `
+    SELECT LOWER(tag_message) AS tag_message, COUNT(DISTINCT ticket_id)::int AS ticket_count
+    FROM ticket_freeform_tags
+  `;
+  const params = [];
+  if (companyCode) {
+    query += ` WHERE company_code = $1`;
+    params.push(companyCode);
+  }
+  query += `
+    GROUP BY LOWER(tag_message)
+    ORDER BY ticket_count DESC, LOWER(tag_message)
+  `;
+
+  const result = await pool.query(query, params);
   return result.rows;
 };

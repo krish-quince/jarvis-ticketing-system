@@ -1,7 +1,9 @@
 import API from "./api";
 
-export const getUsers = async () => {
-  const response = await API.get("/users");
+export const getUsers = async (companyCode?: string) => {
+  const response = await API.get("/users", {
+    params: companyCode ? { companyCode } : undefined,
+  });
 
   return response.data.data ?? response.data;
 };

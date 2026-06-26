@@ -1,5 +1,7 @@
 import * as tagService from "../services/tag.service.js";
 import * as tagRepo from "../repositories/tag.repository.js";
+import * as ticketRepository from "../repositories/ticket.repository.js";
+import { canAccessTicket } from "../utils/ticketPermissions.js";
 
 const sendTagError = (res, error) => {
   if (
@@ -91,7 +93,9 @@ export const updateTicketTags = async (req, res) => {
 
 export const getCompanyFreeformTags = async (req, res) => {
   try {
-    const data = await tagRepo.getAllFreeformTagsWithCount(req.user.companyCode);
+    const isSuperAdmin = Number(req.user.roleId) === 4;
+    const companyCode = isSuperAdmin ? (req.query.companyCode || null) : req.user.companyCode;
+    const data = await tagRepo.getAllFreeformTagsWithCount(companyCode);
     return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error(error);
@@ -122,9 +126,17 @@ export const addFreeformTicketTag = async (req, res) => {
       return res.status(400).json({ success: false, message: "Tag must be 100 characters or fewer" });
     }
 
+    const ticket = await ticketRepository.getTicketById(ticketId, req.user.companyCode);
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: "Ticket not found." });
+    }
+    if (!canAccessTicket(ticket, req.user)) {
+      return res.status(403).json({ success: false, message: "Access denied to this ticket." });
+    }
+
     const data = await tagRepo.addFreeformTag(
       ticketId,
-      req.user.companyCode,
+      ticket.company_code,
       tag_message,
       req.user.userCode,
     );
@@ -138,7 +150,16 @@ export const addFreeformTicketTag = async (req, res) => {
 export const deleteFreeformTicketTag = async (req, res) => {
   try {
     const { ticketId, tagId } = req.params;
-    const deleted = await tagRepo.removeFreeformTag(tagId, ticketId, req.user.companyCode);
+
+    const ticket = await ticketRepository.getTicketById(ticketId, req.user.companyCode);
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: "Ticket not found." });
+    }
+    if (!canAccessTicket(ticket, req.user)) {
+      return res.status(403).json({ success: false, message: "Access denied to this ticket." });
+    }
+
+    const deleted = await tagRepo.removeFreeformTag(tagId, ticketId, ticket.company_code);
     if (!deleted) {
       return res.status(404).json({ success: false, message: "Tag not found" });
     }

@@ -1,6 +1,6 @@
 # Jarvis SaaS Ticketing System
 
-Welcome to the **Jarvis SaaS Ticketing System**! This is a multi-tenant (SaaS-level) helpdesk and ticketing platform designed to support multiple organizations (tenants), such as Quince Capital (`QC`) and Alpha TNG (`ATND`), with complete isolation of tickets, categories, subcategories, priorities, statuses, and departments.
+Welcome to the **Jarvis SaaS Ticketing System**! This is a multi-tenant (SaaS-level) helpdesk and ticketing platform designed to support multiple organizations (tenants), such as Quince Capital (`QC`) and Alpha TNG (`ATNG`), with complete isolation of tickets, categories, subcategories, priorities, statuses, and departments.
 
 This document serves as an exhaustive guide for developers, system administrators, and even non-technical stakeholders to understand, deploy, run, and modify the application.
 
@@ -45,15 +45,42 @@ The Jarvis SaaS Ticketing System is a full-stack web application consisting of:
 └────────────────────────────────────────────────────────┘
 ```
 
+### Key Features & Functionality
+
+#### 1. SaaS-Level Multi-Tenancy & Isolation
+- **Metadata Isolation**: Ticket Categories, Subcategories, Priorities, Statuses, and Departments are partitioned per tenant via a `company_code`. Users and administrators only interact with records and configurations scoped to their respective tenant.
+- **Tenant Restriction Logic**: Every database query is strictly filtered on the tenant scope. Backend service layers validate request configurations dynamically to prevent cross-tenant parameter injection.
+- **Super Admin Operations**: Global system administrators (Super Admins, role `'Super Admin'`) bypass tenant scopes. They possess permissions to manage corporate tenants, view and reassign all system users, and manage tickets globally across all companies.
+
+#### 2. Dynamic Ticket Allocation & Routing
+- **Subcategory-Based Routing**: When a subcategory is defined, a set of target assignees can be specified as a pipe-delimited list of usernames (e.g. `TECH_01|TECH_02`).
+- **Automatic Assignment Engine**: Upon creating a ticket or selecting a subcategory, the system automatically allocates the ticket to the listed users and selects a technician randomly from this list to balance ticket distribution.
+
+#### 3. Metadata Lifecycle & Closed Ticket Protection
+- **Status Lifecycle Flags**: Statuses feature an `is_closed_status` flag in the database to mark a ticket as closed.
+- **Closed Ticket Integrity**: Standardized logic disallows any changes (metadata updates, comments/replies addition, status modifications) on tickets that are closed. This uses the status flag and case-insensitive close status checks (`close`/`closed`) to ensure consistent behavior across all corporate status naming schemes (e.g. ATNG uses `"Close"` while Quince uses `"Closed"`).
+- **Technician Metadata Management**: Authorized technicians can dynamically manage ticket priority, category groups, subcategories, and assignment (including "Takeover" option to self-assign the ticket).
+
+#### 4. Inline Ticket Categorization & Validation
+- **Category Display & Edit**: Dynamic selection input supporting parent categories (e.g., "Tech") as well as nested subcategories (e.g., "bugs").
+- **Robust Type Resolution**: Type-safe string comparison resolves category/subcategory identifiers, preventing key mapping issues between frontend and database integer column formats.
+
+#### 5. Scoped Registration & User Management
+- **Cascading Dropdowns**: In the registration and admin user creation screens, selecting a company automatically filters and loads only departments associated with that company, ensuring that users are never registered under invalid tenant-department configurations.
+
+#### 6. System Audit Trails & Comments
+- **Detailed History Logs**: All field alterations (status changes, technician adjustments, etc.) generate an audit log entry tracking the field, previous value, new value, modifier user code, and exact timestamp.
+- **Internal / Public Comments**: Support for standard comments (visible to employee raising the ticket) and internal-only comments (exchanged strictly between technicians and administrators).
+
 ---
 
 ## 2. Multi-Tenancy (SaaS) Design & Isolation
 
-In this ticketing system, each company represents a separate tenant. Tenants are identified by their unique `company_code` (e.g., `QC` or `ATND`).
+In this ticketing system, each company represents a separate tenant. Tenants are identified by their unique `company_code` (e.g., `QC` or `ATNG`).
 
 ### Tenant Scopes & Rules:
 1.  **Isolation of Ticket Configuration**:
-    Each company can customize its helpdesk setup. Therefore, ticket categories, subcategories, priorities, and statuses are tied to a `company_code`. A user from `ATND` only sees `ATND`-specific options, and a user from `QC` only sees `QC`-specific options.
+    Each company can customize its helpdesk setup. Therefore, ticket categories, subcategories, priorities, and statuses are tied to a `company_code`. A user from `ATNG` only sees `ATNG`-specific options, and a user from `QC` only sees `QC`-specific options.
 2.  **User Scoping**:
     Every user is assigned to one `company_code`. When a user logs in, their JWT token is signed with their company code.
 3.  **Strict Filtering**:
@@ -74,7 +101,7 @@ The database contains 11 main tables. Below is a detailed mapping of the tables,
 #### 1. `companies`
 Stores the corporate tenants registered on the SaaS platform.
 *   `company_id` (bigint, PK, auto-increment): Unique company identifier.
-*   `company_code` (varchar(50), Unique): Business shortcode (e.g., `QC`, `ATND`).
+*   `company_code` (varchar(50), Unique): Business shortcode (e.g., `QC`, `ATNG`).
 *   `company_name` (varchar(150)): The full company name.
 *   `is_active` (boolean): Whether the company tenant is active.
 
@@ -239,6 +266,8 @@ Route Request ──► Middleware (Auth/Role/Validate) ──► Controller ─
 *   **Ticket Checks**: Enhanced `ticket.repository.js` with helper methods (`getCategoryByIdAndCompany`, `getStatusByIdAndCompany`, etc.) to ensure that users cannot assign cross-tenant master objects to a ticket.
 *   **Dashboard Bugfix**: Corrected `dashboard.controller.js` count query which previously checked for a non-existent status of `'Open'`. It now correctly counts `'New'` status.
 *   **User Listing Bugfix**: In `user.controller.js` (`getAllUsersWithData`), changed the SQL department join from `INNER JOIN` to `LEFT JOIN` so users without an assigned department are not omitted from the users list.
+*   **Closed Ticket Integrity**: Implemented database-driven checking (`is_closed_status`) in `ticket.service.js` to strictly disallow comments and metadata modifications on closed tickets.
+*   **Dynamic TicketDetailedPage Loading**: Refactored the detail view data-loaders (`loadCategoryGroups`, `loadStatuses`, `loadPriorities`, `getUsers`) to fetch and load parameters scoped to the target ticket's company code, ensuring multi-tenancy compatibility for Super Admins.
 
 ---
 
@@ -274,9 +303,9 @@ Follow these steps to set up and run the system locally from scratch.
     # Execute the SQL dump at the root directory
     psql -U <postgres_user> -d jarvis_helpdesk -f jarvis_helpdesk.sql
     ```
-4.  Run the multitenant migrations and copy seed records for Alpha TNG (`ATND`):
+4.  Run the multitenant migrations and copy seed records for Alpha TNG (`ATNG`):
     *   Open and copy the contents of the database migration script.
-    *   You can locate this migration SQL inside: `C:\Users\krish\.gemini\antigravity\brain\1674af35-7e05-4965-9302-c1832a33dc3a\scratch\migration.sql` (or just run the commands to add `company_code` column to `ticket_categories`, `ticket_subcategories`, `ticket_priorities`, and `ticket_statuses` tables, default them to `'QC'`, and duplicate them for `'ATND'`).
+    *   You can locate this migration SQL inside: `C:\Users\krish\.gemini\antigravity\brain\1674af35-7e05-4965-9302-c1832a33dc3a\scratch\migration.sql` (or just run the commands to add `company_code` column to `ticket_categories`, `ticket_subcategories`, `ticket_priorities`, and `ticket_statuses` tables, default them to `'QC'`, and duplicate them for `'ATNG'`).
 
 ### Step 2: Backend Configuration & Start
 1.  Navigate into the `backend/` directory.
@@ -327,10 +356,10 @@ You can test the multi-tenant system by logging in with the following default ac
 *   **Technician User (Sales)**: `SAL001` / `abcd1234` (Can be assigned to Sales tickets)
 *   **Employee User**: `SAL002` / `abcd1234` (Regular employee who can submit tickets)
 
-### Alpha TNG (`ATND` Tenant):
-*   **Admin User**: `AT_ADMIN` / `abcd1234` (Full access to ATND administration, departments, and user creation)
-*   **Technician User (Sales)**: `AT_SAL001` / `abcd1234` (Can be assigned to ATND Sales tickets)
-*   **Employee User**: `AT_FIN001` / `abcd1234` (Employee who can submit tickets in ATND tenant)
+### Alpha TNG (`ATNG` Tenant):
+*   **Admin User**: `AT_ADMIN` / `abcd1234` (Full access to ATNG administration, departments, and user creation)
+*   **Technician User (Sales)**: `AT_SAL001` / `abcd1234` (Can be assigned to ATNG Sales tickets)
+*   **Employee User**: `AT_FIN001` / `abcd1234` (Employee who can submit tickets in ATNG tenant)
 
 ---
 

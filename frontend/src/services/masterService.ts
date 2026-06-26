@@ -2,26 +2,34 @@ import API from "./api";
 
 const unwrapData = (responseData: any) => responseData.data ?? responseData;
 
-export const getCategories = async () => {
-  const response = await API.get("/master/categories");
+export const getCategories = async (companyCode?: string) => {
+  const response = await API.get("/master/categories", {
+    params: companyCode ? { companyCode } : undefined,
+  });
 
   return unwrapData(response.data);
 };
 
-export const getPriorities = async () => {
-  const response = await API.get("/master/priorities");
+export const getPriorities = async (companyCode?: string) => {
+  const response = await API.get("/master/priorities", {
+    params: companyCode ? { companyCode } : undefined,
+  });
 
   return unwrapData(response.data);
 };
 
-export const getStatuses = async () => {
-  const response = await API.get("/master/statuses");
+export const getStatuses = async (companyCode?: string) => {
+  const response = await API.get("/master/statuses", {
+    params: companyCode ? { companyCode } : undefined,
+  });
 
   return unwrapData(response.data);
 };
 
-export const getSubCategories = async (categoryId: number) => {
-  const response = await API.get(`/master/subcategories/${categoryId}`);
+export const getSubCategories = async (categoryId: number, companyCode?: string) => {
+  const response = await API.get(`/master/subcategories/${categoryId}`, {
+    params: companyCode ? { companyCode } : undefined,
+  });
 
   return unwrapData(response.data);
 };

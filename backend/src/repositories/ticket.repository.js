@@ -241,6 +241,7 @@ export const getTicketById = async (ticketId, companyCode) => {
         p.priority_color,
         s.status_name,
         s.status_color,
+        s.is_closed_status,
         (
           SELECT string_agg(u.first_name || ' ' || u.last_name, ', ')
           FROM ReturnTable(t.assigned_to_user_code, '|') rt

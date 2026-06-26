@@ -323,7 +323,7 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
     throw new Error("Ticket not found.");
   }
 
-  if(ticket.status_name == "Closed") {
+  if (ticket.is_closed_status || ticket.status_name?.toLowerCase() === "closed" || ticket.status_name?.toLowerCase() === "close") {
     throw new Error("Can't update closed ticket.");
   }
 
@@ -349,7 +349,7 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
     }
   }
 
-  const status = await ticketRepository.getStatusByIdAndCompany(statusId, user.companyCode);
+  const status = await ticketRepository.getStatusByIdAndCompany(statusId, ticket.company_code);
 
   if (!status) {
     throw new Error("Status not found.");
@@ -367,7 +367,7 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
     const updatedTicket = await ticketRepository.updateTicketStatus(
       ticketId,
       statusId,
-      user.companyCode,
+      ticket.company_code,
       user.userCode,
       client,
     );
@@ -406,7 +406,7 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
     throw new Error("Ticket not found.");
   }
 
-  if(ticket.status_name == "Closed") {
+  if (ticket.is_closed_status || ticket.status_name?.toLowerCase() === "closed" || ticket.status_name?.toLowerCase() === "close") {
     throw new Error("Can't update closed ticket.");
   }
 
@@ -427,7 +427,7 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
 
   const assignee = await ticketRepository.getUserByCodeAndCompany(
     assignedToUserCode.trim(),
-    user.companyCode,
+    ticket.company_code,
   );
 
   if (!assignee) {
@@ -448,7 +448,7 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
     const updatedTicket = await ticketRepository.updateTicketAssignee(
       ticketId,
       assignedToUserCode,
-      user.companyCode,
+      ticket.company_code,
       client,
     );
 
@@ -482,7 +482,7 @@ export const updateTicketAllocated = async (ticketId, allocatedToUserCode, user)
     throw new Error("Ticket not found.");
   }
 
-  if(ticket.status_name == "Closed") {
+  if (ticket.is_closed_status || ticket.status_name?.toLowerCase() === "closed" || ticket.status_name?.toLowerCase() === "close") {
     throw new Error("Can't update closed ticket.");
   }
 
@@ -501,7 +501,7 @@ export const updateTicketAllocated = async (ticketId, allocatedToUserCode, user)
     for (const code of codes) {
       const dbUser = await ticketRepository.getUserByCodeAndCompany(
         code,
-        user.companyCode,
+        ticket.company_code,
       );
       if (!dbUser) {
         throw new Error(`Allocated user "${code}" not found.`);
@@ -523,7 +523,7 @@ export const updateTicketAllocated = async (ticketId, allocatedToUserCode, user)
     const updatedTicket = await ticketRepository.updateTicketAllocated(
       ticketId,
       allocatedToUserCode,
-      user.companyCode,
+      ticket.company_code,
       client,
     );
 
@@ -561,7 +561,7 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
     throw new Error("Ticket not found.");
   }
 
-  if(ticket.status_name == "Closed") {
+  if (ticket.is_closed_status || ticket.status_name?.toLowerCase() === "closed" || ticket.status_name?.toLowerCase() === "close") {
     throw new Error("Can't update closed ticket.");
   }
 
@@ -577,7 +577,7 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
     );
   }
 
-  const priority = await ticketRepository.getPriorityByIdAndCompany(priorityId, user.companyCode);
+  const priority = await ticketRepository.getPriorityByIdAndCompany(priorityId, ticket.company_code);
 
   if (!priority) {
     throw new Error("Priority not found.");
@@ -595,7 +595,7 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
     const updatedTicket = await ticketRepository.updateTicketPriority(
       ticketId,
       priorityId,
-      user.companyCode,
+      ticket.company_code,
       client,
     );
 
@@ -638,7 +638,7 @@ export const updateTicketCategory = async (
     throw new Error("Ticket not found.");
   }
 
-  if(ticket.status_name == "Closed") {
+  if (ticket.is_closed_status || ticket.status_name?.toLowerCase() === "closed" || ticket.status_name?.toLowerCase() === "close") {
     throw new Error("Can't update closed ticket.");
   }
 
@@ -654,7 +654,7 @@ export const updateTicketCategory = async (
     );
   }
 
-  const category = await ticketRepository.getCategoryByIdAndCompany(categoryId, user.companyCode);
+  const category = await ticketRepository.getCategoryByIdAndCompany(categoryId, ticket.company_code);
 
   if (!category) {
     throw new Error("Category not found.");
@@ -663,7 +663,7 @@ export const updateTicketCategory = async (
   let subCategory = null;
 
   if (subCategoryId) {
-    subCategory = await masterRepository.getSubCategoryById(subCategoryId, user.companyCode);
+    subCategory = await masterRepository.getSubCategoryById(subCategoryId, ticket.company_code);
 
     if (!subCategory) {
       throw new Error("Subcategory not found.");
@@ -697,7 +697,7 @@ export const updateTicketCategory = async (
     for (const code of allocatedCodes) {
       const userRes = await pool.query(
         "SELECT user_code FROM users WHERE user_code = $1 AND company_code = $2 AND is_active = true",
-        [code, user.companyCode]
+        [code, ticket.company_code]
       );
       if (userRes.rows.length === 0) {
         throw new Error(`Allocated user "${code}" not found or inactive.`);
@@ -725,7 +725,7 @@ export const updateTicketCategory = async (
       subCategoryId,
       allocatedToUserCode,
       assignedToUserCode,
-      user.companyCode,
+      ticket.company_code,
       client,
     );
 
@@ -790,7 +790,7 @@ export const resolveTicket = async (ticketId, statusId, user) => {
     throw new Error("Ticket not found.");
   }
 
-  if(ticket.status_name == "Closed") {
+  if (ticket.is_closed_status || ticket.status_name?.toLowerCase() === "closed" || ticket.status_name?.toLowerCase() === "close") {
     throw new Error("Can't update closed ticket.");
   }
 
@@ -800,8 +800,8 @@ export const resolveTicket = async (ticketId, statusId, user) => {
   }
 
   const resolvedStatus = statusId
-    ? await ticketRepository.getStatusByIdAndCompany(statusId, user.companyCode)
-    : await ticketRepository.getResolvedStatusByCompany(user.companyCode);
+    ? await ticketRepository.getStatusByIdAndCompany(statusId, ticket.company_code)
+    : await ticketRepository.getResolvedStatusByCompany(ticket.company_code);
 
   if (!resolvedStatus) {
     throw new Error("Resolved status not found.");
@@ -826,7 +826,7 @@ export const resolveTicket = async (ticketId, statusId, user) => {
       ticketId,
       user.userCode,
       nextStatusId,
-      user.companyCode,
+      ticket.company_code,
       client,
     );
 
@@ -873,7 +873,7 @@ export const takeoverTicket = async (ticketId, user) => {
     throw new Error("Ticket not found.");
   }
 
-  if(ticket.status_name == "Closed") {
+  if (ticket.is_closed_status || ticket.status_name?.toLowerCase() === "closed" || ticket.status_name?.toLowerCase() === "close") {
     throw new Error("Cant update closed ticket.");
   }
 
@@ -917,7 +917,7 @@ export const takeoverTicket = async (ticketId, user) => {
       ticketId,
       user.userCode,
       nextAllocatedString,
-      user.companyCode,
+      ticket.company_code,
       client,
     );
 
@@ -965,7 +965,7 @@ export const updateTicketDueDate = async (ticketId, dueDate, user) => {
     throw new Error("Ticket not found.");
   }
 
-  if(ticket.status_name == "Closed") {
+  if (ticket.is_closed_status || ticket.status_name?.toLowerCase() === "closed" || ticket.status_name?.toLowerCase() === "close") {
     throw new Error("Can't update closed ticket.");
   }
 
@@ -985,7 +985,7 @@ export const updateTicketDueDate = async (ticketId, dueDate, user) => {
     const updatedTicket = await ticketRepository.updateTicketDueDate(
       ticketId,
       dueDate,
-      user.companyCode,
+      ticket.company_code,
       client,
     );
 
@@ -1025,10 +1025,10 @@ export const reopenTicket = async (ticketId, user) => {
 
   const currentStatusRes = await pool.query(
     "SELECT is_closed_status FROM ticket_statuses WHERE status_id = $1 AND company_code = $2",
-    [ticket.status_id, user.companyCode]
+    [ticket.status_id, ticket.company_code]
   );
   const currentStatus = currentStatusRes.rows[0];
-  const isClosed = currentStatus ? currentStatus.is_closed_status : (ticket.status_name === "Closed");
+  const isClosed = ticket.is_closed_status || (currentStatus ? currentStatus.is_closed_status : (ticket.status_name?.toLowerCase() === "closed" || ticket.status_name?.toLowerCase() === "close"));
 
   if (!isClosed) {
     throw new Error("Ticket is not closed.");
@@ -1050,7 +1050,7 @@ export const reopenTicket = async (ticketId, user) => {
      AND LOWER(status_name) = 'in progress' 
      AND is_active = true 
      LIMIT 1`,
-    [user.companyCode]
+    [ticket.company_code]
   );
   
   if (inProgressRes.rows.length > 0) {
@@ -1062,7 +1062,7 @@ export const reopenTicket = async (ticketId, user) => {
        AND is_default = true 
        AND is_active = true 
        LIMIT 1`,
-      [user.companyCode]
+      [ticket.company_code]
     );
     if (defaultRes.rows.length > 0) {
       targetStatusId = defaultRes.rows[0].status_id;
@@ -1074,7 +1074,7 @@ export const reopenTicket = async (ticketId, user) => {
          AND is_active = true 
          ORDER BY display_order ASC, status_id ASC 
          LIMIT 1`,
-        [user.companyCode]
+        [ticket.company_code]
       );
       if (fallbackRes.rows.length > 0) {
         targetStatusId = fallbackRes.rows[0].status_id;
@@ -1094,7 +1094,7 @@ export const reopenTicket = async (ticketId, user) => {
     const updatedTicket = await ticketRepository.updateTicketStatus(
       ticketId,
       targetStatusId,
-      user.companyCode,
+      ticket.company_code,
       null,
       client,
     );
