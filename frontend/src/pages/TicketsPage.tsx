@@ -621,8 +621,17 @@ const TicketsPage = () => {
     return true;
   };
 
+  const filterByMode = (ticket: Ticket) => {
+    const userCode = currentUser.userCode || currentUser.user_code;
+    const isAssigned = ticket.assigned_to_user_code === userCode;
+    const isAllocated = ticket.allocated_to_user_code
+      ? ticket.allocated_to_user_code.split("|").includes(userCode)
+      : false;
+    return isAssigned || isAllocated;
+  };
+
   const filteredTickets = tickets.filter(
-    (t) => filterPill(t) && filterCategory(t) && filterCustom(t),
+    (t) => filterByMode(t) && filterPill(t) && filterCategory(t) && filterCustom(t),
   );
 
   const getSortValue = (ticket: Ticket, opt: string) => {

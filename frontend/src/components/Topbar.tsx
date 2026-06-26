@@ -21,7 +21,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getCompanySettings } from "../services/masterService";
 import servicedeskLogo from "../assets/logos/servicedesk-logo.png";
-import { InsertChartOutlined, KeyboardArrowDown, ListAltOutlined, SettingsOutlined } from "@mui/icons-material";
+import { AssignmentIndOutlined, InsertChartOutlined, KeyboardArrowDown, ListAltOutlined, SettingsOutlined } from "@mui/icons-material";
 
 const BACKEND_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace("/api", "");
 
@@ -161,7 +161,7 @@ const Topbar = () => {
                             if (isSuperAdmin) {
                                 navigate("/admin");
                             } else {
-                                navigate("/tickets");
+                                navigate("/my-tickets");
                             }
                         }
                     }}
@@ -510,6 +510,11 @@ const Topbar = () => {
                         ...(!isSuperAdmin
                             ? [
                                 {
+                                    label: "My Tickets",
+                                    path: "/my-tickets",
+                                    icon: AssignmentIndOutlined,
+                                },
+                                {
                                     label: "Tickets",
                                     path: "/tickets",
                                     icon: ListAltOutlined,
@@ -534,7 +539,9 @@ const Topbar = () => {
                     ].map((tab) => {
                         const isTabActive = tab.path === "/admin"
                             ? location.pathname.startsWith("/admin")
-                            : location.pathname === tab.path;
+                            : tab.path === "/tickets"
+                              ? location.pathname.startsWith("/tickets")
+                              : location.pathname === tab.path;
                         const Icon = tab.icon;
                         return (
                             <Button

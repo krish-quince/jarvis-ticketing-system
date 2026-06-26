@@ -25,6 +25,8 @@ import MainLayout from "./layouts/MainLayout";
 import UsersPage from "./pages/UserPage";
 import AddUserPage from "./pages/AddUserPage";
 import TimeSpentPage from "./pages/TimeSpentPage";
+import MyTicketsPage from "./pages/MyTicketsPage";
+import MyTicketDetailPage from "./pages/MyTicketDetailPage";
 
 // Route guard for authenticated users
 const ProtectedRoute = () => {
@@ -56,9 +58,9 @@ const GuestRoute = () => {
       if (Number(user.role_id) === 4) {
         return <Navigate to="/admin" replace />;
       }
-      return <Navigate to="/tickets" replace />;
+      return <Navigate to="/my-tickets" replace />;
     } catch {
-      return <Navigate to="/tickets" replace />;
+      return <Navigate to="/my-tickets" replace />;
     }
   }
   return <Outlet />;
@@ -77,7 +79,10 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
+              {/* <Route path="/dashboard" element={<DashboardPage />} /> */}
+               <Route path="/my-tickets" element={<MyTicketsPage />} />
+              <Route path="/my-tickets/:id" element={<MyTicketDetailPage />} />
+
               <Route path="/tickets" element={<TicketsPage />} />
               <Route path="/tickets/new" element={<NewTicketPage />} />
               <Route path="/tickets/:id" element={<TicketDetailPage />} />

@@ -132,7 +132,7 @@ const LoginPage = () => {
       if (Number(data.user.role_id) === 4) {
         navigate("/admin");
       } else {
-        navigate("/tickets");
+        navigate("/my-tickets");
       }
     } catch (error) {
       console.error(error);

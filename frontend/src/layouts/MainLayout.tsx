@@ -84,6 +84,8 @@ const MainLayout = () => {
 
   const activePill = searchParams.get("filter") || "all";
   const isTicketListRoute = location.pathname === "/tickets";
+  const isFullWidthRoute =
+    location.pathname === "/tickets" || location.pathname === "/my-tickets";
 
   // Dark mode palette
   const darkBg = "#0f1117";
@@ -271,7 +273,7 @@ const MainLayout = () => {
                 return (
                   <Button
                     key={pill.id}
-                    onClick={() => navigate(`/tickets?filter=${pill.id}`)}
+                    onClick={() => navigate(`${location.pathname}?filter=${pill.id}`)}
                     sx={{
                       backgroundColor: isActive ? "#211b5a" : "transparent",
                       color: isActive ? "#fff" : pillInactiveColor,
@@ -779,10 +781,10 @@ const MainLayout = () => {
 
       <Box
         sx={{
-          p: isTicketListRoute
+          p: isFullWidthRoute
             ? { xs: 2, sm: "0 32px 40px" }
             : { xs: 2, sm: 3, md: 4 },
-          maxWidth: isTicketListRoute ? "none" : 1440,
+          maxWidth: isFullWidthRoute ? "none" : 1440,
           mx: "auto",
           width: "100%",
           boxSizing: "border-box",

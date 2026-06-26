@@ -496,12 +496,20 @@ const AdminCategoriesPage = () => {
               >
                 {subcategory.subcategory_name}
               </Button>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                <Chip
-                  size="small"
-                  label={subcategory.assigned_user_code ? subcategory.assigned_user_code.split("|").map(code => usersByCode[code] || code).join(", ") : "Everyone"}
-                  sx={{ color: "#476282", backgroundColor: "rgba(71, 98, 130, 0.09)", fontWeight: 600 }}
-                />
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, flex: 1, minWidth: 0 }}>
+                  {subcategory.assigned_user_code
+                    ? subcategory.assigned_user_code.split("|").map((code: string) => (
+                        <Chip
+                          key={code}
+                          size="small"
+                          label={usersByCode[code] || code}
+                          sx={{ color: "#476282", backgroundColor: "rgba(71, 98, 130, 0.09)", fontWeight: 600, maxWidth: 160 }}
+                        />
+                      ))
+                    : <Chip size="small" label="Everyone" sx={{ color: "#476282", backgroundColor: "rgba(71, 98, 130, 0.09)", fontWeight: 600 }} />
+                  }
+                </Box>
                 <Tooltip title="Remove">
                   <IconButton size="small" onClick={() => handleDeleteSubcategory(subcategory)}>
                     <DeleteOutlined fontSize="small" />
@@ -608,12 +616,20 @@ const AdminCategoriesPage = () => {
                     >
                       {subcategory.subcategory_name}
                     </Button>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                      <Chip
-                        size="small"
-                        label={subcategory.assigned_user_code ? subcategory.assigned_user_code.split("|").map(code => usersByCode[code] || code).join(", ") : "Everyone"}
-                        sx={{ color: "#476282", backgroundColor: "rgba(71, 98, 130, 0.09)", fontWeight: 600 }}
-                      />
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, flex: 1, minWidth: 0 }}>
+                        {subcategory.assigned_user_code
+                          ? subcategory.assigned_user_code.split("|").map((code: string) => (
+                              <Chip
+                                key={code}
+                                size="small"
+                                label={usersByCode[code] || code}
+                                sx={{ color: "#476282", backgroundColor: "rgba(71, 98, 130, 0.09)", fontWeight: 600, maxWidth: 160 }}
+                              />
+                            ))
+                          : <Chip size="small" label="Everyone" sx={{ color: "#476282", backgroundColor: "rgba(71, 98, 130, 0.09)", fontWeight: 600 }} />
+                        }
+                      </Box>
                       <ContentCopyOutlined sx={{ fontSize: 18, color: "var(--text-sub)" }} />
                       <Tooltip title="Remove subcategory">
                         <IconButton size="small" onClick={() => handleDeleteSubcategory(subcategory)}>
@@ -655,7 +671,7 @@ const Breadcrumb = ({ current }: { current: string }) => (
 );
 
 const HeaderRow = ({ left, right }: { left: string; right: string }) => (
-  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 190px", px: 2, py: 1.5, borderBottom: "1px solid var(--border)" }}>
+  <Box sx={{ display: "grid", gridTemplateColumns: "1fr minmax(200px, 320px)", px: 2, py: 1.5, borderBottom: "1px solid var(--border)" }}>
     <Typography sx={{ color: "var(--text-sub)", fontSize: 13 }}>{left}</Typography>
     <Typography sx={{ color: "var(--text-sub)", fontSize: 13 }}>{right}</Typography>
   </Box>
@@ -702,7 +718,7 @@ const detailLabelSx = {
 
 const categoryRowSx = {
   display: "grid",
-  gridTemplateColumns: "1fr 190px",
+  gridTemplateColumns: "1fr minmax(200px, 320px)",
   alignItems: "center",
   minHeight: 54,
   px: 2,
@@ -712,9 +728,10 @@ const categoryRowSx = {
 
 const subcategoryRowSx = {
   display: "grid",
-  gridTemplateColumns: "1fr 190px",
+  gridTemplateColumns: "1fr minmax(200px, 320px)",
   alignItems: "center",
-  minHeight: 88,
+  minHeight: 56,
+  py: 1,
   px: 2,
   borderBottom: "1px solid var(--border)",
 };
