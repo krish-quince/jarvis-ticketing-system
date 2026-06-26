@@ -349,17 +349,35 @@ export const updateTicketStatus = async (
   ticketId,
   statusId,
   companyCode,
+  resolvedByUserCode = null,
   client = null,
 ) => {
   const db = client || pool;
   const result = await db.query(
     `
             UPDATE tickets
-            SET status_id = $1, update_timestamp = CURRENT_TIMESTAMP
+            SET status_id = $1, 
+                update_timestamp = CURRENT_TIMESTAMP,
+                resolution_date = CASE 
+                    WHEN EXISTS (
+                        SELECT 1 FROM ticket_statuses 
+                        WHERE status_id = $1 AND company_code = $3 
+                        AND (is_closed_status = true OR LOWER(status_name) = 'closed')
+                    ) THEN CURRENT_TIMESTAMP
+                    ELSE NULL
+                END,
+                resolved_by_user_code = CASE
+                    WHEN EXISTS (
+                        SELECT 1 FROM ticket_statuses 
+                        WHERE status_id = $1 AND company_code = $3 
+                        AND (is_closed_status = true OR LOWER(status_name) = 'closed')
+                    ) THEN $4
+                    ELSE NULL
+                END
             WHERE ticket_id = $2 AND company_code = $3
             RETURNING *
         `,
-    [statusId, ticketId, companyCode],
+    [statusId, ticketId, companyCode, resolvedByUserCode],
   );
 
   return result.rows[0];
@@ -450,6 +468,8 @@ export const updateTicketCategory = async (
   ticketId,
   categoryId,
   subCategoryId,
+  allocatedToUserCode,
+  assignedToUserCode,
   companyCode,
   client = null,
 ) => {
@@ -457,11 +477,11 @@ export const updateTicketCategory = async (
   const result = await db.query(
     `
             UPDATE tickets
-            SET category_id = $1, subcategory_id = $2, update_timestamp = CURRENT_TIMESTAMP
-            WHERE ticket_id = $3 AND company_code = $4
+            SET category_id = $1, subcategory_id = $2, allocated_to_user_code = $3, assigned_to_user_code = $4, update_timestamp = CURRENT_TIMESTAMP
+            WHERE ticket_id = $5 AND company_code = $6
             RETURNING *
         `,
-    [categoryId, subCategoryId, ticketId, companyCode],
+    [categoryId, subCategoryId, allocatedToUserCode, assignedToUserCode, ticketId, companyCode],
   );
 
   return result.rows[0];

@@ -368,6 +368,7 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
       ticketId,
       statusId,
       user.companyCode,
+      user.userCode,
       client,
     );
 
@@ -662,7 +663,7 @@ export const updateTicketCategory = async (
   let subCategory = null;
 
   if (subCategoryId) {
-    subCategory = await ticketRepository.getSubCategoryById(subCategoryId, user.companyCode);
+    subCategory = await masterRepository.getSubCategoryById(subCategoryId, user.companyCode);
 
     if (!subCategory) {
       throw new Error("Subcategory not found.");
@@ -673,9 +674,42 @@ export const updateTicketCategory = async (
     }
   }
 
+  let allocatedToUserCode = null;
+  let assignedToUserCode = ticket.assigned_to_user_code;
+
+  if (subCategory && subCategory.assigned_user_code) {
+    const routingUsers = subCategory.assigned_user_code
+      .split("|")
+      .map((u) => u.trim())
+      .filter(Boolean);
+
+    if (routingUsers.length > 0) {
+      allocatedToUserCode = routingUsers.join("|");
+      if (!assignedToUserCode || !routingUsers.includes(assignedToUserCode)) {
+        const randomIndex = Math.floor(Math.random() * routingUsers.length);
+        assignedToUserCode = routingUsers[randomIndex];
+      }
+    }
+  }
+
+  if (allocatedToUserCode) {
+    const allocatedCodes = allocatedToUserCode.split("|").map(c => c.trim()).filter(Boolean);
+    for (const code of allocatedCodes) {
+      const userRes = await pool.query(
+        "SELECT user_code FROM users WHERE user_code = $1 AND company_code = $2 AND is_active = true",
+        [code, user.companyCode]
+      );
+      if (userRes.rows.length === 0) {
+        throw new Error(`Allocated user "${code}" not found or inactive.`);
+      }
+    }
+  }
+
   if (
     String(ticket.category_id) === String(categoryId) &&
-    String(ticket.subcategory_id || "") === String(subCategoryId || "")
+    String(ticket.subcategory_id || "") === String(subCategoryId || "") &&
+    String(ticket.allocated_to_user_code || "") === String(allocatedToUserCode || "") &&
+    String(ticket.assigned_to_user_code || "") === String(assignedToUserCode || "")
   ) {
     return ticket;
   }
@@ -689,6 +723,8 @@ export const updateTicketCategory = async (
       ticketId,
       categoryId,
       subCategoryId,
+      allocatedToUserCode,
+      assignedToUserCode,
       user.companyCode,
       client,
     );
@@ -710,6 +746,28 @@ export const updateTicketCategory = async (
       user.userCode,
       client,
     );
+
+    if (String(ticket.allocated_to_user_code || "") !== String(allocatedToUserCode || "")) {
+      await historyService.createHistory(
+        ticketId,
+        "Allocations",
+        String(ticket.allocated_to_user_code || ""),
+        String(allocatedToUserCode || ""),
+        user.userCode,
+        client,
+      );
+    }
+
+    if (String(ticket.assigned_to_user_code || "") !== String(assignedToUserCode || "")) {
+      await historyService.createHistory(
+        ticketId,
+        "AssignedTo",
+        String(ticket.assigned_to_user_code || ""),
+        String(assignedToUserCode || ""),
+        user.userCode,
+        client,
+      );
+    }
 
     await client.query("COMMIT");
 
@@ -1037,6 +1095,7 @@ export const reopenTicket = async (ticketId, user) => {
       ticketId,
       targetStatusId,
       user.companyCode,
+      null,
       client,
     );
 

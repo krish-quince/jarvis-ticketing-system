@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -43,6 +43,7 @@ import {
   ImportExport as SortIcon,
   DeleteOutlined as DeleteIcon,
   SearchOutlined as SearchIcon,
+  Visibility as VisibilityIcon,
   PushPin,
   KeyboardArrowDown,
 } from "@mui/icons-material";
@@ -164,6 +165,33 @@ const TicketDetailPage = () => {
   const timerSecondsRef = useRef(0);
   const currentEntryIdRef = useRef<number | null>(null);
   const timerStoppedRef = useRef(false);
+  const conversationEndRef = useRef<HTMLDivElement | null>(null);
+  const lastUpdateTimestampRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!conversationEndRef.current) return;
+    
+    let latestTimeStr = ticket?.updated_at || "";
+    if (comments && comments.length > 0) {
+      comments.forEach((c: any) => {
+        if (c.created_at && (!latestTimeStr || new Date(c.created_at) > new Date(latestTimeStr))) {
+          latestTimeStr = c.created_at;
+        }
+      });
+    }
+    if (history && history.length > 0) {
+      history.forEach((h: any) => {
+        if (h.changed_at && (!latestTimeStr || new Date(h.changed_at) > new Date(latestTimeStr))) {
+          latestTimeStr = h.changed_at;
+        }
+      });
+    }
+
+    if (latestTimeStr && latestTimeStr !== lastUpdateTimestampRef.current) {
+      lastUpdateTimestampRef.current = latestTimeStr;
+      conversationEndRef.current.scrollTop = conversationEndRef.current.scrollHeight;
+    }
+  }, [comments, history, ticket?.updated_at]);
 
   // Toast feedback state
   const [toast, setToast] = useState({
@@ -184,12 +212,22 @@ const TicketDetailPage = () => {
   const loggedInRoleId = Number(loggedInUser.role_id ?? loggedInUser.roleId);
   const loggedInUserCode = loggedInUser.user_code ?? loggedInUser.userCode;
   const isAdminOrDev = loggedInRoleId === 1 || loggedInRoleId === 3;
-  const canManageTicketMetadata = (ticketToCheck = ticket) =>
-    isAdminOrDev ||
-    ticketToCheck?.assigned_to_user_code === loggedInUserCode ||
-    ticketToCheck?.raised_by_user_code === loggedInUserCode;
+  const canManageTicketMetadata = (ticketToCheck = ticket) => {
+    if (!ticketToCheck) return false;
+    const allocatedList = ticketToCheck.allocated_to_user_code
+      ? ticketToCheck.allocated_to_user_code.split("|").map((c: string) => c.trim()).filter(Boolean)
+      : [];
+    const isAllocated = allocatedList.includes(loggedInUserCode);
 
-  // Allocated people can only view, check if logged in user is in allocated list
+    return (
+      isAdminOrDev ||
+      ticketToCheck.assigned_to_user_code === loggedInUserCode ||
+      ticketToCheck.raised_by_user_code === loggedInUserCode ||
+      isAllocated
+    );
+  };
+
+  // Check if logged in user is in allocated list
   const isAllocatedUser = () => {
     if (!ticket || !ticket.allocated_to_user_code) return false;
     const allocatedList = ticket.allocated_to_user_code
@@ -1205,6 +1243,7 @@ const TicketDetailPage = () => {
     (a, b) =>
       new Date(a.feedDate || 0).getTime() - new Date(b.feedDate || 0).getTime(),
   );
+
   const apiOrigin = (
     import.meta.env.VITE_API_URL || "http://localhost:5000/api"
   ).replace(/\/api\/?$/, "");
@@ -1336,25 +1375,35 @@ const TicketDetailPage = () => {
     }).replace(",", "");
   };
 
-  const allFiles = [
-    ...(ticket?.attachments || []).map((att: any) => ({
-      ...att,
-      type: "ticket",
-      gallery_key: `ticket-${att.attachment_id}`,
-    })),
-    ...comments.flatMap((comment: any) =>
-      (comment.attachments || []).map((att: any) => ({
-        ...att,
-        type: "comment",
-        gallery_key: `comment-${att.attachment_id}`,
-      }))
-    ),
-  ].sort((a, b) => {
-    const timeA = new Date(a.uploaded_at || 0).getTime();
-    const timeB = new Date(b.uploaded_at || 0).getTime();
-    return fileSortOrder === "asc" ? timeA - timeB : timeB - timeA;
-  });
+const allFiles = [
+  ...(ticket?.attachments || []).map((att: any) => ({
+    ...att,
+    type: "ticket",
+    sourceId: ticket.ticket_id,
+    uploadedBy:
+      ticket.raised_by_name ||
+      ticket.raised_by_user_code ||
+      "Unknown",
+    gallery_key: `ticket-${att.attachment_id}`,
+  })),
 
+  ...comments.flatMap((comment: any) =>
+    (comment.attachments || []).map((att: any) => ({
+      ...att,
+      type: "comment",
+      sourceId: comment.comment_id,
+      uploadedBy:
+        comment.commented_by_name ||
+        comment.commented_by_user_code ||
+        "Unknown",
+      gallery_key: `comment-${att.attachment_id}`,
+    }))
+  ),
+].sort((a, b) => {
+  const timeA = new Date(a.uploaded_at || 0).getTime();
+  const timeB = new Date(b.uploaded_at || 0).getTime();
+  return fileSortOrder === "asc" ? timeA - timeB : timeB - timeA;
+});
   const handleDownloadAllFiles = () => {
     allFiles.forEach((file) => {
       const link = document.createElement("a");
@@ -1385,6 +1434,40 @@ const TicketDetailPage = () => {
       });
     }
   };
+  
+const scrollToAttachment = (file: any) => {
+  if (file.type === "ticket") {
+    // ticket-description is outside the scrollable conversation box — use scrollIntoView on page
+    const target = document.getElementById("ticket-description");
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => {
+      target.animate(
+        [{ backgroundColor: "#fff59d" }, { backgroundColor: "transparent" }],
+        { duration: 2000 }
+      );
+    }, 400);
+  } else {
+    // comments live inside the scrollable conversation box
+    const target = document.getElementById(`comment-${file.sourceId}`);
+    const scrollBox = document.getElementById("conversation-scroll-box");
+    if (!target || !scrollBox) return;
+
+    // getBoundingClientRect gives position relative to viewport;
+    // we compute offset relative to the scroll container
+    const boxRect = scrollBox.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const offset = targetRect.top - boxRect.top + scrollBox.scrollTop - 16;
+
+    scrollBox.scrollTo({ top: offset, behavior: "smooth" });
+    setTimeout(() => {
+      target.animate(
+        [{ backgroundColor: "#fff59d" }, { backgroundColor: "transparent" }],
+        { duration: 2000 }
+      );
+    }, 400);
+  }
+};
   const categoryDisplay = ticket.subcategory_name
     ? `${ticket.category_name} / ${ticket.subcategory_name}`
     : ticket.category_name || "Uncategorized";
@@ -1445,7 +1528,7 @@ const TicketDetailPage = () => {
     !submittingComment;
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 3, p: 1 }}>
+    <Box id="conversation-container" sx={{ display: "flex", flexDirection: "column", gap: 3, p: 1 }}>
       <Grid container spacing={3}>
         {/* Left main content column */}
         <Grid
@@ -1672,8 +1755,9 @@ const TicketDetailPage = () => {
             </Box>
 
             <Box
-              sx={{
-                color: "var(--text)",
+  id="ticket-description"
+  sx={{
+    color: "var(--text)",
                 lineHeight: 1.6,
                 fontSize: "15px",
                 mb: 2,
@@ -2081,8 +2165,9 @@ const TicketDetailPage = () => {
                     borderRadius: 999,
                   },
                 }}
+                id="conversation-scroll-box"
                 ref={(node: HTMLDivElement | null) => {
-                  if (node) node.scrollTop = node.scrollHeight;
+                  conversationEndRef.current = node;
                 }}
               >
                 <Box
@@ -2145,8 +2230,9 @@ const TicketDetailPage = () => {
                   if (item.feedType === "history") {
                     return (
                       <Box
-                        key={item.feedKey}
-                        sx={{
+  id={`comment-${item.comment_id}`}
+  key={item.feedKey}
+  sx={{
                           alignSelf: "center",
                           maxWidth: 640,
                           display: "flex",
@@ -2210,11 +2296,12 @@ const TicketDetailPage = () => {
                   }
 
                   return (
-                    <Box
-                      key={item.feedKey}
-                      sx={{
-                        display: "flex",
-                        justifyContent: isOwnComment ? "flex-end" : "flex-start",
+  <Box
+    id={`comment-${item.comment_id}`}
+    key={item.feedKey}
+    sx={{
+      display: "flex",
+      justifyContent: isOwnComment ? "flex-end" : "flex-start",
                         alignItems: "flex-end",
                         gap: 1,
                         width: "100%",
@@ -3731,7 +3818,7 @@ const TicketDetailPage = () => {
               ) : (
                 allFiles.map((file) => {
                   const fileSizeStr = file.file_size
-                    ? `, ${formatFileSize(Number(file.file_size))}`
+                    ? ` ${formatFileSize(Number(file.file_size))}`
                     : "";
                   return (
                     <Box
@@ -3753,13 +3840,13 @@ const TicketDetailPage = () => {
                       {/* File Details */}
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography
-                          component="a"
-                          href={getAttachmentUrl(file)}
-                          download={file.file_name}
+                          component="span"
+                          onClick={() => scrollToAttachment(file)}
                           variant="body2"
                           sx={{
                             fontWeight: 600,
                             color: "var(--primary-link, #211b5a)",
+                            cursor: "pointer",
                             textDecoration: "none",
                             wordBreak: "break-all",
                             display: "-webkit-box",
@@ -3774,23 +3861,63 @@ const TicketDetailPage = () => {
                           {file.file_name}
                         </Typography>
                         <Typography
-                          variant="caption"
-                          sx={{ color: "var(--text-secondary)", mt: 0.5, display: "block" }}
-                        >
-                          {`${formatUploadDate(file.uploaded_at)}${fileSizeStr}`}
-                        </Typography>
-                      </Box>
+    variant="body2"
+    sx={{
+      fontWeight: 600,
+      color: "#211b5a",
+      fontSize: 13,
+      mb: 0.25,
+    }}
+  >
+    Uploaded by {file.uploadedBy}
+  </Typography>
 
-                      {/* Delete icon */}
-                      <Tooltip title="Delete file">
+  <Typography
+    variant="caption"
+    sx={{
+      color: "var(--text-secondary)",
+      display: "block",
+    }}
+  >
+    {`${formatUploadDate(file.uploaded_at)}${fileSizeStr}`}
+  </Typography>
+                      </Box>
+                      <Tooltip title="View in conversation">
                         <IconButton
                           size="small"
-                          onClick={() => handleDeleteAttachment(file.type, file.attachment_id)}
-                          sx={{ color: "var(--text-secondary)", "&:hover": { color: "error.main" } }}
+                          onClick={() => scrollToAttachment(file)}
+                          sx={{
+                            color: "var(--text-secondary)",
+                            "&:hover": {
+                              color: "#211b5a",
+                            },
+                          }}
                         >
-                          <DeleteIcon sx={{ fontSize: 18 }} />
+                          <VisibilityIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                       </Tooltip>
+                      {/* Download icon */}
+                      <Tooltip title="Download file">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            const link = document.createElement("a");
+                            link.href = getAttachmentUrl(file);
+                            link.setAttribute("download", file.file_name);
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                          sx={{
+                            color: "var(--text-secondary)",
+                            "&:hover": {
+                              color: "var(--primary-link, #211b5a)",
+                            },
+                          }}
+                        >
+                          <DownloadIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Tooltip>                     
                     </Box>
                   );
                 })
