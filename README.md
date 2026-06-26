@@ -59,7 +59,8 @@ The Jarvis SaaS Ticketing System is a full-stack web application consisting of:
 #### 3. Metadata Lifecycle & Closed Ticket Protection
 - **Status Lifecycle Flags**: Statuses feature an `is_closed_status` flag in the database to mark a ticket as closed.
 - **Closed Ticket Integrity**: Standardized logic disallows any changes (metadata updates, comments/replies addition, status modifications) on tickets that are closed. This uses the status flag and case-insensitive close status checks (`close`/`closed`) to ensure consistent behavior across all corporate status naming schemes (e.g. ATNG uses `"Close"` while Quince uses `"Closed"`).
-- **Technician Metadata Management**: Authorized technicians can dynamically manage ticket priority, category groups, subcategories, and assignment (including "Takeover" option to self-assign the ticket).
+- **Technician Metadata Management & Takeover**: Authorized technicians can dynamically manage ticket priority, category groups, subcategories, and assignment.
+- **Takeover & Action Lock for Allocated Users**: If a ticket is allocated to multiple technicians, any technician who is not the currently assigned owner has read-only access to view comments, history, and attachments. If they attempt to edit metadata or add comments, they are blocked by a popup prompting them to take over the ticket first. The takeover action requires explicit user confirmation via a pop-up dialog.
 
 #### 4. Inline Ticket Categorization & Validation
 - **Category Display & Edit**: Dynamic selection input supporting parent categories (e.g., "Tech") as well as nested subcategories (e.g., "bugs").

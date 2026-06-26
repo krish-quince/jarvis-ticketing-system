@@ -3,7 +3,8 @@ import * as ticketRepository from "../repositories/ticket.repository.js";
 import * as historyService from "./history.service.js";
 import {
   canAccessTicket,
-  canManageTicket
+  canManageTicket,
+  checkAllocatedTakeoverBlock
 } from "../utils/ticketPermissions.js";
 import * as masterRepository from "../repositories/master.repository.js";
 import * as tagRepository from "../repositories/tag.repository.js";
@@ -332,6 +333,8 @@ export const updateTicketStatus = async (ticketId, statusId, user) => {
     throw new Error("Access denied to this ticket.");
   }
 
+  checkAllocatedTakeoverBlock(ticket, user);
+
   // Check Update status permission:
   if (!canManageTicket(ticket, user)) {
     const isCreator = ticket.raised_by_user_code === user.userCode;
@@ -414,6 +417,8 @@ export const assignTicket = async (ticketId, assignedToUserCode, user) => {
   if (!canAccessTicket(ticket, user)) {
     throw new Error("Access denied to this ticket.");
   }
+
+  checkAllocatedTakeoverBlock(ticket, user);
 
   // Check Assign Permission
   if (!canManageTicket(ticket, user)) {
@@ -570,6 +575,8 @@ export const updateTicketPriority = async (ticketId, priorityId, user) => {
     throw new Error("Access denied to this ticket.");
   }
 
+  checkAllocatedTakeoverBlock(ticket, user);
+
   // Check Priority Permission
   if (!canManageTicket(ticket, user)) {
     throw new Error(
@@ -646,6 +653,8 @@ export const updateTicketCategory = async (
   if (!canAccessTicket(ticket, user)) {
     throw new Error("Access denied to this ticket.");
   }
+
+  checkAllocatedTakeoverBlock(ticket, user);
 
   // Check Category Permission
   if (!canManageTicket(ticket, user)) {
@@ -972,6 +981,8 @@ export const updateTicketDueDate = async (ticketId, dueDate, user) => {
   if (!canAccessTicket(ticket, user)) {
     throw new Error("Access denied to this ticket.");
   }
+
+  checkAllocatedTakeoverBlock(ticket, user);
 
   if (!canManageTicket(ticket, user)) {
     throw new Error("Access denied. Only technicians can update due date.");

@@ -37,3 +37,22 @@ export const canManageTicket = (ticket, user) => {
         isAllocated
     );
 };
+
+export const checkAllocatedTakeoverBlock = (ticket, user) => {
+    if (!user || !ticket) return;
+
+    if ([1, 4].includes(Number(user.roleId))) {
+        return;
+    }
+
+    const allocatedList = ticket.allocated_to_user_code
+        ? ticket.allocated_to_user_code.split("|").map(c => c.trim()).filter(Boolean)
+        : [];
+    const isAllocated = allocatedList.includes(user.userCode);
+    const hasAssignee = !!ticket.assigned_to_user_code;
+    const isNotAssignee = ticket.assigned_to_user_code !== user.userCode;
+
+    if (isAllocated && hasAssignee && isNotAssignee) {
+        throw new Error("Ticket is already assigned. Please takeover to make changes.");
+    }
+};

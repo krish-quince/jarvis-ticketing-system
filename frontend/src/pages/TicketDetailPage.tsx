@@ -18,6 +18,10 @@ import {
   Chip,
   Switch,
   Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
   Tooltip,
   TextField,
   InputAdornment,
@@ -153,6 +157,8 @@ const TicketDetailPage = () => {
   const [previewIndex, setPreviewIndex] = useState(0);
   // More actions menu anchor
   const [moreAnchor, setMoreAnchor] = useState<null | HTMLElement>(null);
+  const [takeoverWarningOpen, setTakeoverWarningOpen] = useState(false);
+  const [takeoverConfirmOpen, setTakeoverConfirmOpen] = useState(false);
 
   // Timer state
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -233,6 +239,19 @@ const TicketDetailPage = () => {
       .map((c: string) => c.trim())
       .filter(Boolean);
     return allocatedList.includes(loggedInUserCode);
+  };
+
+  const checkAllocatedTakeoverWarning = () => {
+    if (!ticket) return false;
+    const isAllocated = isAllocatedUser();
+    const hasAssignee = !!ticket.assigned_to_user_code;
+    const isNotAssignee = ticket.assigned_to_user_code !== loggedInUserCode;
+
+    if (!isAdminOrDev && isAllocated && hasAssignee && isNotAssignee) {
+      setTakeoverWarningOpen(true);
+      return true;
+    }
+    return false;
   };
 
   const isTakeoverAllowed = () => {
@@ -577,6 +596,7 @@ const TicketDetailPage = () => {
   const handlePostComment = async ({
     resolveTicket = false,
   }: { resolveTicket?: boolean } = {}) => {
+    if (checkAllocatedTakeoverWarning()) return;
     const plainText = getReplyPlainText();
     const hasImage = replyHtml.includes("<img");
 
@@ -625,6 +645,7 @@ const TicketDetailPage = () => {
   };
 
   const handleCloseTicket = async () => {
+    if (checkAllocatedTakeoverWarning()) return;
     try {
       setUpdatingMetadata(true);
       const closedId = getClosedStatusId();
@@ -649,6 +670,7 @@ const TicketDetailPage = () => {
   };
 
   const handleReopenTicket = async () => {
+    if (checkAllocatedTakeoverWarning()) return;
     try {
       setUpdatingMetadata(true);
       await reopenTicket(ticketId);
@@ -693,7 +715,13 @@ const TicketDetailPage = () => {
     }
   };
 
+  const handleTakeoverConfirm = async () => {
+    setTakeoverConfirmOpen(false);
+    await handleTakeover();
+  };
+
   const handleAddFreeformTag = async () => {
+    if (checkAllocatedTakeoverWarning()) return;
     const trimmedTag = tagInput.trim();
     if (!trimmedTag) return;
     try {
@@ -707,6 +735,7 @@ const TicketDetailPage = () => {
   };
 
   const handleDeleteFreeformTag = async (tagId: number) => {
+    if (checkAllocatedTakeoverWarning()) return;
     try {
       await deleteFreeformTag(ticketId, tagId);
       await fetchData();
@@ -741,6 +770,7 @@ const TicketDetailPage = () => {
   };
 
   const handlePriorityEditStart = () => {
+    if (checkAllocatedTakeoverWarning()) return;
     if (!canManageTicketMetadata()) return;
     setSelectedPriorityValue(String(ticket.priority_id || ""));
     setEditingPriority(true);
@@ -761,6 +791,7 @@ const TicketDetailPage = () => {
   };
 
   const handleCategoryEditStart = async () => {
+    if (checkAllocatedTakeoverWarning()) return;
     if (!canManageTicketMetadata()) return;
 
     setSelectedCategoryValue(
@@ -812,6 +843,7 @@ const TicketDetailPage = () => {
   };
 
   const handleDueEditStart = () => {
+    if (checkAllocatedTakeoverWarning()) return;
     if (!canManageTicketMetadata()) return;
     if (ticket.due_date) {
       const d = new Date(ticket.due_date);
@@ -890,6 +922,7 @@ const TicketDetailPage = () => {
   };
 
   const handleStatusEditStart = async () => {
+    if (checkAllocatedTakeoverWarning()) return;
     if (!canManageTicketMetadata()) return;
     const currentStatusValue = getStatusValue();
     setSelectedStatusValue(currentStatusValue);
@@ -940,6 +973,7 @@ const TicketDetailPage = () => {
   };
 
   const handleAssigneeEditStart = async () => {
+    if (checkAllocatedTakeoverWarning()) return;
     if (!canManageTicketMetadata()) return;
     setSelectedAssigneeValue(ticket.assigned_to_user_code ? ticket.assigned_to_user_code.split("|") : []);
     setEditingAssignee(true);
@@ -1586,7 +1620,7 @@ const scrollToAttachment = (file: any) => {
                   <Button
                     variant="outlined"
                     startIcon={<TakeoverIcon />}
-                    onClick={handleTakeover}
+                    onClick={() => setTakeoverConfirmOpen(true)}
                     disabled={updatingMetadata}
                     sx={{
                       borderRadius: "6px",
@@ -4064,6 +4098,45 @@ const scrollToAttachment = (file: any) => {
             </Typography>
           </Box>
         )}
+      </Dialog>
+
+      {/* Takeover Warning Dialog */}
+      <Dialog
+        open={takeoverWarningOpen}
+        onClose={() => setTakeoverWarningOpen(false)}
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>Action Required</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ color: "var(--text-h)" }}>
+            Ticket is already assigned. Please takeover to make changes.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setTakeoverWarningOpen(false)} variant="contained" color="primary" autoFocus>
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Takeover Confirmation Dialog */}
+      <Dialog
+        open={takeoverConfirmOpen}
+        onClose={() => setTakeoverConfirmOpen(false)}
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>Takeover Ticket</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ color: "var(--text-h)" }}>
+            Are you sure wanna takeover this ticket?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setTakeoverConfirmOpen(false)} variant="outlined">
+            No
+          </Button>
+          <Button onClick={handleTakeoverConfirm} variant="contained" color="primary" autoFocus>
+            Yes
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Toast Feedback */}
