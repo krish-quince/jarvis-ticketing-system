@@ -1,7 +1,7 @@
 import * as tagService from "../services/tag.service.js";
 import * as tagRepo from "../repositories/tag.repository.js";
 import * as ticketRepository from "../repositories/ticket.repository.js";
-import { canAccessTicket } from "../utils/ticketPermissions.js";
+import { canAccessTicket, checkAllocatedTakeoverBlock } from "../utils/ticketPermissions.js";
 
 const sendTagError = (res, error) => {
   if (
@@ -134,6 +134,12 @@ export const addFreeformTicketTag = async (req, res) => {
       return res.status(403).json({ success: false, message: "Access denied to this ticket." });
     }
 
+    try {
+      checkAllocatedTakeoverBlock(ticket, req.user);
+    } catch (err) {
+      return res.status(403).json({ success: false, message: err.message });
+    }
+
     const data = await tagRepo.addFreeformTag(
       ticketId,
       ticket.company_code,
@@ -157,6 +163,12 @@ export const deleteFreeformTicketTag = async (req, res) => {
     }
     if (!canAccessTicket(ticket, req.user)) {
       return res.status(403).json({ success: false, message: "Access denied to this ticket." });
+    }
+
+    try {
+      checkAllocatedTakeoverBlock(ticket, req.user);
+    } catch (err) {
+      return res.status(403).json({ success: false, message: err.message });
     }
 
     const deleted = await tagRepo.removeFreeformTag(tagId, ticketId, ticket.company_code);

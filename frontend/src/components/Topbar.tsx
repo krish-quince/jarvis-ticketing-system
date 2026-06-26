@@ -141,7 +141,7 @@ const Topbar = () => {
             <Toolbar
                 sx={{
                     px: { xs: 2, md: 4 },
-                    py: "16px",
+                    py: "10px",
                     minHeight: "64px !important",
                 }}
             >
@@ -493,7 +493,7 @@ const Topbar = () => {
             {/* Secondary Navigation Row (Tabs) */}
             <Box
                 sx={{
-                    borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                    
                     display: "flex",
                     px: 4,
                 }}
