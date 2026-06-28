@@ -182,3 +182,24 @@ export const toggleTicketPin = async (id: number, isPinned: boolean) => {
   });
   return response.data;
 };
+
+export const getTicketRecurrence = async (id: number | string) => {
+  const response = await API.get(`/tickets/${id}/recurrence`);
+  return unwrapData(response.data);
+};
+
+export const createTicketRecurrence = async (id: number | string, data: any) => {
+  const response = await API.post(`/tickets/${id}/recurrence`, data);
+  return unwrapData(response.data);
+};
+
+export const updateTicketRecurrence = async (id: number | string, data: any) => {
+  const response = await API.put(`/tickets/${id}/recurrence`, data);
+  return unwrapData(response.data);
+};
+
+export const deleteTicketRecurrence = async (id: number | string) => {
+  const response = await API.delete(`/tickets/${id}/recurrence`);
+  return response.data;
+};
+

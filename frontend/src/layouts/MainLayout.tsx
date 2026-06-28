@@ -11,6 +11,8 @@ import {
   InputLabel,
   Typography,
   MenuList,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import {
   Outlet,
@@ -30,6 +32,7 @@ import {
 import Topbar from "../components/Topbar";
 import { getTickets } from "../services/ticketService";
 import { useThemeMode } from "../hooks/useThemeMode";
+import { getColumnPreferences, saveColumnPreferences } from "../services/preferenceService";
 import { getUsers } from "../services/userService";
 import {
   getPriorities,
@@ -105,15 +108,66 @@ const MainLayout = () => {
   const pillCountInactiveBg = isDark ? "rgba(255,255,255,0.1)" : "rgba(33,27,90,0.1)";
   const pillCountInactiveColor = isDark ? darkText : "#374151";
 
+  const DEFAULT_VISIBILITY: Record<string, boolean> = {
+    ticket_no: true,
+    subject: true,
+    category: true,
+    priority: true,
+    status: true,
+    assigned_to: true,
+    raised_by: true,
+    due_date: true,
+    created_at: true,
+    updated_at: true,
+  };
+
+  const COLUMN_LABELS: Record<string, string> = {
+    ticket_no: "Ticket No",
+    subject: "Subject",
+    category: "Category",
+    priority: "Priority",
+    status: "Status",
+    assigned_to: "Assignee",
+    raised_by: "Raised By",
+    due_date: "Due Date",
+    created_at: "Created Date",
+    updated_at: "Updated Date",
+  };
+
   // --- Feature 1: Columns Visibility State ---
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({
-    Priority: true,
-    Status: true,
-    Date: true,
-    Due: true,
-    Tech: true,
-    Updated: true,
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(DEFAULT_VISIBILITY);
+
+  const [toast, setToast] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
   });
+
+  useEffect(() => {
+    if (isTicketListRoute) {
+      const loadPrefs = async () => {
+        try {
+          const prefs = await getColumnPreferences("tickets");
+          if (prefs && Object.keys(prefs).length > 0) {
+            setColumnVisibility({
+              ...DEFAULT_VISIBILITY,
+              ...prefs,
+            });
+          } else {
+            setColumnVisibility(DEFAULT_VISIBILITY);
+          }
+        } catch (error) {
+          console.error("Failed to load column preferences", error);
+          setColumnVisibility(DEFAULT_VISIBILITY);
+        }
+      };
+      loadPrefs();
+    }
+  }, [isTicketListRoute]);
 
   // --- Feature 2: Sort By State ---
   const [sortBy, setSortBy] = useState<string>("Updated");
@@ -122,10 +176,14 @@ const MainLayout = () => {
   // --- Feature 3: Filter State ---
   const [filters, setFilters] = useState<any>({
     date: "",
+    customDateStart: "",
+    customDateEnd: "",
     dueInDays: "",
     updated: "",
-    status: "",
-    priority: "",
+    customUpdatedStart: "",
+    customUpdatedEnd: "",
+    status: [],
+    priority: [],
     from: "",
     company: "",
     department: "",
@@ -179,11 +237,28 @@ const MainLayout = () => {
   const [sortAnchor, setSortAnchor] = useState<null | HTMLElement>(null);
   const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
 
-  const handleToggleColumn = (col: string) => {
+  const handleToggleColumn = async (col: string) => {
+    const nextVal = !columnVisibility[col];
     setColumnVisibility((prev) => ({
       ...prev,
-      [col]: !prev[col],
+      [col]: nextVal,
     }));
+
+    try {
+      await saveColumnPreferences("tickets", { [col]: nextVal });
+    } catch (error) {
+      console.error("Failed to save column preference:", error);
+      // Revert visibility state
+      setColumnVisibility((prev) => ({
+        ...prev,
+        [col]: !nextVal,
+      }));
+      setToast({
+        open: true,
+        message: "Failed to save column preferences.",
+        severity: "error",
+      });
+    }
   };
 
   const handleSortSelect = (opt: string) => {
@@ -394,7 +469,14 @@ const MainLayout = () => {
 
               <Button
                 startIcon={<Tune sx={{ fontSize: "20px !important" }} />}
-                onClick={(e) => setFilterAnchor(e.currentTarget)}
+                onClick={(e) => {
+                  setTempFilters({
+                    ...filters,
+                    status: Array.isArray(filters.status) ? [...filters.status] : (filters.status ? [filters.status] : []),
+                    priority: Array.isArray(filters.priority) ? [...filters.priority] : (filters.priority ? [filters.priority] : []),
+                  });
+                  setFilterAnchor(e.currentTarget);
+                }}
                 sx={{
                   color: isFilterOpen
                     ? (isDark ? "#ffffff" : "#211b5a")
@@ -464,7 +546,7 @@ const MainLayout = () => {
                       }
                       label={
                         <Typography variant="body2" sx={{ fontSize: 13, color: text, ml: 0.5 }}>
-                          {col}
+                          {COLUMN_LABELS[col] || col}
                         </Typography>
                       }
                       sx={{
@@ -594,16 +676,61 @@ const MainLayout = () => {
                       value={tempFilters.date}
                       label="Date"
                       onChange={(e) =>
-                        setTempFilters((prev: any) => ({ ...prev, date: e.target.value }))
+                        setTempFilters((prev: any) => ({
+                          ...prev,
+                          date: e.target.value,
+                          ...(e.target.value !== "Custom..." && {
+                            customDateStart: "",
+                            customDateEnd: "",
+                          }),
+                        }))
                       }
                       sx={{ borderRadius: "8px" }}
                     >
                       <MenuItem value="">Any time</MenuItem>
                       <MenuItem value="Today">Today</MenuItem>
-                      <MenuItem value="Last 7 days">Last 7 days</MenuItem>
-                      <MenuItem value="Last 30 days">Last 30 days</MenuItem>
+                      <MenuItem value="Last week">Last week</MenuItem>
+                      <MenuItem value="30 days">30 days</MenuItem>
+                      <MenuItem value="Custom...">Custom...</MenuItem>
                     </Select>
                   </FormControl>
+
+                  {tempFilters.date === "Custom..." && (
+                    <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
+                      <TextField
+                        fullWidth
+                        type="date"
+                        size="small"
+                        value={tempFilters.customDateStart || ""}
+                        onChange={(e) =>
+                          setTempFilters((prev: any) => ({
+                            ...prev,
+                            customDateStart: e.target.value,
+                          }))
+                        }
+                        slotProps={{ inputLabel: { shrink: true } }}
+                        sx={{
+                          "& .MuiOutlinedInput-root": { borderRadius: "8px" },
+                        }}
+                      />
+                      <TextField
+                        fullWidth
+                        type="date"
+                        size="small"
+                        value={tempFilters.customDateEnd || ""}
+                        onChange={(e) =>
+                          setTempFilters((prev: any) => ({
+                            ...prev,
+                            customDateEnd: e.target.value,
+                          }))
+                        }
+                        slotProps={{ inputLabel: { shrink: true } }}
+                        sx={{
+                          "& .MuiOutlinedInput-root": { borderRadius: "8px" },
+                        }}
+                      />
+                    </Box>
+                  )}
 
                   {/* Due In Filter */}
                   <TextField
@@ -633,36 +760,93 @@ const MainLayout = () => {
                       value={tempFilters.updated}
                       label="Updated"
                       onChange={(e) =>
-                        setTempFilters((prev: any) => ({ ...prev, updated: e.target.value }))
+                        setTempFilters((prev: any) => ({
+                          ...prev,
+                          updated: e.target.value,
+                          ...(e.target.value !== "Custom..." && {
+                            customUpdatedStart: "",
+                            customUpdatedEnd: "",
+                          }),
+                        }))
                       }
                       sx={{ borderRadius: "8px" }}
                     >
                       <MenuItem value="">Any time</MenuItem>
                       <MenuItem value="Today">Today</MenuItem>
-                      <MenuItem value="Last 7 days">Last 7 days</MenuItem>
-                      <MenuItem value="Last 30 days">Last 30 days</MenuItem>
+                      <MenuItem value="Last week">Last week</MenuItem>
+                      <MenuItem value="30 days">30 days</MenuItem>
+                      <MenuItem value="Custom...">Custom...</MenuItem>
                     </Select>
                   </FormControl>
+
+                  {tempFilters.updated === "Custom..." && (
+                    <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
+                      <TextField
+                        fullWidth
+                        type="date"
+                        size="small"
+                        value={tempFilters.customUpdatedStart || ""}
+                        onChange={(e) =>
+                          setTempFilters((prev: any) => ({
+                            ...prev,
+                            customUpdatedStart: e.target.value,
+                          }))
+                        }
+                        slotProps={{ inputLabel: { shrink: true } }}
+                        sx={{
+                          "& .MuiOutlinedInput-root": { borderRadius: "8px" },
+                        }}
+                      />
+                      <TextField
+                        fullWidth
+                        type="date"
+                        size="small"
+                        value={tempFilters.customUpdatedEnd || ""}
+                        onChange={(e) =>
+                          setTempFilters((prev: any) => ({
+                            ...prev,
+                            customUpdatedEnd: e.target.value,
+                          }))
+                        }
+                        slotProps={{ inputLabel: { shrink: true } }}
+                        sx={{
+                          "& .MuiOutlinedInput-root": { borderRadius: "8px" },
+                        }}
+                      />
+                    </Box>
+                  )}
 
                   {/* Status Filter */}
                   <FormControl fullWidth size="small">
                     <InputLabel id="filter-status-label">Status</InputLabel>
                     <Select
                       labelId="filter-status-label"
-                      value={tempFilters.status}
+                      multiple
+                      displayEmpty
+                      value={tempFilters.status || []}
                       label="Status"
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const val = e.target.value;
                         setTempFilters((prev: any) => ({
                           ...prev,
-                          status: e.target.value,
-                        }))
-                      }
+                          status: typeof val === "string" ? val.split(",") : val,
+                        }));
+                      }}
+                      renderValue={(selected: any) => {
+                        if (!selected || selected.length === 0) {
+                          return <span style={{ color: "rgba(0, 0, 0, 0.38)" }}>Status</span>;
+                        }
+                        return (selected as string[]).join(", ");
+                      }}
                       sx={{ borderRadius: "8px" }}
                     >
-                      <MenuItem value="">Status</MenuItem>
-                      {filterOptions.statuses.map((s) => (
-                        <MenuItem key={s.status_id} value={s.status_name}>
-                          {s.status_name}
+                      {((filterOptions.statuses && filterOptions.statuses.length > 0)
+                        ? filterOptions.statuses.map((s) => s.status_name)
+                        : ["New", "In progress", "Closed"]
+                      ).map((status) => (
+                        <MenuItem key={status} value={status} sx={{ py: 0.5 }}>
+                          <Checkbox size="small" checked={(tempFilters.status || []).includes(status)} />
+                          <Typography variant="body2">{status}</Typography>
                         </MenuItem>
                       ))}
                     </Select>
@@ -673,20 +857,32 @@ const MainLayout = () => {
                     <InputLabel id="filter-priority-label">Priority</InputLabel>
                     <Select
                       labelId="filter-priority-label"
-                      value={tempFilters.priority}
+                      multiple
+                      displayEmpty
+                      value={tempFilters.priority || []}
                       label="Priority"
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const val = e.target.value;
                         setTempFilters((prev: any) => ({
                           ...prev,
-                          priority: e.target.value,
-                        }))
-                      }
+                          priority: typeof val === "string" ? val.split(",") : val,
+                        }));
+                      }}
+                      renderValue={(selected: any) => {
+                        if (!selected || selected.length === 0) {
+                          return <span style={{ color: "rgba(0, 0, 0, 0.38)" }}>Priority</span>;
+                        }
+                        return (selected as string[]).join(", ");
+                      }}
                       sx={{ borderRadius: "8px" }}
                     >
-                      <MenuItem value="">Priority</MenuItem>
-                      {filterOptions.priorities.map((p) => (
-                        <MenuItem key={p.priority_id} value={p.priority_name}>
-                          {p.priority_name}
+                      {((filterOptions.priorities && filterOptions.priorities.length > 0)
+                        ? filterOptions.priorities.map((p) => p.priority_name)
+                        : ["Low", "Normal", "High", "Critical"]
+                      ).map((prio) => (
+                        <MenuItem key={prio} value={prio} sx={{ py: 0.5 }}>
+                          <Checkbox size="small" checked={(tempFilters.priority || []).includes(prio)} />
+                          <Typography variant="body2">{prio}</Typography>
                         </MenuItem>
                       ))}
                     </Select>
@@ -869,6 +1065,16 @@ const MainLayout = () => {
           })}
         </Box>
       </Box>
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+      >
+        <Alert severity={toast.severity} sx={{ width: "100%" }}>
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

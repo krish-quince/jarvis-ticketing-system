@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import type { SxProps, Theme } from "@mui/material/styles";
 import StarterKit from "@tiptap/starter-kit";
@@ -97,32 +97,34 @@ const RichTextEditor = ({
     }
   };
 
+  const extensions = useMemo(() => [
+    StarterKit,
+    Image.configure({
+      allowBase64: true,
+      resize: {
+        enabled: true,
+        directions: ["top-left", "top-right", "bottom-left", "bottom-right"],
+        alwaysPreserveAspectRatio: true,
+      },
+    }),
+    Link.configure({
+      openOnClick: false,
+      autolink: true,
+    }),
+    TextStyle,
+    Color,
+    TaskList,
+    TaskItem.configure({
+      nested: true,
+    }),
+    Underline,
+    TextAlign.configure({
+      types: ["heading", "paragraph"],
+    }),
+  ], []);
+
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Image.configure({
-        allowBase64: true,
-        resize: {
-          enabled: true,
-          directions: ["top-left", "top-right", "bottom-left", "bottom-right"],
-          alwaysPreserveAspectRatio: true,
-        },
-      }),
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-      }),
-      TextStyle,
-      Color,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Underline,
-      TextAlign.configure({
-        types: ["heading", "paragraph"],
-      }),
-    ],
+    extensions,
 
     content: value,
 

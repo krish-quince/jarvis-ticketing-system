@@ -8,7 +8,6 @@ import {
 } from "react-router-dom";
 
 import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
 import AdminPage from "./pages/AdminPage";
 import TicketsPage from "./pages/TicketsPage";
 import TicketDetailPage from "./pages/TicketDetailPage";
@@ -20,6 +19,7 @@ import AdminCompaniesPage from "./pages/AdminCompaniesPage";
 import AdminDepartmentsPage from "./pages/AdminDepartmentsPage";
 import GeneralSettingsPage from "./pages/GeneralSettingsPage";
 import EmailSettingsPage from "./pages/EmailSettingsPage";
+import RecurringTicketPage from "./pages/RecurringTicketPage";
 
 import MainLayout from "./layouts/MainLayout";
 import UsersPage from "./pages/UserPage";
@@ -87,6 +87,7 @@ function App() {
               <Route path="/tickets/new" element={<NewTicketPage />} />
               <Route path="/tickets/:id" element={<TicketDetailPage />} />
               <Route path="/tickets/:id/time-spent" element={<TimeSpentPage />} />
+              <Route path="/tickets/:id/recurring" element={<RecurringTicketPage />} />
 
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/users" element={<UsersPage />} />

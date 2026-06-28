@@ -342,3 +342,52 @@ export const getUserByCodeDetail = async (req, res) => {
         });
     }
 };
+
+export const searchUsers = async (req, res) => {
+    try {
+        const { q = "" } = req.query;
+        if (q.trim().length < 2) {
+            return res.status(200).json({
+                success: true,
+                data: []
+            });
+        }
+
+        const isSuper = Number(req.user.roleId) === 4;
+        const searchPattern = `%${q.trim()}%`;
+        
+        let query = `
+            SELECT u.user_code, u.first_name, u.last_name, u.email, c.company_name
+            FROM public.users u
+            LEFT JOIN public.companies c ON c.company_code = u.company_code
+            WHERE u.is_active = true
+              AND (
+                LOWER(u.first_name) LIKE LOWER($1)
+                OR LOWER(u.last_name) LIKE LOWER($1)
+                OR LOWER(u.first_name || ' ' || u.last_name) LIKE LOWER($1)
+                OR LOWER(u.email) LIKE LOWER($1)
+                OR LOWER(u.user_code) LIKE LOWER($1)
+              )
+        `;
+        const params = [searchPattern];
+
+        if (!isSuper) {
+            query += ` AND u.company_code = $2`;
+            params.push(req.user.companyCode);
+        }
+
+        query += ` LIMIT 10`;
+
+        const result = await pool.query(query, params);
+        return res.status(200).json({
+            success: true,
+            data: result.rows
+        });
+    } catch (error) {
+        console.error("searchUsers error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};

@@ -15,6 +15,9 @@ import {
   TextField,
   Typography,
   Popover,
+  Autocomplete,
+  FormControlLabel,
+  InputLabel,
 } from "@mui/material";
 
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -124,6 +127,45 @@ const NewTicketPage = () => {
     severity: "success" | "error";
     message: string;
   }>({ open: false, severity: "success", message: "" });
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
+  })();
+
+  const showOnBehalfSwitch = [1, 2, 4].includes(Number(currentUser.role_id));
+
+  const [userSearchOpen, setUserSearchOpen] = useState(false);
+  const [userSearchInput, setUserSearchInput] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const [ticketSource, setTicketSource] = useState("WebApp");
+  const [suppressUserEmail, setSuppressUserEmail] = useState(false);
+  const [suppressTechEmail, setSuppressTechEmail] = useState(false);
+
+  useEffect(() => {
+    if (userSearchInput.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setUserSearchLoading(true);
+      try {
+        const response = await api.get(`/users/search?q=${encodeURIComponent(userSearchInput)}`);
+        setSearchResults(response.data.data || []);
+      } catch (err) {
+        console.error("User search failed:", err);
+      } finally {
+        setUserSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [userSearchInput]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -288,6 +330,40 @@ const NewTicketPage = () => {
       return;
     }
 
+    if (submitForAnotherUser && !selectedUser) {
+      setToast({ open: true, severity: "error", message: "Selected user is required when submitting on behalf of another user" });
+      return;
+    }
+
+    if (recurring) {
+      // Save form data and navigate to recurrence config page before submitting
+      const ticketData = {
+        subject,
+        description,
+        category_id: Number(categoryId),
+        subcategory_id: subcategoryId ? Number(subcategoryId) : null,
+        priority_id: Number(priorityId),
+        assigned_to_user_code: assignTo.length > 0 ? assignTo[0] : null,
+        allocated_to_user_code: allocatedTo.length > 0 ? allocatedTo.join("|") : null,
+        due_date: dueDate || null,
+        tags,
+        is_recurring: true,
+        submit_for_another_user: submitForAnotherUser,
+        raised_by_user_code: selectedUser ? selectedUser.user_code : null,
+        ticket_source: ticketSource,
+        suppress_user_email: suppressUserEmail,
+        suppress_tech_email: suppressTechEmail,
+      };
+      resetForm();
+      navigate(`/tickets/new/recurring`, {
+        state: {
+          ticketData,
+          attachments,
+        }
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       await createTicket({
@@ -300,8 +376,12 @@ const NewTicketPage = () => {
         allocated_to_user_code: allocatedTo.length > 0 ? allocatedTo.join("|") : null,
         due_date: dueDate || null,
         tags,
-        is_recurring: recurring,
+        is_recurring: false,
         submit_for_another_user: submitForAnotherUser,
+        raised_by_user_code: selectedUser ? selectedUser.user_code : null,
+        ticket_source: ticketSource,
+        suppress_user_email: suppressUserEmail,
+        suppress_tech_email: suppressTechEmail,
       }, attachments);
 
       setToast({ open: true, severity: "success", message: "Ticket created successfully" });
@@ -357,16 +437,133 @@ const NewTicketPage = () => {
           {/* Card Body */}
           <Box sx={{ p: 3 }}>
 
-            {/* Submit on behalf */}
-            <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-              <Switch
-                checked={submitForAnotherUser}
-                onChange={(e) => setSubmitForAnotherUser(e.target.checked)}
-              />
-              <Typography sx={{ color: "var(--text)", fontSize: 14 }}>
-                Submit on behalf of another user
-              </Typography>
-            </Box>
+             {/* Submit on behalf */}
+             {showOnBehalfSwitch && (
+               <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+                 <Switch
+                   checked={submitForAnotherUser}
+                   onChange={(e) => setSubmitForAnotherUser(e.target.checked)}
+                 />
+                 <Typography sx={{ color: "var(--text)", fontSize: 14 }}>
+                   Submit on behalf of another user
+                 </Typography>
+               </Box>
+             )}
+
+             {/* Submit on Behalf Card Details */}
+             {submitForAnotherUser && showOnBehalfSwitch && (
+               <Card
+                 sx={{
+                   mb: 3,
+                   p: 2.5,
+                   borderRadius: 2,
+                   border: "1px dashed var(--border)",
+                   backgroundColor: "rgba(99, 91, 255, 0.03)",
+                   display: "flex",
+                   flexDirection: "column",
+                   gap: 2,
+                 }}
+               >
+                 <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "var(--text-h)" }}>
+                   On-Behalf Submission Details
+                 </Typography>
+                 
+                 {/* Autocomplete for User Search */}
+                 <Autocomplete
+                   open={userSearchOpen}
+                   onOpen={() => setUserSearchOpen(true)}
+                   onClose={() => setUserSearchOpen(false)}
+                   inputValue={userSearchInput}
+                   onInputChange={(_, newInputValue) => {
+                     setUserSearchInput(newInputValue);
+                   }}
+                   value={selectedUser}
+                   onChange={(_, newValue) => {
+                     setSelectedUser(newValue);
+                   }}
+                   options={searchResults}
+                   getOptionLabel={(option) => {
+                     if (!option) return "";
+                     if (typeof option === "string") return option;
+                     return `${option.first_name || ""} ${option.last_name || ""} (${option.email || ""}) (${option.company_name || ""})`.trim();
+                   }}
+                   isOptionEqualToValue={(option, val) => option?.user_code === val?.user_code}
+                   loading={userSearchLoading}
+                   renderInput={(params) => (
+                     <TextField
+                       {...params}
+                       label="From"
+                       placeholder="Search user..."
+                       size="small"
+                       required
+                       slotProps={{
+                         ...params.slotProps,
+                         input: {
+                           ...params.slotProps?.input,
+                           endAdornment: (
+                             <>
+                               {userSearchLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                               {params.slotProps?.input?.endAdornment}
+                             </>
+                           ),
+                         }
+                       }}
+                     />
+                   )}
+                 />
+
+                 {/* Via (Ticket Source) Dropdown */}
+                 <FormControl size="small" fullWidth>
+                   <InputLabel>Via</InputLabel>
+                   <Select
+                     value={ticketSource}
+                     label="Via"
+                     onChange={(e) => setTicketSource(e.target.value)}
+                     sx={{ borderRadius: "6px" }}
+                   >
+                     <MenuItem value="WebApp">WebApp</MenuItem>
+                     <MenuItem value="Email">Email</MenuItem>
+                     <MenuItem value="Phone">Phone</MenuItem>
+                     <MenuItem value="Walk-in">Walk-in</MenuItem>
+                     <MenuItem value="Chat">Chat</MenuItem>
+                     <MenuItem value="API">API</MenuItem>
+                   </Select>
+                 </FormControl>
+
+                 {/* Notification switches */}
+                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}>
+                   <FormControlLabel
+                     control={
+                       <Switch
+                         checked={suppressUserEmail}
+                         onChange={(e) => setSuppressUserEmail(e.target.checked)}
+                         size="small"
+                       />
+                     }
+                     label={
+                       <Typography sx={{ fontSize: 13, color: "var(--text)" }}>
+                         Don't send the 'new ticket' confirmation to the user
+                       </Typography>
+                     }
+                   />
+                   
+                   <FormControlLabel
+                     control={
+                       <Switch
+                         checked={suppressTechEmail}
+                         onChange={(e) => setSuppressTechEmail(e.target.checked)}
+                         size="small"
+                       />
+                     }
+                     label={
+                       <Typography sx={{ fontSize: 13, color: "var(--text)" }}>
+                         Don't send the 'new ticket' notification to technicians
+                       </Typography>
+                     }
+                   />
+                 </Box>
+               </Card>
+             )}
 
             {/* Category + Priority row */}
             <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3, alignItems: "center" }}>
@@ -572,44 +769,43 @@ const NewTicketPage = () => {
       </Box>
     )}
 
-    {subPanel.length === 0 ? (
-      <Box
-        sx={{
-          px: 2,
-          py: 2,
-          fontSize: 13,
-          color: "var(--text-secondary)",
-        }}
-      >
-        No subcategories
-      </Box>
-    ) : (
-      subPanel.map((sub) => {
+    {(() => {
+      const filteredSubPanel = subPanel.filter((sub) => {
+        const name = String(sub.subcategory_name).toLowerCase().trim();
+        return name !== "general ticket" && name !== "general";
+      });
+
+      if (filteredSubPanel.length === 0 && subPanel.length === 0) {
+        return (
+          <Box
+            sx={{
+              px: 2,
+              py: 2,
+              fontSize: 13,
+              color: "var(--text-secondary)",
+            }}
+          >
+            No subcategories
+          </Box>
+        );
+      }
+
+      return filteredSubPanel.map((sub) => {
         const isSelected =
-          String(
-            hoveredCat?.category_id
-          ) === categoryId &&
-          String(
-            sub.subcategory_id
-          ) === subcategoryId;
+          String(hoveredCat?.category_id) === categoryId &&
+          String(sub.subcategory_id) === subcategoryId;
 
         return (
           <Box
             key={sub.subcategory_id}
-            sx={
-              isSelected
-                ? selectedItemSx
-                : menuItemSx
-            }
-            onClick={() =>
-              handleSubcategoryClick(sub)
-            }
+            sx={isSelected ? selectedItemSx : menuItemSx}
+            onClick={() => handleSubcategoryClick(sub)}
           >
             {sub.subcategory_name}
           </Box>
         );
-      })
-    )}
+      });
+    })()}
   </Box>
 </Box>
   </Box>

@@ -32,6 +32,19 @@ export const requireTechnician = (req, res, next) => {
     });
 };
 
+export const requireTechnicianOrAdmin = (req, res, next) => {
+    const roleId = Number(req.user?.roleId);
+
+    if (roleId === 1 || roleId === 2 || roleId === 4) {
+        return next();
+    }
+
+    return res.status(403).json({
+        success: false,
+        message: "Access denied. Only technicians/agents and admins can perform this action.",
+    });
+};
+
 export const requireSuperAdmin = (req, res, next) => {
     if (isSuperAdmin(req.user)) {
         return next();

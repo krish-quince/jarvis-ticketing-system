@@ -30,6 +30,14 @@ import {
 }
 from "../validators/ticket.validator.js";
 
+import { recurrenceSchema } from "../validators/recurrence.validator.js";
+import {
+    getTicketRecurrence,
+    createTicketRecurrence,
+    updateTicketRecurrence,
+    deleteTicketRecurrence
+} from "../controllers/recurrence.controller.js";
+
 import { uploadTicketAttachments } from "../middleware/ticketUpload.middleware.js";
 
 
@@ -63,5 +71,11 @@ router.patch("/:ticketId/takeover", verifyToken, takeoverTicket);
 router.patch("/:ticketId/reopen", verifyToken, reopenTicket);
 router.delete("/attachments/:type/:attachmentId", verifyToken, deleteAttachment);
 router.delete("/:ticketId", verifyToken, deleteTicket);
+
+// Recurrence settings routes
+router.get("/:ticketId/recurrence", verifyToken, getTicketRecurrence);
+router.post("/:ticketId/recurrence", verifyToken, validate(recurrenceSchema), createTicketRecurrence);
+router.put("/:ticketId/recurrence", verifyToken, validate(recurrenceSchema), updateTicketRecurrence);
+router.delete("/:ticketId/recurrence", verifyToken, deleteTicketRecurrence);
 
 export default router;

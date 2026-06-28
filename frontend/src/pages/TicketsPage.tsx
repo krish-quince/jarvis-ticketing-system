@@ -180,6 +180,16 @@ const TicketsPage = () => {
   };
 
   const { columnVisibility, sortBy, sortOrder, handleSortSelect, filters } = useOutletContext<any>();
+  const getColSpanCount = () => {
+    let count = 2; // Checkbox + Subject
+    if (columnVisibility.status) count++;
+    if (columnVisibility.priority) count++;
+    if (columnVisibility.created_at) count++;
+    if (columnVisibility.due_date) count++;
+    if (columnVisibility.assigned_to) count++;
+    if (columnVisibility.updated_at) count++;
+    return count;
+  };
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsedParents, setCollapsedParents] = useState<Set<string>>(
@@ -537,12 +547,23 @@ const TicketsPage = () => {
       const now = new Date();
       if (filters.date === "Today") {
         if (createdDate.toDateString() !== now.toDateString()) return false;
-      } else if (filters.date === "Last 7 days") {
+      } else if (filters.date === "Last week") {
         const diff = (now.getTime() - createdDate.getTime()) / (1000 * 3600 * 24);
-        if (diff > 7) return false;
-      } else if (filters.date === "Last 30 days") {
+        if (diff < 0 || diff > 7) return false;
+      } else if (filters.date === "30 days") {
         const diff = (now.getTime() - createdDate.getTime()) / (1000 * 3600 * 24);
-        if (diff > 30) return false;
+        if (diff < 0 || diff > 30) return false;
+      } else if (filters.date === "Custom...") {
+        if (filters.customDateStart) {
+          const start = new Date(filters.customDateStart);
+          start.setHours(0, 0, 0, 0);
+          if (createdDate < start) return false;
+        }
+        if (filters.customDateEnd) {
+          const end = new Date(filters.customDateEnd);
+          end.setHours(23, 59, 59, 999);
+          if (createdDate > end) return false;
+        }
       }
     }
 
@@ -562,23 +583,40 @@ const TicketsPage = () => {
       const now = new Date();
       if (filters.updated === "Today") {
         if (updatedDate.toDateString() !== now.toDateString()) return false;
-      } else if (filters.updated === "Last 7 days") {
+      } else if (filters.updated === "Last week") {
         const diff = (now.getTime() - updatedDate.getTime()) / (1000 * 3600 * 24);
-        if (diff > 7) return false;
-      } else if (filters.updated === "Last 30 days") {
+        if (diff < 0 || diff > 7) return false;
+      } else if (filters.updated === "30 days") {
         const diff = (now.getTime() - updatedDate.getTime()) / (1000 * 3600 * 24);
-        if (diff > 30) return false;
+        if (diff < 0 || diff > 30) return false;
+      } else if (filters.updated === "Custom...") {
+        if (filters.customUpdatedStart) {
+          const start = new Date(filters.customUpdatedStart);
+          start.setHours(0, 0, 0, 0);
+          if (updatedDate < start) return false;
+        }
+        if (filters.customUpdatedEnd) {
+          const end = new Date(filters.customUpdatedEnd);
+          end.setHours(23, 59, 59, 999);
+          if (updatedDate > end) return false;
+        }
       }
     }
 
-    // 4. Status filter
-    if (filters.status) {
-      if (ticket.status_name?.toLowerCase() !== filters.status.toLowerCase()) return false;
+    // 4. Status filter (multi-select)
+    const statusFilter = Array.isArray(filters.status) ? filters.status : (filters.status ? [filters.status] : []);
+    if (statusFilter.length > 0) {
+      if (!ticket.status_name || !statusFilter.map((s: string) => s.toLowerCase()).includes(ticket.status_name.toLowerCase())) {
+        return false;
+      }
     }
 
-    // 5. Priority filter
-    if (filters.priority) {
-      if (ticket.priority_name?.toLowerCase() !== filters.priority.toLowerCase()) return false;
+    // 5. Priority filter (multi-select)
+    const priorityFilter = Array.isArray(filters.priority) ? filters.priority : (filters.priority ? [filters.priority] : []);
+    if (priorityFilter.length > 0) {
+      if (!ticket.priority_name || !priorityFilter.map((p: string) => p.toLowerCase()).includes(ticket.priority_name.toLowerCase())) {
+        return false;
+      }
     }
 
     // 6. From filter (Email or username of the creator)
@@ -621,17 +659,10 @@ const TicketsPage = () => {
     return true;
   };
 
-  const filterByMode = (ticket: Ticket) => {
-    const userCode = currentUser.userCode || currentUser.user_code;
-    const isAssigned = ticket.assigned_to_user_code === userCode;
-    const isAllocated = ticket.allocated_to_user_code
-      ? ticket.allocated_to_user_code.split("|").includes(userCode)
-      : false;
-    return isAssigned || isAllocated;
-  };
+
 
   const filteredTickets = tickets.filter(
-    (t) => filterByMode(t) && filterPill(t) && filterCategory(t) && filterCustom(t),
+    (t) => filterPill(t) && filterCategory(t) && filterCustom(t),
   );
 
   const getSortValue = (ticket: Ticket, opt: string) => {
@@ -643,6 +674,12 @@ const TicketsPage = () => {
       }
       case "Subject":
         return (ticket.subject || "").toLowerCase();
+      case "Category":
+        return (ticket.category_name || "").toLowerCase();
+      case "Subcategory":
+        return ((ticket as any).subcategory_name || "").toLowerCase();
+      case "Department":
+        return ((ticket as any).department || "").toLowerCase();
       case "From":
         return (ticket.raised_by_user_code || "").toLowerCase();
       case "Company":
@@ -1334,134 +1371,80 @@ const TicketsPage = () => {
                     )}
                   </Box>
                 </TableCell>
-                {columnVisibility.Status && (
+                {columnVisibility.status && (
                   <TableCell
-                    sx={{
-                      ...headCellSx,
-                      width: 140,
-                      cursor: "pointer",
-                      userSelect: "none",
-                    }}
+                    sx={{ ...headCellSx, width: 140, cursor: "pointer", userSelect: "none" }}
                     onClick={() => handleSortSelect("Status")}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                       Status
                       {sortBy === "Status" && (
-                        sortOrder === "asc" ? (
-                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
-                        ) : (
-                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
-                        )
+                        sortOrder === "asc" ? <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} /> : <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
                       )}
                     </Box>
                   </TableCell>
                 )}
-                {columnVisibility.Priority && (
+                {columnVisibility.priority && (
                   <TableCell
-                    sx={{
-                      ...headCellSx,
-                      width: 100,
-                      cursor: "pointer",
-                      userSelect: "none",
-                    }}
+                    sx={{ ...headCellSx, width: 100, cursor: "pointer", userSelect: "none" }}
                     onClick={() => handleSortSelect("Priority")}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                       Priority
                       {sortBy === "Priority" && (
-                        sortOrder === "asc" ? (
-                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
-                        ) : (
-                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
-                        )
+                        sortOrder === "asc" ? <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} /> : <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
                       )}
                     </Box>
                   </TableCell>
                 )}
-                {columnVisibility.Date && (
+                {columnVisibility.created_at && (
                   <TableCell
-                    sx={{
-                      ...headCellSx,
-                      width: 180,
-                      cursor: "pointer",
-                      userSelect: "none",
-                    }}
+                    sx={{ ...headCellSx, width: 180, cursor: "pointer", userSelect: "none" }}
                     onClick={() => handleSortSelect("Date")}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                       Date
                       {sortBy === "Date" && (
-                        sortOrder === "asc" ? (
-                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
-                        ) : (
-                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
-                        )
+                        sortOrder === "asc" ? <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} /> : <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
                       )}
                     </Box>
                   </TableCell>
                 )}
-                {columnVisibility.Due && (
+                {columnVisibility.due_date && (
                   <TableCell
-                    sx={{
-                      ...headCellSx,
-                      width: 90,
-                      cursor: "pointer",
-                      userSelect: "none",
-                    }}
+                    sx={{ ...headCellSx, width: 90, cursor: "pointer", userSelect: "none" }}
                     onClick={() => handleSortSelect("Due")}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                       Due
                       {sortBy === "Due" && (
-                        sortOrder === "asc" ? (
-                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
-                        ) : (
-                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
-                        )
+                        sortOrder === "asc" ? <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} /> : <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
                       )}
                     </Box>
                   </TableCell>
                 )}
-                {columnVisibility.Tech && (
+                {columnVisibility.assigned_to && (
                   <TableCell
-                    sx={{
-                      ...headCellSx,
-                      width: 110,
-                      cursor: "pointer",
-                      userSelect: "none",
-                    }}
+                    sx={{ ...headCellSx, width: 110, cursor: "pointer", userSelect: "none" }}
                     onClick={() => handleSortSelect("Tech")}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                       Tech
                       {sortBy === "Tech" && (
-                        sortOrder === "asc" ? (
-                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
-                        ) : (
-                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
-                        )
+                        sortOrder === "asc" ? <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} /> : <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
                       )}
                     </Box>
                   </TableCell>
                 )}
-                {columnVisibility.Updated && (
+                {columnVisibility.updated_at && (
                   <TableCell
-                    sx={{
-                      ...headCellSx,
-                      width: 130,
-                      cursor: "pointer",
-                      userSelect: "none",
-                    }}
+                    sx={{ ...headCellSx, width: 130, cursor: "pointer", userSelect: "none" }}
                     onClick={() => handleSortSelect("Updated")}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                       Updated
                       {sortBy === "Updated" && (
-                        sortOrder === "asc" ? (
-                          <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} />
-                        ) : (
-                          <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
-                        )
+                        sortOrder === "asc" ? <KeyboardArrowUp sx={{ fontSize: 15, color: "var(--accent)" }} /> : <KeyboardArrowDown sx={{ fontSize: 15, color: "var(--accent)" }} />
                       )}
                     </Box>
                   </TableCell>
@@ -1472,7 +1455,7 @@ const TicketsPage = () => {
               {sortedTickets.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={2 + Object.values(columnVisibility).filter(Boolean).length}
+                  colSpan={1 + Object.values(columnVisibility).filter(Boolean).length}
                     align="center"
                     sx={{
                       py: 5,
@@ -1534,33 +1517,35 @@ const TicketsPage = () => {
                         <TableCell sx={{ py: 1.8, backgroundColor: "inherit" }}>
                           <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.5 }}>
                             <Box sx={{ flex: 1, minWidth: 0 }}>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontWeight: 500,
-                                  color: "var(--text-h)",
-                                  fontSize: "1rem",
-                                  lineHeight: "1.5rem",
-                                  mb: 0.5,
-                                  cursor: "pointer",
-                                  transition: "color 0.15s ease",
-                                  "&:hover": { color: "#211b5a" },
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 0.75,
-                                }}
-                              >
-                                {ticket.is_pinned && (
-                                  <PushPin
-                                    sx={{
-                                      fontSize: 16,
-                                      color: "var(--text-h)",
-                                      transform: "rotate(45deg)",
-                                    }}
-                                  />
-                                )}
-                                {ticket.subject}
-                              </Typography>
+                              {columnVisibility.subject && (
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    fontWeight: 500,
+                                    color: "var(--text-h)",
+                                    fontSize: "1rem",
+                                    lineHeight: "1.5rem",
+                                    mb: 0.5,
+                                    cursor: "pointer",
+                                    transition: "color 0.15s ease",
+                                    "&:hover": { color: "#211b5a" },
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 0.75,
+                                  }}
+                                >
+                                  {ticket.is_pinned && (
+                                    <PushPin
+                                      sx={{
+                                        fontSize: 16,
+                                        color: "var(--text-h)",
+                                        transform: "rotate(45deg)",
+                                      }}
+                                    />
+                                  )}
+                                  {ticket.subject}
+                                </Typography>
+                              )}
                               <Box
                                 sx={{
                                   display: "flex",
@@ -1571,190 +1556,190 @@ const TicketsPage = () => {
                                   mt: 0.5,
                                 }}
                               >
-                                <Box
-                                  component="span"
-                                  title="Click here for preview"
-                                  sx={{
-                                    color: "#211b5a",
-                                    fontSize: 13,
-                                    display: "inline-block",
-                                    cursor: "pointer",
-                                    "&:hover": { textDecoration: "underline" },
-                                  }}
-                                  onClick={(e) => handleUserClick(e, ticket.raised_by_user_code || "", "left")}
-                                >
-                                  {ticket.raised_by_name || ticket.raised_by_user_code}
-                                </Box>
-                                <Box
-                                  component="span"
-                                  sx={{ color: "var(--text-muted)", fontSize: 13 }}
-                                >
-                                  {ticket.category_name}{(ticket as any).subcategory_name ? " / " + (ticket as any).subcategory_name : ""}
-                                </Box>
-                                <Box
-                                  component="span"
-                                  sx={{ color: "var(--text-muted)", fontSize: 13 }}
-                                >
-                                  #{ticket.ticket_no}
-                                </Box>
+                                {/* Raised By */}
+                                {columnVisibility.raised_by && (
+                                  <Box
+                                    component="span"
+                                    title="Click here for preview"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (ticket.raised_by_user_code) {
+                                        handleUserClick(e, ticket.raised_by_user_code, "left");
+                                      }
+                                    }}
+                                    sx={{
+                                      color: "#6366f1",
+                                      fontSize: 13,
+                                      display: "inline-block",
+                                      cursor: "pointer",
+                                      fontWeight: 500,
+                                      "&:hover": { textDecoration: "underline" },
+                                    }}
+                                  >
+                                    {ticket.raised_by_name || ticket.raised_by_user_code}
+                                  </Box>
+                                )}
+
+                                {/* Company */}
+                                {columnVisibility.company && ((ticket as any).company_name || ticket.company_code) && (
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      color: "#6366f1",
+                                      fontSize: 13,
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    {(ticket as any).company_name || ticket.company_code}
+                                  </Box>
+                                )}
+
+                                {/* Category */}
+                                {columnVisibility.category && (
+                                  <Box
+                                    component="span"
+                                    sx={{ color: "var(--text-muted)", fontSize: 13 }}
+                                  >
+                                    {ticket.category_name}
+                                    {ticket.subcategory_name ? " - " + ticket.subcategory_name : ""}
+                                  </Box>
+                                )}
+
+                                {/* Ticket No */}
+                                {columnVisibility.ticket_no && (
+                                  <Box
+                                    component="span"
+                                    sx={{ color: "#a1a1aa", fontSize: 13 }}
+                                  >
+                                    #{ticket.ticket_no}
+                                  </Box>
+                                )}
                               </Box>
                             </Box>
                           </Box>
                         </TableCell>
 
                         {/* Status */}
-                        {columnVisibility.Status && <TableCell
-                          sx={{
-                            py: 1.8,
-                            verticalAlign: "top",
-                            backgroundColor: "inherit",
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 0.8,
-                            }}
+                        {columnVisibility.status && (
+                          <TableCell
+                            sx={{ py: 1.8, verticalAlign: "top", backgroundColor: "inherit" }}
                           >
-                            <Box
-                              sx={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: "50%",
-                                backgroundColor: statusInfo.color,
-                                flex: "0 0 auto",
-                              }}
-                            />
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                fontWeight: 500,
-                                color:
-                                  statusInfo.label === "New"
-                                    ? "#ff727e"
-                                    : "var(--text-muted)",
-                                fontSize: 13,
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {statusInfo.label}
-                            </Typography>
-                          </Box>
-                          {updByTech && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "var(--accent)",
-                                fontSize: 11,
-                                display: "block",
-                                mt: 0.3,
-                              }}
-                            >
-                              Upd by tech
-                            </Typography>
-                          )}
-                        </TableCell>}
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                              <Box
+                                sx={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  backgroundColor: statusInfo.color,
+                                  flex: "0 0 auto",
+                                }}
+                              />
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 500,
+                                  color: statusInfo.label === "New" ? "#ff727e" : "var(--text-muted)",
+                                  fontSize: 13,
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {statusInfo.label}
+                              </Typography>
+                            </Box>
+                            {updByTech && (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "var(--accent)",
+                                  fontSize: 11,
+                                  display: "block",
+                                  mt: 0.3,
+                                }}
+                              >
+                                Upd by tech
+                              </Typography>
+                            )}
+                          </TableCell>
+                        )}
 
                         {/* Priority */}
-                        {columnVisibility.Priority && <TableCell
-                          sx={{
-                            py: 1.8,
-                            verticalAlign: "top",
-                            backgroundColor: "inherit",
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 0.8,
-                            }}
+                        {columnVisibility.priority && (
+                          <TableCell
+                            sx={{ py: 1.8, verticalAlign: "top", backgroundColor: "inherit" }}
                           >
-                            <Box
-                              sx={{
-                                width: 9,
-                                height: 9,
-                                borderRadius: "50%",
-                                backgroundColor: priorityInfo.color,
-                                boxShadow: `0 0 0 3px ${priorityInfo.color}33`,
-                              }}
-                            />
-                            <Typography
-                              variant="body2"
-                              sx={{ color: "var(--text-muted)", fontSize: 13 }}
-                            >
-                              {priorityInfo.label}
-                            </Typography>
-                          </Box>
-                        </TableCell>}
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                              <Box
+                                sx={{
+                                  width: 9,
+                                  height: 9,
+                                  borderRadius: "50%",
+                                  backgroundColor: priorityInfo.color,
+                                  boxShadow: `0 0 0 3px ${priorityInfo.color}33`,
+                                }}
+                              />
+                              <Typography variant="body2" sx={{ color: "var(--text-muted)", fontSize: 13 }}>
+                                {priorityInfo.label}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                        )}
 
-                        {columnVisibility.Date && <TableCell
-                          sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
-                        >
-                          {ticket.created_at
-                            ? formatDateTime(ticket.created_at)
-                            : "-"}
-                        </TableCell>}
+                        {/* Date */}
+                        {columnVisibility.created_at && (
+                          <TableCell sx={{ ...bodyCellSx, backgroundColor: "inherit" }}>
+                            {ticket.created_at ? formatDateTime(ticket.created_at) : "-"}
+                          </TableCell>
+                        )}
 
                         {/* Due Date */}
-                        {columnVisibility.Due && <TableCell
-                          sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
-                        >
-                          {ticket.due_date
-                            ? new Date(ticket.due_date).toLocaleDateString("en-US")
-                            : ""}
-                        </TableCell>}
+                        {columnVisibility.due_date && (
+                          <TableCell sx={{ ...bodyCellSx, backgroundColor: "inherit" }}>
+                            {ticket.due_date ? new Date(ticket.due_date).toLocaleDateString("en-US") : "-"}
+                          </TableCell>
+                        )}
 
-                        {columnVisibility.Tech && <TableCell
-                          sx={{
-                            ...bodyCellSx,
-                            backgroundColor: "inherit",
-                          }}
-                        >
-                          {ticket.assigned_to_name ? (
-                            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0.5 }}>
-                              {ticket.assigned_to_name.split(", ").map((name, i) => (
-                                <Box
-                                  key={i}
-                                  component="span"
-                                  title="Click here for preview"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (ticket.assigned_to_user_code) {
-                                      handleUserClick(e, ticket.assigned_to_user_code, "right");
-                                    }
-                                  }}
-                                  sx={{
-                                    display: "inline-block",
-                                    whiteSpace: "nowrap",
-                                    color: "#211b5a",
-                                    cursor: "pointer",
-                                    "&:hover": { textDecoration: "underline" },
-                                  }}
-                                >
-                                  {name}
-                                </Box>
-                              ))}
-                            </Box>
-                          ) : (
-                            <Box
-                              component="span"
-                              sx={{
-                                color: "var(--text-sub)",
-                                fontStyle: "italic",
-                              }}
-                            >
-                              Unassigned
-                            </Box>
-                          )}
-                        </TableCell>}
+                        {/* Tech (Assignee) */}
+                        {columnVisibility.assigned_to && (
+                          <TableCell sx={{ ...bodyCellSx, backgroundColor: "inherit" }}>
+                            {ticket.assigned_to_name ? (
+                              <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0.5 }}>
+                                {ticket.assigned_to_name.split(", ").map((name, i) => (
+                                  <Box
+                                    key={i}
+                                    component="span"
+                                    title="Click here for preview"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (ticket.assigned_to_user_code) {
+                                        handleUserClick(e, ticket.assigned_to_user_code, "right");
+                                      }
+                                    }}
+                                    sx={{
+                                      display: "inline-block",
+                                      whiteSpace: "nowrap",
+                                      color: "#211b5a",
+                                      cursor: "pointer",
+                                      "&:hover": { textDecoration: "underline" },
+                                    }}
+                                  >
+                                    {name}
+                                  </Box>
+                                ))}
+                              </Box>
+                            ) : (
+                              <Box component="span" sx={{ color: "var(--text-sub)", fontStyle: "italic" }}>
+                                Unassigned
+                              </Box>
+                            )}
+                          </TableCell>
+                        )}
 
-                        {columnVisibility.Updated && <TableCell
-                          sx={{ ...bodyCellSx, backgroundColor: "inherit" }}
-                        >
-                          {formatDateTime(ticket.update_timestamp)}
-                        </TableCell>}
+                        {/* Updated Date */}
+                        {columnVisibility.updated_at && (
+                          <TableCell sx={{ ...bodyCellSx, backgroundColor: "inherit" }}>
+                            {formatDateTime(ticket.update_timestamp)}
+                          </TableCell>
+                        )}
                       </TableRow>
 
                       {/* ── Floating bulk action bar ── */}
@@ -1762,7 +1747,7 @@ const TicketsPage = () => {
                         selectedTickets.length > 0 && (
                           <TableRow>
                             <TableCell
-                              colSpan={2 + Object.values(columnVisibility).filter(Boolean).length}
+                              colSpan={getColSpanCount()}
                               sx={{
                                 border: 0,
                                 p: 0,

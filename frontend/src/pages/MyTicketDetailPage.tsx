@@ -1198,6 +1198,14 @@ const MyTicketDetailPage = () => {
   };
   const getHistoryMessage = (item: any) => {
     const field = item.field_changed || "Ticket";
+    if (String(field).toLowerCase() === "created") {
+      const val = item.new_value || "";
+      if (val.includes("on behalf of")) {
+        return val.replace("Ticket created by ", "").replace(" on behalf of ", " submitted this ticket on behalf of ");
+      }
+      return val || "Ticket Created";
+    }
+
     const fieldKey = normalizeHistoryField(field);
     const fieldNameMap: Record<string, string> = {
       status: "status",
@@ -1705,6 +1713,14 @@ const scrollToAttachment = (file: any) => {
                       }}
                     >
                       Manage Subscribers
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        setMoreAnchor(null);
+                        navigate(`/tickets/${ticket.ticket_id}/recurring`);
+                      }}
+                    >
+                      Recurring settings
                     </MenuItem>
                     <MenuItem
                       onClick={async () => {
@@ -2875,7 +2891,7 @@ const scrollToAttachment = (file: any) => {
                       slotProps={{
                         paper: {
                           sx: {
-                            width: categoryAnchorEl ? categoryAnchorEl.clientWidth : 250,
+                            width: categoryAnchorEl ? (categoryAnchorEl as any).clientWidth : 250,
                             maxHeight: 280,
                             overflowY: "auto",
                             mt: 0.5,
@@ -3065,12 +3081,22 @@ const scrollToAttachment = (file: any) => {
                 >
                   From:
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 600, color: "#211b5a", flex: 1 }}
-                >
-                  {ticket.raised_by_name ?? ticket.raised_by_user_code}
-                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 600, color: "#211b5a" }}
+                  >
+                    {ticket.raised_by_name ?? ticket.raised_by_user_code}
+                  </Typography>
+                  {ticket.created_by_user_code && ticket.created_by_user_code !== ticket.raised_by_user_code && (
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "#8b90a2", mt: 0.25, fontSize: "12px", fontWeight: 400 }}
+                    >
+                      logged by {ticket.created_by_name || ticket.created_by_user_code}
+                    </Typography>
+                  )}
+                </Box>
               </Box>
 
               {/* Via */}
@@ -3097,7 +3123,7 @@ const scrollToAttachment = (file: any) => {
                   variant="body2"
                   sx={{ fontWeight: 600, color: "var(--text-h)", flex: 1 }}
                 >
-                  WebApp
+                  {ticket.ticket_source || "WebApp"}
                 </Typography>
               </Box>
 
@@ -3647,12 +3673,35 @@ const scrollToAttachment = (file: any) => {
                 >
                   Recurring:
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 600, color: "var(--text-h)", flex: 1 }}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    cursor: canEditRightCard ? "pointer" : "default",
+                  }}
+                  onClick={() => {
+                    if (canEditRightCard) {
+                      navigate(`/tickets/${ticket.ticket_id}/recurring`);
+                    }
+                  }}
                 >
-                  This ticket is not recurring
-                </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 600, color: "var(--text-h)" }}
+                  >
+                    {ticket.is_recurring ? "This ticket is recurring" : "This ticket is not recurring"}
+                  </Typography>
+                  {canEditRightCard && (
+                    <MoreIcon
+                      sx={{
+                        fontSize: 14,
+                        color: "var(--text-secondary)",
+                        ml: 0.5,
+                      }}
+                    />
+                  )}
+                </Box>
               </Box>
 
               {/* Freeform Tags - Styled Inline */}
@@ -3787,14 +3836,16 @@ const scrollToAttachment = (file: any) => {
               </Typography>
               <Box sx={{ display: "flex", gap: 1 }}>
                 <Tooltip title="Download all files">
-                  <IconButton
-                    size="small"
-                    onClick={handleDownloadAllFiles}
-                    disabled={allFiles.length === 0}
-                    sx={{ color: "var(--text-secondary)" }}
-                  >
-                    <CloudDownloadIcon sx={{ fontSize: 20 }} />
-                  </IconButton>
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={handleDownloadAllFiles}
+                      disabled={allFiles.length === 0}
+                      sx={{ color: "var(--text-secondary)" }}
+                    >
+                      <CloudDownloadIcon sx={{ fontSize: 20 }} />
+                    </IconButton>
+                  </span>
                 </Tooltip>
                 <Tooltip title={`Sort by upload date: ${fileSortOrder === "asc" ? "Ascending" : "Descending"}`}>
                   <IconButton
