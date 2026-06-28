@@ -20,6 +20,7 @@ import dashboardRoutes from "./routes/dashboard.routes.js";
 import masterRoutes from "./routes/master.routes.js";
 import emailConfigRoutes from "./routes/emailConfig.routes.js";
 import tagRoutes from "./routes/tag.routes.js";
+import preferenceRoutes from "./routes/preference.routes.js";
 
 dotenv.config();
 
@@ -102,6 +103,11 @@ app.use(
 app.use(
   "/api/email-configs",
   emailConfigRoutes
+);
+
+app.use(
+  "/api/preferences",
+  preferenceRoutes
 );
 
 export default app;

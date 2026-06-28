@@ -1,6 +1,7 @@
 import pool from "../config/db.js";
 import * as ticketRepository from "../repositories/ticket.repository.js";
 import * as historyService from "./history.service.js";
+import { sendNewTicketNotifications } from "./email.service.js";
 import {
   canAccessTicket,
   canManageTicket,
@@ -172,6 +173,20 @@ export const createTicket = async (ticketData, user, files = []) => {
     }
   }
 
+  // Backend Validation for on-behalf ticket creation
+  const isOnBehalf = ticketData.submit_for_another_user === true || ticketData.submit_for_another_user === "true";
+  if (isOnBehalf && !ticketData.raised_by_user_code) {
+    throw new Error("Selected user is required when submitting on behalf of another user.");
+  }
+
+  const raisedByUserCode = isOnBehalf 
+    ? ticketData.raised_by_user_code 
+    : user.userCode;
+
+  const createdByUserCode = isOnBehalf
+    ? user.userCode
+    : null;
+
   const payload = {
     subject: ticketData.subject,
     description: ticketData.description,
@@ -189,7 +204,9 @@ export const createTicket = async (ticketData, user, files = []) => {
 
     ticketNo,
 
-    raisedByUserCode: user.userCode,
+    raisedByUserCode,
+    created_by_user_code: createdByUserCode,
+    ticket_source: ticketData.ticket_source || 'WebApp',
     companyCode: user.companyCode,
 
     department_id: user.departmentId,
@@ -268,16 +285,45 @@ export const createTicket = async (ticketData, user, files = []) => {
       tags.push(tag);
     }
 
+    let historyMsg = "Ticket Created";
+    if (payload.created_by_user_code) {
+      const creatorRes = await client.query(
+        "SELECT first_name, last_name FROM users WHERE user_code = $1",
+        [payload.created_by_user_code]
+      );
+      const raisedByRes = await client.query(
+        "SELECT first_name, last_name FROM users WHERE user_code = $1",
+        [payload.raisedByUserCode]
+      );
+      const creatorName = creatorRes.rows.length > 0 
+        ? [creatorRes.rows[0].first_name, creatorRes.rows[0].last_name].filter(Boolean).join(" ")
+        : payload.created_by_user_code;
+      const raisedByName = raisedByRes.rows.length > 0 
+        ? [raisedByRes.rows[0].first_name, raisedByRes.rows[0].last_name].filter(Boolean).join(" ")
+        : payload.raisedByUserCode;
+      
+      historyMsg = `Ticket created by ${creatorName} on behalf of ${raisedByName}`;
+    }
+
     await historyService.createHistory(
       ticket.ticket_id,
       "Created",
       "",
-      "Ticket Created",
+      historyMsg,
       user.userCode,
       client,
     );
 
     await client.query("COMMIT");
+
+    // Asynchronously send new ticket notifications based on user preferences
+    sendNewTicketNotifications(
+      { ...ticket, description: ticketData.description },
+      ticketData.suppress_user_email === true || ticketData.suppress_user_email === "true",
+      ticketData.suppress_tech_email === true || ticketData.suppress_tech_email === "true"
+    ).catch((notifErr) => {
+      console.error("Error triggering new ticket notifications:", notifErr);
+    });
 
     return { ...ticket, attachments, tags };
   } catch (error) {

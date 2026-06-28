@@ -285,3 +285,152 @@ export const sendWelcomeEmail = async (userDetails) => {
     return false;
   }
 };
+
+export const sendNewTicketNotifications = async (ticket, suppressUserEmail = false, suppressTechEmail = false) => {
+  // 1. Fetch SMTP config for the ticket's company
+  let companyName = "Quince Capital";
+  let smtpHostDb = null;
+  let smtpPortDb = null;
+  let smtpUserDb = null;
+  let smtpPassDb = null;
+  let emailFromNameDb = null;
+  let sendAssignmentEmailToggle = true;
+
+  try {
+    const companyRes = await pool.query(
+      "SELECT company_name FROM companies WHERE company_code = $1", 
+      [ticket.company_code]
+    );
+    if (companyRes.rows.length > 0) {
+      companyName = companyRes.rows[0].company_name;
+    }
+
+    const configRes = await pool.query(
+      "SELECT * FROM email_configs WHERE company_code = $1 AND is_active = true LIMIT 1",
+      [ticket.company_code]
+    );
+    if (configRes.rows.length > 0) {
+      const cfg = configRes.rows[0];
+      smtpHostDb = cfg.smtp_host;
+      smtpPortDb = cfg.smtp_port;
+      smtpUserDb = cfg.smtp_user;
+      smtpPassDb = cfg.smtp_pass;
+      emailFromNameDb = cfg.email_from_name;
+      sendAssignmentEmailToggle = cfg.send_ticket_assignment_email !== false;
+    }
+  } catch (dbErr) {
+    console.warn("Failed to load SMTP settings for ticket notifications:", dbErr);
+  }
+
+  // Resolve SMTP configuration
+  const smtpUser = smtpUserDb || process.env.EMAIL_USER || process.env.SMTP_USER;
+  const smtpPass = smtpPassDb || process.env.EMAIL_PASS || process.env.SMTP_PASS || process.env.APP_PASSWORD;
+  const smtpHost = smtpHostDb || process.env.EMAIL_HOST || process.env.SMTP_HOST || "smtp.gmail.com";
+  const smtpPort = smtpPortDb ? Number(smtpPortDb) : parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || "587");
+  const fromName = emailFromNameDb || companyName || "Jarvis Helpdesk";
+
+  if (!smtpUser || !smtpPass) {
+    console.warn("SMTP credentials not configured. Skipping email notifications.");
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpPort === 465,
+    auth: {
+      user: smtpUser,
+      pass: smtpPass,
+    },
+  });
+
+  // 2. Send User Confirmation Email (if not suppressed)
+  if (!suppressUserEmail) {
+    try {
+      const userRes = await pool.query(
+        "SELECT email, first_name, last_name FROM users WHERE user_code = $1 AND is_active = true",
+        [ticket.raised_by_user_code]
+      );
+      if (userRes.rows.length > 0) {
+        const u = userRes.rows[0];
+        const fullName = [u.first_name, u.last_name].filter(Boolean).join(" ");
+        const mailOptions = {
+          from: `"${fromName}" <${smtpUser}>`,
+          to: u.email,
+          subject: `Ticket Created - #${ticket.ticket_no}: ${ticket.subject}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+              <h2>Ticket Confirmation</h2>
+              <p>Dear ${fullName},</p>
+              <p>Your ticket has been successfully created in the system.</p>
+              <table style="border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 15px;">
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background-color: #f9f9f9;" width="30%">Ticket No</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${ticket.ticket_no}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background-color: #f9f9f9;">Subject</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${ticket.subject}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background-color: #f9f9f9;">Description</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${ticket.description || ""}</td>
+                </tr>
+              </table>
+              <p style="margin-top: 20px; font-size: 12px; color: #777;">This is a system-generated notification. Please do not reply directly to this email.</p>
+            </div>
+          `,
+        };
+        await transporter.sendMail(mailOptions);
+        console.log(`Confirmation email sent to user ${u.email}`);
+      }
+    } catch (err) {
+      console.error("Failed to send new ticket user confirmation email:", err);
+    }
+  }
+
+  // 3. Send Tech Notification Email (if not suppressed, ticket has assignee, and settings allow it)
+  if (!suppressTechEmail && ticket.assigned_to_user_code && sendAssignmentEmailToggle) {
+    try {
+      const techRes = await pool.query(
+        "SELECT email, first_name, last_name FROM users WHERE user_code = $1 AND is_active = true",
+        [ticket.assigned_to_user_code]
+      );
+      if (techRes.rows.length > 0) {
+        const tech = techRes.rows[0];
+        const fullName = [tech.first_name, tech.last_name].filter(Boolean).join(" ");
+        const mailOptions = {
+          from: `"${fromName}" <${smtpUser}>`,
+          to: tech.email,
+          subject: `Ticket Assigned - #${ticket.ticket_no}: ${ticket.subject}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+              <h2>New Ticket Assignment</h2>
+              <p>Dear ${fullName},</p>
+              <p>The following ticket has been assigned to you:</p>
+              <table style="border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 15px;">
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background-color: #f9f9f9;" width="30%">Ticket No</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${ticket.ticket_no}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background-color: #f9f9f9;">Subject</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${ticket.subject}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background-color: #f9f9f9;">Description</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${ticket.description || ""}</td>
+                </tr>
+              </table>
+              <p style="margin-top: 20px; font-size: 12px; color: #777;">Please log in to your dashboard to review and manage this ticket.</p>
+            </div>
+          `,
+        };
+        await transporter.sendMail(mailOptions);
+        console.log(`Notification email sent to technician ${tech.email}`);
+      }
+    } catch (err) {
+      console.error("Failed to send ticket assignment email to tech:", err);
+    }
+  }
+};

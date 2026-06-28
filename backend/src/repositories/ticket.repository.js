@@ -23,7 +23,9 @@ export const createTicket = async (ticket, client = null) => {
 
     due_date,
 
-    department_id
+    department_id,
+    created_by_user_code,
+    ticket_source
 )
         VALUES
 (
@@ -32,7 +34,9 @@ export const createTicket = async (ticket, client = null) => {
     $6,$7,
     $8,$9,$10,
     $11,
-    $12
+    $12,
+    $13,
+    $14
 )
         RETURNING *
         `,
@@ -54,6 +58,8 @@ export const createTicket = async (ticket, client = null) => {
       ticket.due_date,
 
       ticket.department_id,
+      ticket.created_by_user_code || null,
+      ticket.ticket_source || 'WebApp'
     ],
   );
 
@@ -138,6 +144,8 @@ export const getAllTickets = async (
       sc.subcategory_name,
       p.priority_name,
       p.priority_color,
+      co.company_name,
+      d.department_name AS department,
       COALESCE(
         (
           SELECT json_agg(
@@ -165,6 +173,10 @@ export const getAllTickets = async (
       ON sc.subcategory_id = t.subcategory_id
     LEFT JOIN ticket_priorities p
       ON p.priority_id = t.priority_id
+    LEFT JOIN companies co
+      ON co.company_code = t.company_code
+    LEFT JOIN departments d
+      ON d.department_id = t.department_id
     WHERE 1=1
   `;
 
@@ -235,6 +247,7 @@ export const getTicketById = async (ticketId, companyCode) => {
     SELECT
         t.*,
         COALESCE(u_raised.first_name || ' ' || u_raised.last_name, t.raised_by_user_code) AS raised_by_name,
+        COALESCE(u_created.first_name || ' ' || u_created.last_name, t.created_by_user_code) AS created_by_name,
         c.category_name,
         sc.subcategory_name,
         p.priority_name,
@@ -242,6 +255,8 @@ export const getTicketById = async (ticketId, companyCode) => {
         s.status_name,
         s.status_color,
         s.is_closed_status,
+        co.company_name,
+        d.department_name AS department,
         (
           SELECT string_agg(u.first_name || ' ' || u.last_name, ', ')
           FROM ReturnTable(t.assigned_to_user_code, '|') rt
@@ -316,6 +331,9 @@ export const getTicketById = async (ticketId, companyCode) => {
         LEFT JOIN users u_raised
             ON u_raised.user_code = t.raised_by_user_code
 
+        LEFT JOIN users u_created
+            ON u_created.user_code = t.created_by_user_code
+
         LEFT JOIN ticket_categories c
             ON c.category_id = t.category_id
 
@@ -327,6 +345,12 @@ export const getTicketById = async (ticketId, companyCode) => {
 
         LEFT JOIN ticket_statuses s
             ON s.status_id = t.status_id
+
+        LEFT JOIN companies co
+            ON co.company_code = t.company_code
+
+        LEFT JOIN departments d
+            ON d.department_id = t.department_id
   `;
 
   const isNumeric = /^\d+$/.test(String(ticketId));

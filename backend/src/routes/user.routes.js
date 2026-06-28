@@ -5,7 +5,8 @@ import {
     getAllUsers,
     getAllUsersWithData,
     updateUser,
-    getUserByCodeDetail
+    getUserByCodeDetail,
+    searchUsers
 } from "../controllers/user.controller.js";
 
 import {
@@ -13,7 +14,8 @@ import {
 } from "../middleware/auth.middleware.js";
 
 import {
-    requireAdmin
+    requireAdmin,
+    requireTechnicianOrAdmin
 } from "../middleware/role.middleware.js";
 
 const router = Router();
@@ -22,6 +24,13 @@ router.get(
     "/",
     verifyToken,
     getAllUsers
+);
+
+router.get(
+    "/search",
+    verifyToken,
+    requireTechnicianOrAdmin,
+    searchUsers
 );
 
 router.get(
